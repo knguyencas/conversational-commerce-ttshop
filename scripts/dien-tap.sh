@@ -117,11 +117,11 @@ sql "INSERT INTO order_status_log (tiktok_order_id, odoo_sale_order, status, sou
      VALUES ('$ORDER', 'S00012', 'odoo_created', 'n8n');" >/dev/null
 
 echo "== 3. Kho đóng gói xong, Odoo báo n8n"
-code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$N8N/webhook/odoo-picking-done?secret=$ODOO_WEBHOOK_SECRET" \
+code=$(curl -s -o "$TMP/out" -w '%{http_code}' -X POST "$N8N/webhook/odoo-picking-done?secret=$ODOO_WEBHOOK_SECRET" \
   -H 'Content-Type: application/json' --data-binary @contracts/internal/odoo_picking_done.json)
 check "Đặt vận chuyển nhận phiếu xuất kho, trả 200" "$([ "$code" = 200 ] && echo 1 || echo 0)"
 check "Đã đặt TikTok tới lấy hàng" "$(wait_for "SELECT EXISTS (SELECT 1 FROM order_status_log WHERE tiktok_order_id = '$ORDER' AND status = 'shipping_arranged')")"
-code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$N8N/webhook/odoo-picking-done?secret=sai" \
+code=$(curl -s -o "$TMP/out" -w '%{http_code}' -X POST "$N8N/webhook/odoo-picking-done?secret=sai" \
   -H 'Content-Type: application/json' --data-binary @contracts/internal/odoo_picking_done.json)
 check "Sai mã bí mật thì bị chặn (401)" "$([ "$code" = 401 ] && echo 1 || echo 0)"
 
@@ -133,7 +133,7 @@ sql "SELECT '    ' || to_char(changed_at, 'HH24:MI:SS') || '  ' || rpad(status, 
 
 echo "== 5. Kiểm tra chặn chữ ký giả và số liệu KPI"
 echo '{"type":1,"tts_notification_id":"dientap-gia","data":{}}' > "$TMP/gia.json"
-code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$N8N/webhook/tiktok-events" -H 'Authorization: sai' \
+code=$(curl -s -o "$TMP/out" -w '%{http_code}' -X POST "$N8N/webhook/tiktok-events" -H 'Authorization: sai' \
   -H 'Content-Type: application/json' --data-binary @"$TMP/gia.json")
 check "Webhook sai chữ ký bị chặn (401)" "$([ "$code" = 401 ] && echo 1 || echo 0)"
 kpi=$(curl -s "$N8N/webhook/kpi-dashboard?bang=tong_hop" -H "x-kpi-key: $KPI_SECRET" | sed -n 2p)
