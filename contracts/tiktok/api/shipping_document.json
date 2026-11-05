@@ -1,0 +1,9 @@
+{
+  "code": 0,
+  "message": "Success",
+  "request_id": "2026102610000401234567890ABCDEF",
+  "data": {
+    "doc_url": "https://example.invalid/shipping-label/1155443322110099887.pdf",
+    "tracking_number": "VNEXAMPLE123456789"
+  }
+}

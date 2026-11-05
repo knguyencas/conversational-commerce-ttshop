@@ -1,0 +1,238 @@
+{
+  "id": "m3UpsellGhiNhan1",
+  "name": "M3 · Ghi nhận mua kèm",
+  "active": false,
+  "nodes": [
+    {
+      "id": "37a98c44-d00c-5706-a0c4-106759959f35",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -400
+      ],
+      "parameters": {
+        "width": 1100,
+        "height": 300,
+        "color": 7,
+        "content": "## M3 · Ghi nhận mua kèm (bandit học từ khách thật)\n**Đơn mới** (Router gọi cùng lúc với `M2 · Tạo đơn`): lấy chi tiết đơn → nếu khách mua món đã được mời trong 48 giờ: `upsell_offers.reward = 1`, `bandit_arms.alpha + 1` → ghi `upsell_order_stats` (giá trị đơn, nhóm offer/control).\n\n**Mỗi giờ** (và sau mỗi đơn): lượt mời quá 48 giờ không mua → `reward = 0`, `bandit_arms.beta + 1`.\n\nXem hiệu quả: `select * from upsell_report;` và `select * from upsell_offer_report;`"
+      }
+    },
+    {
+      "id": "903f4000-4165-5592-88f7-6ee9eee0ebf1",
+      "name": "Router gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "1e471fe9-2268-525c-bcb6-db8e42743e2b",
+      "name": "Yêu cầu chi tiết đơn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Tạo yêu cầu lấy chi tiết đơn mới (người mua, SKU, tổng tiền)\nconst ev = $input.first().json;\nconst id = ev.data && ev.data.order_id;\nif (!id) throw new Error('Sự kiện không có order_id');\nreturn [{ json: { method: 'GET', path: '/order/202309/orders', query: { ids: String(id) } } }];\n"
+      }
+    },
+    {
+      "id": "6f4bfde4-3320-5ce4-9f58-a838329a34ea",
+      "name": "Lấy chi tiết đơn",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "040f20f7-b204-5671-8e51-a1c659baff30",
+      "name": "Đọc đơn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const ev = $('Router gọi tới').first().json;\nconst r = $input.first().json;\nif (!r.ok) throw new Error(`Ghi nhận mua kèm: lấy chi tiết đơn lỗi ${r.code} ${r.message}`);\nconst o = (r.data.orders || [])[0] || {};\nconst skus = [...new Set((o.line_items || []).map((i) => i.seller_sku).filter(Boolean))];\nreturn [{ json: { order_id: String(ev.data.order_id), buyer_user_id: o.user_id ? String(o.user_id) : '',\n  skus, total_amount: o.payment && o.payment.total_amount ? String(o.payment.total_amount) : '' } }];\n"
+      }
+    },
+    {
+      "id": "643ff917-28dd-519a-8a02-676feab653f0",
+      "name": "Thưởng bandit, ghi đơn",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH hit AS (\n  UPDATE upsell_offers\n     SET resolved = true, reward = 1, resolved_at = now(), order_id = $3\n   WHERE buyer_user_id = NULLIF($1, '') AND NOT resolved\n     AND offered_at > now() - interval '48 hours'\n     AND arm_sku IN (SELECT jsonb_array_elements_text($2::jsonb))\n  RETURNING context, arm_sku\n), win AS (\n  INSERT INTO bandit_arms (context, arm, alpha, beta)\n  SELECT context, arm_sku, 1 + count(*), 1 FROM hit GROUP BY 1, 2\n  ON CONFLICT (context, arm) DO UPDATE\n    SET alpha = bandit_arms.alpha + (EXCLUDED.alpha - 1), updated_at = now()\n  RETURNING 1\n), stat AS (\n  INSERT INTO upsell_order_stats (order_id, buyer_user_id, total_amount, upsell_group, accepted_count)\n  VALUES ($3, NULLIF($1, ''), NULLIF($4, '')::numeric,\n          (SELECT upsell_group FROM conversations WHERE buyer_user_id = NULLIF($1, '')\n            ORDER BY last_message_at DESC LIMIT 1),\n          (SELECT count(*) FROM hit))\n  ON CONFLICT (order_id) DO NOTHING\n  RETURNING 1\n)\nSELECT (SELECT count(*) FROM hit) AS so_mon_mua_kem, (SELECT count(*) FROM stat) AS da_ghi_don;",
+        "options": {
+          "queryReplacement": "={{ [ $json.buyer_user_id, JSON.stringify($json.skus), $json.order_id, $json.total_amount ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "9f8d5c88-aca2-5c9c-87eb-a59ccb8e4e08",
+      "name": "Mỗi giờ",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6603ed02-385c-5907-9cf8-5e1af5a95082",
+      "name": "Đóng lượt mời quá 48 giờ",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1100,
+        120
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH miss AS (\n  UPDATE upsell_offers\n     SET resolved = true, reward = 0, resolved_at = now()\n   WHERE NOT resolved AND offered_at <= now() - interval '48 hours'\n  RETURNING context, arm_sku\n), lose AS (\n  INSERT INTO bandit_arms (context, arm, alpha, beta)\n  SELECT context, arm_sku, 1, 1 + count(*) FROM miss GROUP BY 1, 2\n  ON CONFLICT (context, arm) DO UPDATE\n    SET beta = bandit_arms.beta + (EXCLUDED.beta - 1), updated_at = now()\n  RETURNING 1\n)\nSELECT count(*) AS so_luot_khong_mua FROM miss;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    }
+  ],
+  "connections": {
+    "Router gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Yêu cầu chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Lấy chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Đọc đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc đơn": {
+      "main": [
+        [
+          {
+            "node": "Thưởng bandit, ghi đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thưởng bandit, ghi đơn": {
+      "main": [
+        [
+          {
+            "node": "Đóng lượt mời quá 48 giờ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mỗi giờ": {
+      "main": [
+        [
+          {
+            "node": "Đóng lượt mời quá 48 giờ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

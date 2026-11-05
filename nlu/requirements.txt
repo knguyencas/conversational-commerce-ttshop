@@ -1,0 +1,11 @@
+# Sinh dữ liệu và chuyển đổi CSV: chỉ cần Python 3.10+, không cần thư viện ngoài.
+# Train (Colab/Kaggle đã có sẵn torch, transformers, scikit-learn, pandas, matplotlib;
+# notebook tự cài underthesea, seqeval, accelerate):
+torch
+transformers>=4.46
+accelerate
+scikit-learn
+pandas
+matplotlib
+underthesea>=6
+seqeval

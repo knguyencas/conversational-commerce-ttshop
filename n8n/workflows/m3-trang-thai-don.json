@@ -1,0 +1,603 @@
+{
+  "id": "m3TrangThaiDon01",
+  "name": "M3 · Trạng thái đơn",
+  "active": false,
+  "nodes": [
+    {
+      "id": "9169bb6a-a8d7-5f6e-8921-134a36f46544",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -440
+      ],
+      "parameters": {
+        "content": "## M3 · Trạng thái đơn\nRouter gọi khi đơn đã giao cho hãng (`ORDER_STATUS_CHANGE`) hoặc gói hàng cập nhật (`PACKAGE_UPDATE`).\n\nLấy chi tiết đơn từ TikTok → so với lần ghi trước (trùng thì thôi) → ghi `order_status_log` (chatbot đọc để trả lời *đơn tới đâu rồi*) → báo M2 cập nhật Odoo → **lần đầu đang giao: nhắn mã vận đơn cho khách** (qua `M3 · Gửi tin TikTok`) → **hủy sau khi đã giao cho hãng: ghi `failed_jobs`** để M2 theo dõi hàng hoàn.\n\nNhóm trạng thái: `dang_giao` (AWAITING_COLLECTION, IN_TRANSIT), `da_giao` (DELIVERED, COMPLETED), `giao_that_bai`, `khac`.",
+        "height": 300,
+        "width": 1500,
+        "color": 7
+      }
+    },
+    {
+      "id": "122128a9-b688-538e-b6a9-c2169a43a5ef",
+      "name": "Router gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "ec5503a2-712b-55aa-9349-a64c3ce609ac",
+      "name": "Yêu cầu chi tiết đơn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Router gửi ORDER_STATUS_CHANGE (đã giao cho hãng) hoặc PACKAGE_UPDATE\nconst ev = $input.first().json;\nconst d = ev.data || {};\nif (!d.order_id) throw new Error('Sự kiện không có order_id');\nreturn [{ json: { method: 'GET', path: '/order/202309/orders', query: { ids: String(d.order_id) } } }];\n"
+      }
+    },
+    {
+      "id": "8655ed2c-375b-502b-84db-8796aa56809b",
+      "name": "Lấy chi tiết đơn",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "a8fb8c70-2a55-5c50-9c1f-5594532cdb29",
+      "name": "Lịch sử đơn",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT status FROM order_latest_status WHERE tiktok_order_id = $1) AS last_status,\n  EXISTS (SELECT 1 FROM order_status_log WHERE tiktok_order_id = $1 AND COALESCE((detail->>'notified')::boolean, false)) AS notified,\n  EXISTS (SELECT 1 FROM order_status_log WHERE tiktok_order_id = $1\n            AND status IN ('shipping_arranged', 'AWAITING_COLLECTION', 'IN_TRANSIT')) AS was_shipped,\n  (SELECT odoo_sale_order FROM order_status_log WHERE tiktok_order_id = $1 AND odoo_sale_order IS NOT NULL\n    ORDER BY changed_at DESC LIMIT 1) AS odoo_sale_order;",
+        "options": {
+          "queryReplacement": "={{ [ String($('Router gọi tới').first().json.data.order_id) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "63c72287-bda7-55ee-85d2-2b02526f6533",
+      "name": "Xác định trạng thái",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const ev = $('Router gọi tới').first().json;\nconst r = $('Lấy chi tiết đơn').first().json;\nconst h = $input.first().json;\nconst orderId = String(ev.data.order_id);\nconst order = r.ok && r.data ? (r.data.orders || [])[0] : null;\nconst status = ev.data.order_status || (order && order.status);\nif (!status) throw new Error(`Không biết trạng thái đơn ${orderId}: lấy chi tiết đơn lỗi ${r.code} ${r.message}`);\nconst items = order ? order.line_items || [] : [];\nconst tracking = (items.find((i) => i.tracking_number) || {}).tracking_number || null;\n\nlet nhom = 'khac';\nif (['AWAITING_COLLECTION', 'IN_TRANSIT'].includes(status)) nhom = 'dang_giao';\nelse if (['DELIVERED', 'COMPLETED'].includes(status)) nhom = 'da_giao';\nelse if (status === 'CANCELLED' && h.was_shipped) nhom = 'giao_that_bai';\n\nif (status === h.last_status) return [{ json: { nhom: 'trung', status, tiktok_order_id: orderId } }];\nconst notify = nhom === 'dang_giao' && !!tracking && !h.notified && !!(order && order.user_id);\nreturn [{ json: { nhom, status, tiktok_order_id: orderId, odoo_sale_order: h.odoo_sale_order || '',\n  tracking_number: tracking, buyer_user_id: order ? order.user_id ?? null : null, notify } }];\n"
+      }
+    },
+    {
+      "id": "83127d7a-f73f-5269-92ad-30903426bc04",
+      "name": "Trạng thái mới?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "82d8095a-c044-59e0-9d2c-e49206a73c2a",
+              "leftValue": "={{ $json.nhom }}",
+              "rightValue": "trung",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ca3ad3fd-cdda-5b7e-a636-530982cd1852",
+      "name": "Trùng, bỏ qua",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        -160
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "7ac4374b-e6e3-53b1-bfd0-96f9dcfd64df",
+      "name": "Ghi order_status_log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1320,
+        40
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO order_status_log (tiktok_order_id, odoo_sale_order, status, source, tracking_number, detail)\nVALUES ($1, NULLIF($2, ''), $3, 'tiktok', NULLIF($4, ''), $5::jsonb)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.tiktok_order_id, $json.odoo_sale_order, $json.status, $json.tracking_number || '', JSON.stringify({ nhom: $json.nhom }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "79829fc6-f78b-5fa0-9749-7135d41c06f1",
+      "name": "Dữ liệu cho M2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        160
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Xác định trạng thái').first().json;\nreturn [{ json: { action: 'cap_nhat_trang_thai', tiktok_order_id: s.tiktok_order_id, odoo_sale_order: s.odoo_sale_order,\n  status: s.status, nhom: s.nhom, tracking_number: s.tracking_number } }];\n"
+      }
+    },
+    {
+      "id": "3e1ec6a0-6d78-513e-aff7-1aaca8995158",
+      "name": "Báo M2 cập nhật Odoo",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        160
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m2OdooVanChuyen1",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "fe77f35d-2f8a-56b8-8766-de933115855a",
+      "name": "Việc tiếp theo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        40
+      ],
+      "parameters": {
+        "jsCode": "// Việc tiếp theo: báo mã vận đơn cho khách, báo nhóm khi giao thất bại, hoặc thôi\nconst s = $('Xác định trạng thái').first().json;\nconst next = s.notify ? 'bao_khach' : (s.nhom === 'giao_that_bai' ? 'bao_nhom' : 'xong');\nreturn [{ json: { ...s, log_id: $('Ghi order_status_log').first().json.id, next } }];\n"
+      }
+    },
+    {
+      "id": "50ca9db5-c7a1-58e8-994e-cd40ee65d8fd",
+      "name": "Cần làm gì thêm",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1760,
+        -40
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3620fea2-6ba7-57f9-961d-4a9fa0e652d9",
+                    "leftValue": "={{ $json.next }}",
+                    "rightValue": "bao_khach",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Báo khách"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a658ab95-5b52-53c4-9324-4741023a8bdd",
+                    "leftValue": "={{ $json.next }}",
+                    "rightValue": "bao_nhom",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Báo nhóm"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c499ab93-4ae8-5aa1-bc3e-2f6b95ca1de8",
+                    "leftValue": "={{ $json.next }}",
+                    "rightValue": "xong",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Xong"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e1b058d2-6cf2-598e-8692-7877dd5d0f59",
+      "name": "Soạn tin cho khách",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        -200
+      ],
+      "parameters": {
+        "jsCode": "const s = $input.first().json;\nreturn [{ json: { buyer_user_id: s.buyer_user_id,\n  text: `Dạ đơn hàng ${s.tiktok_order_id} của anh/chị đã được giao cho đơn vị vận chuyển, mã vận đơn ${s.tracking_number}. Anh/chị theo dõi trong mục Đơn hàng của TikTok nhé ạ.` } }];\n"
+      }
+    },
+    {
+      "id": "51fbc856-dda8-5f86-b96e-1a47ab7adf26",
+      "name": "Nhắn khách (M3 · Gửi tin TikTok)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2200,
+        -200
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3GuiTinTikTok01",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "7534f027-0c10-541a-a041-b5795b9a89d9",
+      "name": "Đánh dấu đã báo khách",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2420,
+        -200
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE order_status_log\n   SET detail = detail || jsonb_build_object('notified', $2::boolean, 'notify_error', NULLIF($3, ''))\n WHERE id = $1\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ $('Việc tiếp theo').first().json.log_id, $json.ok, $json.error || '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "bcc9c343-3706-52bc-a2a0-a070909ec0bf",
+      "name": "Báo nhóm: giao thất bại",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1980,
+        -20
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO failed_jobs (workflow_name, node_name, error_message, payload, note)\nVALUES ('M3 · Trạng thái đơn', 'Giao thất bại', $1, $2::jsonb, 'Theo dõi hàng hoàn về kho (M2)')\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ 'Đơn ' + $json.tiktok_order_id + ' bị hủy sau khi đã giao cho hãng vận chuyển: hàng sẽ hoàn về', JSON.stringify({ tiktok_order_id: $json.tiktok_order_id, odoo_sale_order: $json.odoo_sale_order, status: $json.status }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "4576280a-6be9-5400-b83a-36b87e439d3a",
+      "name": "Không cần làm gì",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        140
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Router gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Yêu cầu chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Lấy chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Lịch sử đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lịch sử đơn": {
+      "main": [
+        [
+          {
+            "node": "Xác định trạng thái",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xác định trạng thái": {
+      "main": [
+        [
+          {
+            "node": "Trạng thái mới?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trạng thái mới?": {
+      "main": [
+        [
+          {
+            "node": "Trùng, bỏ qua",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ghi order_status_log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi order_status_log": {
+      "main": [
+        [
+          {
+            "node": "Việc tiếp theo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dữ liệu cho M2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dữ liệu cho M2": {
+      "main": [
+        [
+          {
+            "node": "Báo M2 cập nhật Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Việc tiếp theo": {
+      "main": [
+        [
+          {
+            "node": "Cần làm gì thêm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cần làm gì thêm": {
+      "main": [
+        [
+          {
+            "node": "Soạn tin cho khách",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Báo nhóm: giao thất bại",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Không cần làm gì",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soạn tin cho khách": {
+      "main": [
+        [
+          {
+            "node": "Nhắn khách (M3 · Gửi tin TikTok)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nhắn khách (M3 · Gửi tin TikTok)": {
+      "main": [
+        [
+          {
+            "node": "Đánh dấu đã báo khách",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

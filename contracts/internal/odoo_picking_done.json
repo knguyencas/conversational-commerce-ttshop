@@ -1,0 +1,10 @@
+{
+  "_model": "stock.picking",
+  "_id": 15,
+  "id": 15,
+  "name": "WH/OUT/00015",
+  "origin": "S00012",
+  "state": "done",
+  "picking_type_code": "outgoing",
+  "date_done": "2026-10-26 03:30:00"
+}

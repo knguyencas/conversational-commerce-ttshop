@@ -1,0 +1,17 @@
+# Khóa và mật khẩu
+.env
+
+# Bản sao lưu (có thể chứa dữ liệu khách và token)
+backups/*
+!backups/.gitkeep
+
+# Kết quả train NLU (mô hình nặng cỡ GB) và mô hình mua kèm
+nlu/outputs/
+upsell/outputs/
+
+# Linh tinh
+*.log
+.DS_Store
+Thumbs.db
+__pycache__/
+.ipynb_checkpoints/

@@ -1,0 +1,117 @@
+{
+  "id": "testChatbotWh001",
+  "name": "TEST · Chatbot qua webhook",
+  "active": false,
+  "nodes": [
+    {
+      "id": "7e5d0f08-adbe-5933-b8a3-b56cfea137ed",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -260
+      ],
+      "parameters": {
+        "content": "## TEST · Chatbot qua webhook\n`POST /webhook/chatbot-test` với `{\"text\": \"...\", \"conversation_id\": \"...\"}` để test chatbot bằng script. **Unpublish sau khi test** (ai biết link cũng gọi được).",
+        "height": 200,
+        "width": 620,
+        "color": 7
+      }
+    },
+    {
+      "id": "15e7d4a5-a77a-51cb-b1eb-c51e61ba5ffa",
+      "name": "Webhook test",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot-test",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "2c574c58-2b1f-54de-bbc9-62f3971d94d8"
+    },
+    {
+      "id": "e6ad2801-8251-5a87-96f7-1ca0b7de0fae",
+      "name": "Đổi sang chatbot_input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || {};\nreturn [{ json: {\n  conversation_id: b.conversation_id || 'test-webhook',\n  message_id: 'wh-' + Date.now(),\n  buyer_user_id: b.buyer_user_id || 'nguoi-test',\n  message_type: b.message_type || 'TEXT',\n  text: String(b.text || ''),\n  product_id: b.product_id || null,\n  channel: b.channel || 'test',\n  received_at: new Date().toISOString(),\n} }];\n"
+      }
+    },
+    {
+      "id": "b1740061-47e0-5ce1-a1ac-34ef25622f87",
+      "name": "Gọi M3 · Chatbot",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3Chatbot0000001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook test": {
+      "main": [
+        [
+          {
+            "node": "Đổi sang chatbot_input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đổi sang chatbot_input": {
+      "main": [
+        [
+          {
+            "node": "Gọi M3 · Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "m3XuLyLoi0000001",
+    "callerPolicy": "any"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

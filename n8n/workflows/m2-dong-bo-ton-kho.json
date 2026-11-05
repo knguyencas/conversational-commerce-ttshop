@@ -1,0 +1,128 @@
+{
+  "id": "m2DongBoTonKho01",
+  "name": "M2 · Đồng bộ tồn kho",
+  "active": false,
+  "nodes": [
+    {
+      "id": "16695969-10ad-5d54-8007-36c8df41029c",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -420
+      ],
+      "parameters": {
+        "content": "## M2 · Đồng bộ tồn kho (giữ chỗ)\nHợp đồng: `contracts/internal/ton_kho.md`.\n\n1. Bật lại node *Mỗi 15 phút* khi làm xong.\n2. Thay node *Chưa làm*: đọc tồn có thể bán trong Odoo theo SKU, đổi SKU qua `sku_map`, gọi **M3 · TikTok API** với `/product/202309/products/{product_id}/inventory/update`.\n3. Gọi workflow này (không chờ) ở cuối M2 · Tạo đơn và M2 · Hủy đơn.",
+        "height": 300,
+        "width": 560
+      }
+    },
+    {
+      "id": "4ad3ce90-52f6-55cf-a259-dce2960cdba4",
+      "name": "Mỗi 15 phút",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -100
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "disabled": true
+    },
+    {
+      "id": "bd8129d1-7c71-5904-b37c-fbb2ef496b21",
+      "name": "Workflow khác gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        100
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "5e2f6f24-1964-5756-b652-54a651969e0c",
+      "name": "Chuẩn hóa yêu cầu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Gom yêu cầu đồng bộ: từ lịch chạy thì đồng bộ tất cả, từ workflow khác thì theo danh sách SKU\nconst items = $input.all().map((i) => i.json);\nconst fromSchedule = items.some((j) => j.timestamp || j['Readable date']);\nconst skus = [...new Set(items.flatMap((j) => j.seller_skus || (j.seller_sku ? [j.seller_sku] : [])))];\nreturn [{ json: { ly_do: fromSchedule ? 'lich' : (items[0].ly_do || 'khac'), tat_ca: fromSchedule || skus.length === 0,\n  seller_skus: skus, tiktok_order_id: items[0].tiktok_order_id || null } }];\n"
+      }
+    },
+    {
+      "id": "48801ebc-3d22-54a6-824a-327691ee0dd5",
+      "name": "Chưa làm (giữ chỗ)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Giữ chỗ: M2 thay bằng xử lý thật, giữ nguyên trigger và dữ liệu vào\nreturn $input.all();\n"
+      }
+    }
+  ],
+  "connections": {
+    "Mỗi 15 phút": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn hóa yêu cầu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn hóa yêu cầu": {
+      "main": [
+        [
+          {
+            "node": "Chưa làm (giữ chỗ)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow khác gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn hóa yêu cầu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

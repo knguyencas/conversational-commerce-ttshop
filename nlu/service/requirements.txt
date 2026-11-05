@@ -1,0 +1,5 @@
+# torch (bản CPU) cài riêng trong Dockerfile để không kéo bản GPU nặng vài GB
+transformers==5.3.0
+fastapi==0.115.12
+uvicorn==0.34.0
+underthesea==9.5.0

@@ -1,0 +1,637 @@
+{
+  "id": "m3RouterTiktok01",
+  "name": "M3 · Router",
+  "active": false,
+  "nodes": [
+    {
+      "id": "277ed83b-199a-5b29-93f1-2df22082ed42",
+      "name": "Ghi chú Router",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -360
+      ],
+      "parameters": {
+        "content": "## M3 · Router\nCửa vào duy nhất cho webhook TikTok: `POST /webhook/tiktok-events`.\n\n1. Kiểm chữ ký **trước** khi trả 200 (sai thì trả 401, ghi `failed_jobs` trạng thái `ignored`).\n2. Trả 200 **trước** khi làm việc nặng: TikTok chỉ chờ 3 giây rồi gửi lại.\n3. Ghi `processed_events`; event_id đã có thì dừng (bỏ bản trùng).\n4. Rẽ theo loại sự kiện, gọi workflow con và **không chờ** nó chạy xong.\n\nKhóa app đọc từ `.env` (`TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`). Sự kiện chưa có nhánh thì chỉ ghi log, không báo lỗi.",
+        "height": 260,
+        "width": 1120,
+        "color": 7
+      }
+    },
+    {
+      "id": "d4e3b6c6-3248-52da-8794-05373a39095d",
+      "name": "Webhook · /tiktok-events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-events",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "webhookId": "64748655-3fad-529b-b7b5-c56a624fdc43"
+    },
+    {
+      "id": "368c36df-5abd-54d2-8ff0-9fe51d1073c6",
+      "name": "Kiểm chữ ký và đọc sự kiện",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm chữ ký webhook TikTok và đọc sự kiện.\nconst crypto = require('crypto');\n\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) {\n  throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env của n8n');\n}\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst received = String(headers.authorization || '').trim().toLowerCase();\n\nif (!item.binary || !item.binary.data) {\n  throw new Error('Không có body gốc: bật Options > Raw Body ở node Webhook');\n}\nconst raw = await this.helpers.getBinaryDataBuffer(0, 'data');\n\nconst expected = crypto.createHmac('sha256', appSecret).update(appKey).update(raw).digest('hex');\nconst valid = received.length === expected.length &&\n  crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected));\n\nif (!valid) {\n  return [{ json: {\n    valid: false,\n    reason: received ? 'Sai chữ ký' : 'Thiếu header Authorization',\n    ip: headers['x-forwarded-for'] || headers['x-real-ip'] || null,\n  } }];\n}\n\nlet body;\ntry {\n  body = JSON.parse(raw.toString('utf8'));\n} catch (e) {\n  throw new Error('Body webhook không phải JSON hợp lệ');\n}\nif (typeof body.type !== 'number') {\n  throw new Error('Webhook thiếu trường \"type\" dạng số');\n}\n\nconst TYPE_NAMES = {\n  1: 'ORDER_STATUS_CHANGE',\n  3: 'RECIPIENT_ADDRESS_UPDATE',\n  4: 'PACKAGE_UPDATE',\n  5: 'PRODUCT_STATUS_CHANGE',\n  6: 'SELLER_DEAUTHORIZATION',\n  7: 'UPCOMING_AUTHORIZATION_EXPIRATION',\n  11: 'CANCELLATION_STATUS_CHANGE',\n  12: 'RETURN_STATUS_CHANGE',\n  13: 'NEW_CONVERSATION',\n  14: 'NEW_MESSAGE',\n};\nconst eventType = TYPE_NAMES[body.type] || `UNKNOWN_${body.type}`;\nconst data = body.data || {};\n\nconst SHIPPED = ['AWAITING_COLLECTION', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED'];\n\nlet route = 'ignore';\nswitch (eventType) {\n  case 'NEW_MESSAGE':\n    if (data.sender && data.sender.role === 'BUYER') route = 'chatbot';\n    break;\n  case 'ORDER_STATUS_CHANGE':\n    if (data.order_status === 'AWAITING_SHIPMENT') route = 'create_order';\n    else if (SHIPPED.includes(data.order_status)) route = 'order_status';\n    break;\n  case 'CANCELLATION_STATUS_CHANGE':\n    route = 'cancel_order';\n    break;\n  case 'PACKAGE_UPDATE':\n    route = 'order_status';\n    break;\n  case 'UPCOMING_AUTHORIZATION_EXPIRATION':\n  case 'SELLER_DEAUTHORIZATION':\n    route = 'token';\n    break;\n}\n\nconst ROUTE_TO = {\n  chatbot: 'M3 · Chatbot',\n  create_order: 'M2 · Tạo đơn',\n  cancel_order: 'M2 · Hủy đơn',\n  order_status: 'M3 · Trạng thái đơn',\n  token: 'M3 · Token',\n  ignore: null,\n};\n\n// Giờ Việt Nam dạng ISO, vd 2026-10-26T10:00:00+07:00\nconst vnIso = (ms) => new Date(ms + 7 * 3600 * 1000).toISOString().replace(/\\.\\d{3}Z$/, '+07:00');\n\nreturn [{ json: {\n  valid: true,\n  route,\n  routed_to: ROUTE_TO[route],\n  event_id: String(body.tts_notification_id || crypto.createHash('sha256').update(raw).digest('hex')),\n  event_type: eventType,\n  type_code: body.type,\n  shop_id: body.shop_id != null ? String(body.shop_id) : null,\n  order_id: data.order_id != null ? String(data.order_id) : null,\n  sent_at: body.timestamp ? vnIso(body.timestamp * 1000) : null,\n  received_at: vnIso(Date.now()),\n  data,\n  payload: body,\n} }];\n"
+      }
+    },
+    {
+      "id": "bd909a1d-361f-5d43-88b3-486956e2aa7b",
+      "name": "Chữ ký đúng?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c14f71f1-4116-5d6f-9b9b-ce1e890eb270",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b19d5cf9-c6de-5451-9f79-e7ee2934a597",
+      "name": "Trả 200 ngay",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { code: 0, message: 'success' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "181f9f16-17d6-5969-a6b9-c0367dfe5662",
+      "name": "Trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { code: 401, message: 'invalid signature' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "d33a8113-2557-58ee-b892-b3652cd050ed",
+      "name": "Ghi log chữ ký sai",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        880,
+        140
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO failed_jobs (workflow_name, node_name, execution_id, error_message, payload, status, note)\nVALUES ('M3 · Router', 'Kiểm chữ ký và đọc sự kiện', $1, $2, $3::jsonb, 'ignored',\n        'Webhook bị từ chối (401), không xử lý');",
+        "options": {
+          "queryReplacement": "={{ [ $execution.id, $json.reason, JSON.stringify({ ip: $json.ip }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "d9624a57-a7d0-540d-b206-b57ca5115179",
+      "name": "Ghi processed_events (bỏ bản trùng)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        880,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO processed_events (event_id, event_type, type_code, shop_id, order_id, routed_to, payload)\nVALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)\nON CONFLICT (event_id) DO NOTHING\nRETURNING event_id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.event_id, $json.event_type, $json.type_code, $json.shop_id, $json.order_id, $json.routed_to, JSON.stringify($json.payload) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "4183694f-67db-547a-bd0c-c151e9628401",
+      "name": "Dựng input cho workflow con",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Dựng dữ liệu cho workflow con, dừng nếu webhook bị gửi lại\nconst inserted = $input.all().filter((i) => i.json.event_id);\nif (inserted.length === 0) return [];\n\nconst ev = $('Kiểm chữ ký và đọc sự kiện').first().json;\nconst vnIso = (ms) => new Date(ms + 7 * 3600 * 1000).toISOString().replace(/\\.\\d{3}Z$/, '+07:00');\n\nif (ev.route === 'chatbot') {\n  let content = {};\n  try { content = JSON.parse(ev.data.content || '{}'); } catch (e) { content = { content: ev.data.content }; }\n  return [{ json: {\n    route: ev.route,\n    event_id: ev.event_id,\n    conversation_id: ev.data.conversation_id != null ? String(ev.data.conversation_id) : null,\n    message_id: ev.data.message_id != null ? String(ev.data.message_id) : null,\n    buyer_user_id: ev.data.sender ? String(ev.data.sender.im_user_id) : null,\n    message_type: ev.data.type || null,\n    text: content.content ?? null,\n    product_id: content.product_id != null ? String(content.product_id) : null,\n    sent_at: ev.data.create_time ? vnIso(ev.data.create_time * 1000) : ev.sent_at,\n    received_at: ev.received_at,\n  } }];\n}\n\nreturn [{ json: {\n  route: ev.route,\n  event_id: ev.event_id,\n  event_type: ev.event_type,\n  type_code: ev.type_code,\n  shop_id: ev.shop_id,\n  sent_at: ev.sent_at,\n  received_at: ev.received_at,\n  data: ev.data,\n} }];\n"
+      }
+    },
+    {
+      "id": "e97ae242-e51b-572d-8b9e-66a86d52f21c",
+      "name": "Rẽ theo loại sự kiện",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1320,
+        -100
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b1e2bb60-8e82-58c5-a95a-b7954d53db77",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "chatbot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Chatbot"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c63fee76-1cc0-58d9-afcc-6f60577006c3",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "create_order",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Tạo đơn"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7fbb8c48-8d85-587d-bae3-362b778b9548",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "cancel_order",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hủy đơn"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7e309dd0-9501-5263-ab6c-cddd419edb26",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "order_status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Trạng thái đơn"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6a4a3b99-0829-5273-b014-db8d8cc91487",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "token",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Token"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "06bca9fb-5894-5b60-92e3-8348c2c923ff",
+      "name": "Gọi M3 · Chatbot",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        -340
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3Chatbot0000001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "f2e87e5c-8af1-53fa-937c-df772ebf9708",
+      "name": "Gọi M2 · Tạo đơn",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        -220
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m2TaoDon00000001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "a1f6fa72-2f94-5cfe-b737-078c1f9985f4",
+      "name": "Gọi M2 · Hủy đơn",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        -100
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m2HuyDon00000001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "00161dd5-36a4-5a58-a8a9-88f465e4e118",
+      "name": "Gọi M3 · Trạng thái đơn",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        20
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TrangThaiDon01",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "8ed67e42-b2b7-590e-bb90-d5e5d3f9f79b",
+      "name": "Gọi M3 · Token",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        140
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3Token000000001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    },
+    {
+      "id": "b3543972-af2c-5253-b9f1-481acc3c0ecd",
+      "name": "Gọi M3 · Ghi nhận mua kèm",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        -460
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3UpsellGhiNhan1",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook · /tiktok-events": {
+      "main": [
+        [
+          {
+            "node": "Kiểm chữ ký và đọc sự kiện",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm chữ ký và đọc sự kiện": {
+      "main": [
+        [
+          {
+            "node": "Chữ ký đúng?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chữ ký đúng?": {
+      "main": [
+        [
+          {
+            "node": "Trả 200 ngay",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trả 200 ngay": {
+      "main": [
+        [
+          {
+            "node": "Ghi processed_events (bỏ bản trùng)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trả 401": {
+      "main": [
+        [
+          {
+            "node": "Ghi log chữ ký sai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi processed_events (bỏ bản trùng)": {
+      "main": [
+        [
+          {
+            "node": "Dựng input cho workflow con",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dựng input cho workflow con": {
+      "main": [
+        [
+          {
+            "node": "Rẽ theo loại sự kiện",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rẽ theo loại sự kiện": {
+      "main": [
+        [
+          {
+            "node": "Gọi M3 · Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gọi M2 · Tạo đơn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gọi M3 · Ghi nhận mua kèm",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gọi M2 · Hủy đơn",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gọi M3 · Trạng thái đơn",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gọi M3 · Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

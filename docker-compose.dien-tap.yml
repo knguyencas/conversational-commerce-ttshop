@@ -1,0 +1,8 @@
+# Ghi đè khi diễn tập: n8n gọi TikTok giả và Gemini giả trong chính n8n, không ra internet.
+services:
+  n8n:
+    environment:
+      TIKTOK_API_BASE: http://localhost:5678/webhook/tiktok-mock
+      TIKTOK_AUTH_BASE: http://localhost:5678/webhook/tiktok-mock
+      GEMINI_BASE_URL: http://localhost:5678/webhook/2179f9fe-d27e-55de-8ecb-0387433a6b32/gemini-mock
+      GEMINI_API_KEY: dien-tap

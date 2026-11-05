@@ -1,0 +1,22 @@
+{
+  "code": 0,
+  "message": "success",
+  "request_id": "2026102610000101234567890ABCDEF",
+  "data": {
+    "access_token": "ROW_EXAMPLE_ACCESS_TOKEN_not_real",
+    "access_token_expire_in": 1793588400,
+    "refresh_token": "ROW_EXAMPLE_REFRESH_TOKEN_not_real",
+    "refresh_token_expire_in": 1824519600,
+    "open_id": "7494049642642441621-open",
+    "seller_name": "Shop Đồ Công Nghệ Nhóm 3",
+    "seller_base_region": "VN",
+    "user_type": 0,
+    "granted_scopes": [
+      "seller.authorization.info",
+      "seller.order.info",
+      "seller.product.basic",
+      "seller.fulfillment.basic",
+      "seller.customer_service"
+    ]
+  }
+}

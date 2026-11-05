@@ -1,0 +1,101 @@
+{
+  "id": "testGeminiGia001",
+  "name": "TEST · Gemini giả",
+  "active": false,
+  "nodes": [
+    {
+      "id": "7e5d0f08-adbe-5933-b8a3-b56cfea137ed",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -260
+      ],
+      "parameters": {
+        "content": "## TEST · Gemini giả\nGiả lập API Gemini để test chatbot khi chưa có key. Chỉ dùng khi test: đặt `GEMINI_BASE_URL=http://localhost:5678/webhook/gemini-mock` và `GEMINI_API_KEY=test` trong `.env`. **Unpublish sau khi test.**",
+        "height": 200,
+        "width": 620,
+        "color": 7
+      }
+    },
+    {
+      "id": "f2fe4554-8331-5547-bd22-ebfe27501ec8",
+      "name": "Webhook Gemini giả",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gemini-mock/v1beta/models/:model",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "2179f9fe-d27e-55de-8ecb-0387433a6b32"
+    },
+    {
+      "id": "6af2e8d2-1827-550d-98b2-a45df1a1dd78",
+      "name": "Trả lời theo dữ liệu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Gemini giả để test: trả lời theo dữ liệu trong prompt\nconst body = $input.first().json.body || {};\nconst prompt = (body.contents || []).map((c) => (c.parts || []).map((p) => p.text || '').join('')).join('\\n');\nconst dm = prompt.match(/<<<DU_LIEU\\n([\\s\\S]*?)\\nDU_LIEU>>>/);\nconst data = dm ? JSON.parse(dm[1]) : {};\nconst mm = prompt.match(/TIN NHẮN KHÁCH: (\".*\")/);\nconst msg = mm ? JSON.parse(mm[1]) : '';\nconst hasFeedback = prompt.includes('GÓP Ý TỪ BƯỚC SOÁT');\nconst wrong = msg.includes('SAI_HAI_LAN') || (msg.includes('THU_VIET_LAI') && !hasFeedback);\nconst fmt = (v) => String(v).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.') + 'đ';\nlet reply = 'Dạ shop có thể giúp gì thêm cho anh/chị ạ?', skus = [];\nconst ps = data.san_pham || [];\nif (ps.length) {\n  const p = ps[0];\n  reply = `Dạ ${p.name} giá ${fmt(wrong ? p.price + 10000 : p.price)}, hiện còn ${p.stock} cái ạ.`;\n  skus = [p.sku];\n  const u = (data.goi_y_mua_kem || [])[0];\n  if (u) { reply += ` Anh/chị có thể mua kèm ${u.name} giá ${fmt(u.price)} ạ.`; skus.push(u.sku); }\n} else if (data.don_hang && data.don_hang.status) {\n  reply = `Dạ đơn ${data.don_hang.tiktok_order_id} đang ở trạng thái ${data.don_hang.status} ạ.`;\n}\nconst out = { reply, skus, need_human: msg.includes('XIN_GAP_NGUOI'), reason: 'gemini-gia' };\nreturn [{ json: { candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(out) }] } }], modelVersion: 'gemini-gia' } }];\n"
+      }
+    },
+    {
+      "id": "096db55e-2a64-5eef-9c8f-3c95c6e981dc",
+      "name": "Trả JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Gemini giả": {
+      "main": [
+        [
+          {
+            "node": "Trả lời theo dữ liệu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trả lời theo dữ liệu": {
+      "main": [
+        [
+          {
+            "node": "Trả JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

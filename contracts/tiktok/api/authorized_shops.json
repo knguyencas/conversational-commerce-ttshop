@@ -1,0 +1,17 @@
+{
+  "code": 0,
+  "message": "Success",
+  "request_id": "2026102610000201234567890ABCDEF",
+  "data": {
+    "shops": [
+      {
+        "id": "7494049642642441621",
+        "cipher": "ROW_EXAMPLE_SHOP_CIPHER_not_real",
+        "code": "VNLCEXAMPLE",
+        "name": "Shop Đồ Công Nghệ Nhóm 3",
+        "region": "VN",
+        "seller_type": "LOCAL"
+      }
+    ]
+  }
+}

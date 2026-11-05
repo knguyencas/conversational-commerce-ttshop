@@ -1,0 +1,563 @@
+{
+  "id": "m3Token000000001",
+  "name": "M3 · Token",
+  "active": false,
+  "nodes": [
+    {
+      "id": "824e9f23-81a6-5f23-bcb7-9dc55dcf65ad",
+      "name": "Ghi chú Token",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -560
+      ],
+      "parameters": {
+        "content": "## M3 · Token\nAccess token TikTok hết hạn sau khoảng 7 ngày; hết hạn thì mọi lệnh gọi TikTok lỗi 401.\n\n**Ủy quyền lần đầu:** chủ shop (M1) bấm link ủy quyền trong Partner Center → TikTok chuyển về `/webhook/tiktok-oauth?code=...` → đổi code lấy token → lấy `shop_cipher` → lưu bảng `tokens` → hiện trang *Đã kết nối*.\n\n**Làm mới:** mỗi ngày 3:00 nếu còn dưới 48 giờ; hoặc ngay khi Router báo `UPCOMING_AUTHORIZATION_EXPIRATION`. Lỗi thì ghi `failed_jobs`.\n\n**Shop hủy ủy quyền** (`SELLER_DEAUTHORIZATION`): xóa token, báo lỗi để nhóm biết.",
+        "height": 300,
+        "width": 1000,
+        "color": 7
+      }
+    },
+    {
+      "id": "f7ac2125-6e40-5f7c-97c8-128c0edc7a23",
+      "name": "Link ủy quyền chuyển về",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tiktok-oauth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "30379a28-339c-5fa5-a07c-2e5d8afd8525"
+    },
+    {
+      "id": "d089fdec-e0f7-55bc-83e6-ef0e7de29cdf",
+      "name": "Đổi code lấy token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst q = $input.first().json.query || {};\ntry {\n  if ($env.TIKTOK_OAUTH_STATE && q.state !== $env.TIKTOK_OAUTH_STATE) throw new Error('state không khớp (link ủy quyền lạ)');\n  if (!q.code) throw new Error('thiếu code trong link chuyển về');\n\n  const t = parse(await this.helpers.httpRequest({\n    method: 'GET', url: AUTH_BASE + '/api/v2/token/get', json: false, timeout: 20000,\n    qs: { app_key: appKey, app_secret: appSecret, auth_code: q.code, grant_type: 'authorized_code' },\n  }));\n  if (t.code !== 0 || !t.data || !t.data.access_token) throw new Error(`đổi code lấy token lỗi: ${t.code} ${t.message}`);\n  const d = t.data;\n\n  const path = '/authorization/202309/shops';\n  const query = { app_key: appKey, timestamp: Math.floor(Date.now() / 1000) };\n  query.sign = tiktokSign(path, query, '', appSecret);\n  const s = parse(await this.helpers.httpRequest({\n    method: 'GET', url: API_BASE + path + '?' + toQuery(query), json: false, timeout: 20000,\n    headers: { 'x-tts-access-token': d.access_token, 'content-type': 'application/json' },\n  }));\n  const shop = s.code === 0 && s.data && (s.data.shops || [])[0];\n  if (!shop) throw new Error(`lấy danh sách shop lỗi: ${s.code} ${s.message}`);\n\n  return [{ json: { ok: true, shop_id: String(shop.id), shop_cipher: shop.cipher, shop_name: shop.name || d.seller_name || null,\n    region: shop.region || d.seller_base_region || null, access_token: d.access_token,\n    access_expires: toEpoch(d.access_token_expire_in), refresh_token: d.refresh_token,\n    refresh_expires: toEpoch(d.refresh_token_expire_in), scopes: d.granted_scopes || [] } }];\n} catch (e) {\n  return [{ json: { ok: false, error: e.message } }];\n}\n"
+      }
+    },
+    {
+      "id": "149b9a3c-97d7-555c-8e3e-11fff9acf02c",
+      "name": "Thành công?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        460,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "63a1355b-f4eb-5fdf-b669-abf36e16f2a0",
+              "leftValue": "={{ String($json.ok) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ad4c2450-2cdd-58e3-aa13-9064c205e778",
+      "name": "Lưu token",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        680,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO tokens (shop_id, shop_cipher, shop_name, seller_base_region, access_token,\n                    access_token_expires_at, refresh_token, refresh_token_expires_at, granted_scopes)\nVALUES ($1, $2, $3, $4, $5, to_timestamp($6), $7, to_timestamp($8), ARRAY(SELECT jsonb_array_elements_text($9::jsonb)))\nON CONFLICT (shop_id) DO UPDATE SET\n  shop_cipher = EXCLUDED.shop_cipher, shop_name = EXCLUDED.shop_name,\n  seller_base_region = EXCLUDED.seller_base_region, access_token = EXCLUDED.access_token,\n  access_token_expires_at = EXCLUDED.access_token_expires_at, refresh_token = EXCLUDED.refresh_token,\n  refresh_token_expires_at = EXCLUDED.refresh_token_expires_at, granted_scopes = EXCLUDED.granted_scopes\nRETURNING shop_id, shop_name, access_token_expires_at;",
+        "options": {
+          "queryReplacement": "={{ [ $json.shop_id, $json.shop_cipher, $json.shop_name || '', $json.region || '', $json.access_token, $json.access_expires, $json.refresh_token, $json.refresh_expires, JSON.stringify($json.scopes || []) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "57c59582-5eb3-59e1-a2b6-f45ded3e53ed",
+      "name": "Trang đã kết nối",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '<!doctype html><meta charset=\"utf-8\"><title>Đã kết nối</title><body style=\"font-family:sans-serif;max-width:560px;margin:60px auto\"><h2>Đã kết nối shop với hệ thống</h2><p>Shop: <b>' + ($json.shop_name || $json.shop_id) + '</b></p><p>Token hết hạn lúc ' + $json.access_token_expires_at + ' và sẽ được tự làm mới mỗi ngày.</p><p>Có thể đóng trang này.</p></body>' }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "e7465ad0-4412-5571-bca1-f1e097575897",
+      "name": "Trang lỗi",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        120
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ '<!doctype html><meta charset=\"utf-8\"><title>Chưa kết nối được</title><body style=\"font-family:sans-serif;max-width:560px;margin:60px auto\"><h2>Chưa kết nối được shop</h2><p>Lý do: ' + $json.error + '</p><p>Báo trưởng nhóm (M3) và bấm lại link ủy quyền.</p></body>' }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "f21868a3-21c2-5af7-bea4-415fbce0dadf",
+      "name": "Mỗi ngày 3:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        400
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b242be4b-00d6-5bba-8370-b7104dc29b28",
+      "name": "Router gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        600
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "6b41ef90-c205-5412-b0c1-a21353cf198e",
+      "name": "Đọc token hiện tại",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        500
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT shop_id, shop_cipher, access_token, access_token_expires_at, refresh_token\nFROM tokens ORDER BY updated_at DESC LIMIT 1;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "b354c0a4-c3bb-597c-89f1-ef9917561e65",
+      "name": "Cần làm mới?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        500
+      ],
+      "parameters": {
+        "jsCode": "// Quyết định: làm mới token, xóa token (shop hủy ủy quyền), hay bỏ qua\nconst fromRouter = $('Router gọi tới').isExecuted;\nconst ev = fromRouter ? $('Router gọi tới').first().json : {};\nconst tok = $input.first().json;\nif (ev.event_type === 'SELLER_DEAUTHORIZATION') return [{ json: { action: 'deauth', shop_id: ev.shop_id || tok.shop_id || '' } }];\nif (!tok.access_token) return [{ json: { action: 'skip', reason: 'chưa có token (chủ shop chưa ủy quyền)' } }];\nconst hoursLeft = (new Date(tok.access_token_expires_at).getTime() - Date.now()) / 3600e3;\nif (fromRouter || hoursLeft < 48) return [{ json: { action: 'refresh', ...tok, hours_left: Math.round(hoursLeft) } }];\nreturn [{ json: { action: 'skip', reason: `token còn ${Math.round(hoursLeft)} giờ`, shop_id: tok.shop_id } }];\n"
+      }
+    },
+    {
+      "id": "075f08ae-6fd4-5958-87fc-f227a8d75fbd",
+      "name": "Việc cần làm",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        680,
+        500
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1decb526-93c3-527c-8c9c-f090574c4a67",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "refresh",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Làm mới"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "8b53fefd-fea0-519a-87cc-23a8cb27061e",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "deauth",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hủy ủy quyền"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7d0acb5a-516b-5d2c-954b-3b1b374f0f6d",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "skip",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Bỏ qua"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "263e5964-6910-528e-8490-051432a8f484",
+      "name": "Làm mới token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        380
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst tok = $input.first().json;\nconst r = parse(await this.helpers.httpRequest({\n  method: 'GET', url: AUTH_BASE + '/api/v2/token/refresh', json: false, timeout: 20000,\n  qs: { app_key: appKey, app_secret: appSecret, refresh_token: tok.refresh_token, grant_type: 'refresh_token' },\n}));\nif (r.code !== 0 || !r.data || !r.data.access_token) throw new Error(`Làm mới token TikTok lỗi: ${r.code} ${r.message}. Chủ shop cần bấm lại link ủy quyền.`);\nreturn [{ json: { shop_id: tok.shop_id, access_token: r.data.access_token, access_expires: toEpoch(r.data.access_token_expire_in),\n  refresh_token: r.data.refresh_token || tok.refresh_token,\n  refresh_expires: r.data.refresh_token_expire_in ? toEpoch(r.data.refresh_token_expire_in) : null } }];\n"
+      }
+    },
+    {
+      "id": "07603f6b-4037-5f67-b6a6-081760a219d3",
+      "name": "Ghi token mới",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1120,
+        380
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE tokens SET access_token = $2, access_token_expires_at = to_timestamp($3),\n  refresh_token = $4, refresh_token_expires_at = COALESCE(to_timestamp(NULLIF($5, '')::bigint), refresh_token_expires_at)\nWHERE shop_id = $1\nRETURNING shop_id, access_token_expires_at;",
+        "options": {
+          "queryReplacement": "={{ [ $json.shop_id, $json.access_token, $json.access_expires, $json.refresh_token, $json.refresh_expires == null ? '' : String($json.refresh_expires) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "b31f768f-8c47-5c0b-a8fd-f69f797711fd",
+      "name": "Xóa token",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        900,
+        560
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM tokens WHERE shop_id = $1 OR $1 = '' RETURNING shop_id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.shop_id || '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "fc478f86-0838-5034-9825-857b92a211b5",
+      "name": "Báo hủy ủy quyền",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// Ném lỗi để workflow Xử lý lỗi ghi failed_jobs và báo nhóm\nthrow new Error('Shop đã HỦY ỦY QUYỀN app: đã xóa token. Chủ shop (M1) cần bấm lại link ủy quyền thì hệ thống mới chạy tiếp.');\n"
+      }
+    },
+    {
+      "id": "c3b5783f-3eb1-59ad-b057-aea246c66dd1",
+      "name": "Không cần làm gì",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        900,
+        740
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Link ủy quyền chuyển về": {
+      "main": [
+        [
+          {
+            "node": "Đổi code lấy token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đổi code lấy token": {
+      "main": [
+        [
+          {
+            "node": "Thành công?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Thành công?": {
+      "main": [
+        [
+          {
+            "node": "Lưu token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trang lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lưu token": {
+      "main": [
+        [
+          {
+            "node": "Trang đã kết nối",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mỗi ngày 3:00": {
+      "main": [
+        [
+          {
+            "node": "Đọc token hiện tại",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Đọc token hiện tại",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc token hiện tại": {
+      "main": [
+        [
+          {
+            "node": "Cần làm mới?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cần làm mới?": {
+      "main": [
+        [
+          {
+            "node": "Việc cần làm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Việc cần làm": {
+      "main": [
+        [
+          {
+            "node": "Làm mới token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Xóa token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Không cần làm gì",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Làm mới token": {
+      "main": [
+        [
+          {
+            "node": "Ghi token mới",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Xóa token": {
+      "main": [
+        [
+          {
+            "node": "Báo hủy ủy quyền",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,10 @@
+{
+  "type": 7,
+  "tts_notification_id": "7430215561234567006",
+  "shop_id": "7494049642642441621",
+  "timestamp": 1793500000,
+  "data": {
+    "message": "The authorization of your app will expire soon.",
+    "expiration_time": 1794000000
+  }
+}

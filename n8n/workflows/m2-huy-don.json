@@ -1,0 +1,73 @@
+{
+  "id": "m2HuyDon00000001",
+  "name": "M2 · Hủy đơn",
+  "active": false,
+  "nodes": [
+    {
+      "id": "d2a32524-91b2-5b47-83a5-c182e1722c6d",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -260
+      ],
+      "parameters": {
+        "content": "## M2 · Hủy đơn (giữ chỗ)\n**Người làm:** Thành viên 2. **Dữ liệu vào:** dạng `contracts/internal/router_event.json`.\n\n**Cần làm:** Tìm Sales Order theo `client_order_ref` và hủy; đơn đã đóng gói thì không hủy tự động (Hình 6).\n\nRouter gọi workflow này và không chờ kết quả. Lỗi sẽ được ghi vào `failed_jobs`.\n\nSửa xong phải bấm **Publish**, nếu không Router gọi bản cũ hoặc báo lỗi.",
+        "height": 220,
+        "width": 620,
+        "color": 7
+      }
+    },
+    {
+      "id": "138b08c2-3e55-5a0c-81b5-de90e054aa06",
+      "name": "Router gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "a280924d-5744-5ed8-b20a-e5231799f6ce",
+      "name": "Chưa làm (giữ chỗ)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Giữ chỗ: M2 thay bằng xử lý thật, giữ nguyên trigger và dữ liệu vào\nreturn $input.all().map((item) => ({\n  json: { ...item.json, placeholder: true, received_by: $workflow.name },\n}));\n"
+      }
+    }
+  ],
+  "connections": {
+    "Router gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Chưa làm (giữ chỗ)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "m3XuLyLoi0000001",
+    "callerPolicy": "any"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

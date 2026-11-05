@@ -1,0 +1,159 @@
+{
+  "id": "m3XuLyLoi0000001",
+  "name": "M3 · Xử lý lỗi",
+  "active": false,
+  "nodes": [
+    {
+      "id": "56e2879c-51f4-5510-8e8c-c6817c4c11fa",
+      "name": "Ghi chú Xử lý lỗi",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -320
+      ],
+      "parameters": {
+        "content": "## M3 · Xử lý lỗi (dead-letter queue)\nMọi workflow đặt workflow này ở **Settings > Error workflow**. Khi một lần chạy thật bị lỗi (sau khi node đã Retry On Fail 3 lần), lỗi được ghi vào bảng `failed_jobs` trạng thái `open`.\n\nNode **Báo nhóm chat** đang tắt: thay URL bằng webhook của nhóm chat (Discord, Telegram...) rồi bật lên. Workflow này phải được **publish** (n8n 2.x) thì mới nhận được lỗi.",
+        "height": 220,
+        "width": 900,
+        "color": 7
+      }
+    },
+    {
+      "id": "30a2f9c5-ac4f-5580-8796-e0cf0b66bd74",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "47943e17-ef0d-5716-ad1e-fb6cfb6222d4",
+      "name": "Gom thông tin lỗi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Gom thông tin lỗi từ Error Trigger\nconst e = $input.first().json;\nconst exec = e.execution || {};\nconst trig = e.trigger || {};\nconst err = exec.error || trig.error || {};\nreturn [{ json: {\n  workflow_name: (e.workflow && e.workflow.name) || 'Không rõ',\n  workflow_id: (e.workflow && e.workflow.id) || null,\n  node_name: exec.lastNodeExecuted || (err.node && err.node.name) || null,\n  execution_id: exec.id != null ? String(exec.id) : null,\n  execution_url: exec.url || null,\n  error_message: String(err.message || 'Lỗi không rõ').slice(0, 2000),\n  details: {\n    mode: exec.mode || trig.mode || null,\n    description: err.description || null,\n    stack: String(err.stack || '').split('\\n').slice(0, 6).join('\\n'),\n    execution_url: exec.url || null,\n  },\n} }];\n"
+      }
+    },
+    {
+      "id": "17224889-22b7-5275-8891-32c0b57e1c7e",
+      "name": "Ghi failed_jobs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO failed_jobs (workflow_name, node_name, execution_id, error_message, payload)\nVALUES ($1, $2, $3, $4, $5::jsonb)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.workflow_name, $json.node_name, $json.execution_id, $json.error_message, JSON.stringify($json.details) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "c7a6a66e-15c2-5e76-8a2c-df0b9c45be63",
+      "name": "Soạn tin báo nhóm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const info = $('Gom thông tin lỗi').first().json;\nconst jobId = $input.first().json.id;\nconst lines = [\n  `[n8n] Lỗi ở workflow \"${info.workflow_name}\"` + (info.node_name ? `, node \"${info.node_name}\"` : ''),\n  info.error_message,\n  `failed_jobs #${jobId}` + (info.execution_id ? ` · execution ${info.execution_id}` : ''),\n];\nif (info.execution_url) lines.push(info.execution_url);\nreturn [{ json: { text: lines.join('\\n'), failed_job_id: jobId } }];\n"
+      }
+    },
+    {
+      "id": "1c9a4ed6-c094-5458-a75a-8bd0b2de6e18",
+      "name": "Báo nhóm chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/THAY_BANG_WEBHOOK_CUA_NHOM",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: $json.text }) }}",
+        "options": {}
+      },
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Gom thông tin lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gom thông tin lỗi": {
+      "main": [
+        [
+          {
+            "node": "Ghi failed_jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi failed_jobs": {
+      "main": [
+        [
+          {
+            "node": "Soạn tin báo nhóm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soạn tin báo nhóm": {
+      "main": [
+        [
+          {
+            "node": "Báo nhóm chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

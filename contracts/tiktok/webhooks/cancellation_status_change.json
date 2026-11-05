@@ -1,0 +1,12 @@
+{
+  "type": 11,
+  "tts_notification_id": "7430215561234567002",
+  "shop_id": "7494049642642441621",
+  "timestamp": 1792987200,
+  "data": {
+    "order_id": "579123456789012345",
+    "cancellations_role": "BUYER",
+    "cancel_status": "CANCELLATION_REQUEST_COMPLETE",
+    "update_time": 1792987195
+  }
+}

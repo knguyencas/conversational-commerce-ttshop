@@ -1,0 +1,404 @@
+{
+  "id": "testTikTokGia001",
+  "name": "TEST · TikTok giả",
+  "active": false,
+  "nodes": [
+    {
+      "id": "cbd380f4-c707-56f2-ae25-520917e6643a",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -320
+      ],
+      "parameters": {
+        "content": "## TEST · TikTok giả\nGiả lập TikTok để test `M3 · TikTok API` và `M3 · Token` khi chưa có app thật. Đặt trong `.env`: `TIKTOK_API_BASE` và `TIKTOK_AUTH_BASE` = `http://localhost:5678/webhook/tiktok-mock`.\n\nEndpoint: `/api/v2/token/get`, `/api/v2/token/refresh`, `/authorization/202309/shops` (kiểm chữ ký), `/echo/202309/test` (trả lại request). **Unpublish sau khi test.**",
+        "height": 240,
+        "width": 760,
+        "color": 7
+      }
+    },
+    {
+      "id": "c6dbb93e-026d-5afd-8423-7e13f6389b8f",
+      "name": "Token get",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tiktok-mock/api/v2/token/get",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "f6dadd1c-60ff-590e-8ffe-a4e84fc482be"
+    },
+    {
+      "id": "54aedfb4-a37f-5f7c-8826-c24fd44d84e5",
+      "name": "Trả token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nif (q.app_key !== appKey || q.app_secret !== appSecret) return [{ json: { code: 36004002, message: 'app_key hoặc app_secret sai' } }];\nif (q.auth_code === 'sai') return [{ json: { code: 36004004, message: 'invalid auth code' } }];\nreturn [{ json: { code: 0, message: 'success', request_id: 'mock-' + now, data: {\n  access_token: 'mock_at_' + now, access_token_expire_in: now + 7 * 86400,\n  refresh_token: 'mock_rt_' + now, refresh_token_expire_in: now + 60 * 86400,\n  open_id: 'mock-open', seller_name: 'Shop thử', seller_base_region: 'VN',\n  granted_scopes: ['seller.order.info', 'seller.fulfillment.basic'] } } }];\n"
+      }
+    },
+    {
+      "id": "ad7101ea-45f7-546e-aecd-4631cc70a137",
+      "name": "Token refresh",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        180
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tiktok-mock/api/v2/token/refresh",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "583263e4-3639-562e-a02b-4085815a6d66"
+    },
+    {
+      "id": "06437bff-0bc1-57fb-9132-1b4084918841",
+      "name": "Trả token mới",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        180
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nif (!String(q.refresh_token || '').startsWith('mock_rt_')) return [{ json: { code: 36004005, message: 'invalid refresh token' } }];\nreturn [{ json: { code: 0, message: 'success', data: {\n  access_token: 'mock_at_refreshed_' + now, access_token_expire_in: now + 7 * 86400,\n  refresh_token: 'mock_rt_refreshed_' + now, refresh_token_expire_in: now + 60 * 86400 } } }];\n"
+      }
+    },
+    {
+      "id": "b239025f-4ec3-5fe3-bb10-3eb38b9d4044",
+      "name": "Shops",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        360
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tiktok-mock/authorization/202309/shops",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "e41d4b67-ea7c-5f9a-a45c-aa9985799a09"
+    },
+    {
+      "id": "30a9e639-df39-5f21-9021-6de3592b2b0b",
+      "name": "Kiểm chữ ký, trả shop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        360
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nconst at = (w.headers || {})['x-tts-access-token'] || '';\nif (!at.startsWith('mock_at_')) return [{ json: { code: 105001, message: 'Invalid access_token' } }];\nif (q.sign !== tiktokSign('/authorization/202309/shops', q, '', appSecret)) return [{ json: { code: 106001, message: 'Invalid sign' } }];\nreturn [{ json: { code: 0, message: 'Success', data: { shops: [{ id: '7494049642642441621', cipher: 'ROW_mock_cipher', code: 'VNLCMOCK', name: 'Shop thử', region: 'VN', seller_type: 'LOCAL' }] } } }];\n"
+      }
+    },
+    {
+      "id": "69398563-f92b-5f75-8ae3-823889fb0894",
+      "name": "Echo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        540
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-mock/echo/202309/test",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "29db1dcd-f07e-5a40-9459-b632163580e0"
+    },
+    {
+      "id": "ab5a231f-61bc-56e7-852d-609d5eee37b2",
+      "name": "Trả lại request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        540
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nconst at = (w.headers || {})['x-tts-access-token'] || '';\nreturn [{ json: { code: at ? 0 : 105001, message: at ? 'Success' : 'missing token', request_id: 'mock-echo',\n  data: { query: q, body: w.body ?? null, access_token_header: at } } }];\n"
+      }
+    },
+    {
+      "id": "bdd3c1d6-b6ae-576f-b2d2-c99b1da84120",
+      "name": "Order detail",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        720
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tiktok-mock/order/202309/orders",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "76ad2c50-1ce9-5b9a-97ce-ed2691a884f1"
+    },
+    {
+      "id": "15c2ac24-9a8e-594f-8214-9c801708c1ef",
+      "name": "Trả: Order detail",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        720
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nconst at = (w.headers || {})['x-tts-access-token'] || '';\nconst verify = (path) => {\n  if (!at.startsWith('mock_at_')) return { code: 105001, message: 'Invalid access_token' };\n  const bodyStr = w.body && Object.keys(w.body).length ? JSON.stringify(w.body) : '';\n  if (q.sign !== tiktokSign(path, q, bodyStr, appSecret)) return { code: 106001, message: 'Invalid sign' };\n  if (!q.shop_cipher) return { code: 106002, message: 'missing shop_cipher' };\n  return null;\n};\n\nconst bad = verify('/order/202309/orders'); if (bad) return [{ json: bad }];\nconst id = String(q.ids || '');\nconst st = { '345': 'IN_TRANSIT', '346': 'AWAITING_SHIPMENT', '347': 'CANCELLED', '348': 'DELIVERED' }[id.slice(-3)] || 'AWAITING_SHIPMENT';\nconst tr = ['IN_TRANSIT', 'DELIVERED', 'CANCELLED'].includes(st) ? 'VNMOCK' + id.slice(-3) : null;\nconst second = id.endsWith('346') ? 'OP-IP15-TRONG' : 'PK-SAC-ANKER20W-TRANG';\nreturn [{ json: { code: 0, message: 'Success', data: { orders: [{ id, status: st, user_id: '7430999999999999333',\n  payment: { currency: 'VND', total_amount: '17189000' },\n  packages: [{ id: '1155443322110099887' }],\n  line_items: [\n    { id: 'li-1', sku_id: 'sku-a', seller_sku: 'DT-IP15-128', tracking_number: tr, package_id: '1155443322110099887' },\n    { id: 'li-2', sku_id: 'sku-b', seller_sku: second, tracking_number: tr, package_id: '1155443322110099887' },\n  ] }] } } }];\n"
+      }
+    },
+    {
+      "id": "be207cdc-5ff8-586a-a31d-dfb1cf44e4b8",
+      "name": "Ship package",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        900
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-mock/fulfillment/202309/packages/1155443322110099887/ship",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "37e2fc1e-85d6-584d-8f47-1ba70f4e7d65"
+    },
+    {
+      "id": "1bbdc6d3-3876-5e4f-85f8-64cb6976ad58",
+      "name": "Trả: Ship package",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        900
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nconst at = (w.headers || {})['x-tts-access-token'] || '';\nconst verify = (path) => {\n  if (!at.startsWith('mock_at_')) return { code: 105001, message: 'Invalid access_token' };\n  const bodyStr = w.body && Object.keys(w.body).length ? JSON.stringify(w.body) : '';\n  if (q.sign !== tiktokSign(path, q, bodyStr, appSecret)) return { code: 106001, message: 'Invalid sign' };\n  if (!q.shop_cipher) return { code: 106002, message: 'missing shop_cipher' };\n  return null;\n};\n\nconst bad = verify('/fulfillment/202309/packages/1155443322110099887/ship'); if (bad) return [{ json: bad }];\nif (!w.body || !w.body.handover_method) return [{ json: { code: 21011001, message: 'handover_method required' } }];\nreturn [{ json: { code: 0, message: 'Success', data: {} } }];\n"
+      }
+    },
+    {
+      "id": "7848a863-21e3-5682-8928-d8baf1629d3f",
+      "name": "Shipping docs",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1080
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "tiktok-mock/fulfillment/202309/packages/1155443322110099887/shipping_documents",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "493e99f2-aa28-5fca-a462-cbfe395c67dc"
+    },
+    {
+      "id": "b46bbf85-2fd1-5fa4-9056-3fb6b2da82ae",
+      "name": "Trả: Shipping docs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        1080
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nconst at = (w.headers || {})['x-tts-access-token'] || '';\nconst verify = (path) => {\n  if (!at.startsWith('mock_at_')) return { code: 105001, message: 'Invalid access_token' };\n  const bodyStr = w.body && Object.keys(w.body).length ? JSON.stringify(w.body) : '';\n  if (q.sign !== tiktokSign(path, q, bodyStr, appSecret)) return { code: 106001, message: 'Invalid sign' };\n  if (!q.shop_cipher) return { code: 106002, message: 'missing shop_cipher' };\n  return null;\n};\n\nconst bad = verify('/fulfillment/202309/packages/1155443322110099887/shipping_documents'); if (bad) return [{ json: bad }];\nreturn [{ json: { code: 0, message: 'Success', data: { doc_url: 'https://example.invalid/label-1155443322110099887.pdf', tracking_number: 'VNMOCKSHIP001' } } }];\n"
+      }
+    },
+    {
+      "id": "e679d03b-9eb6-5012-a9cc-e74ee82644d8",
+      "name": "Create conversation",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1260
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-mock/customer_service/202309/conversations",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "48cde3b6-5694-53a1-8b92-26092b6ea054"
+    },
+    {
+      "id": "e2187ac9-7a1b-5c90-a9b8-4e7a60a84152",
+      "name": "Trả: Create conversation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        1260
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nconst at = (w.headers || {})['x-tts-access-token'] || '';\nconst verify = (path) => {\n  if (!at.startsWith('mock_at_')) return { code: 105001, message: 'Invalid access_token' };\n  const bodyStr = w.body && Object.keys(w.body).length ? JSON.stringify(w.body) : '';\n  if (q.sign !== tiktokSign(path, q, bodyStr, appSecret)) return { code: 106001, message: 'Invalid sign' };\n  if (!q.shop_cipher) return { code: 106002, message: 'missing shop_cipher' };\n  return null;\n};\n\nconst bad = verify('/customer_service/202309/conversations'); if (bad) return [{ json: bad }];\nreturn [{ json: { code: 0, message: 'Success', data: { conversation_id: 'mock-conv-1' } } }];\n"
+      }
+    },
+    {
+      "id": "cc003bcb-9354-52da-badd-2bcae551f314",
+      "name": "Send message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1440
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-mock/customer_service/202309/conversations/mock-conv-1/messages",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "58847fc4-4366-5b4e-97f8-433bdcb5f834"
+    },
+    {
+      "id": "c88f4d4e-d56d-53a3-89b4-e7d86997bea7",
+      "name": "Trả: Send message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        1440
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst w = $input.first().json;\nconst q = w.query || {};\nconst now = Math.floor(Date.now() / 1000);\n\nconst at = (w.headers || {})['x-tts-access-token'] || '';\nconst verify = (path) => {\n  if (!at.startsWith('mock_at_')) return { code: 105001, message: 'Invalid access_token' };\n  const bodyStr = w.body && Object.keys(w.body).length ? JSON.stringify(w.body) : '';\n  if (q.sign !== tiktokSign(path, q, bodyStr, appSecret)) return { code: 106001, message: 'Invalid sign' };\n  if (!q.shop_cipher) return { code: 106002, message: 'missing shop_cipher' };\n  return null;\n};\n\nconst bad = verify('/customer_service/202309/conversations/mock-conv-1/messages'); if (bad) return [{ json: bad }];\nconst c = JSON.parse((w.body || {}).content || '{}').content;\nif (!c) return [{ json: { code: 10001, message: 'empty content' } }];\nreturn [{ json: { code: 0, message: 'Success', data: { message_id: 'mock-msg-' + now, echo: c } } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Token get": {
+      "main": [
+        [
+          {
+            "node": "Trả token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token refresh": {
+      "main": [
+        [
+          {
+            "node": "Trả token mới",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shops": {
+      "main": [
+        [
+          {
+            "node": "Kiểm chữ ký, trả shop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Echo": {
+      "main": [
+        [
+          {
+            "node": "Trả lại request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order detail": {
+      "main": [
+        [
+          {
+            "node": "Trả: Order detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ship package": {
+      "main": [
+        [
+          {
+            "node": "Trả: Ship package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shipping docs": {
+      "main": [
+        [
+          {
+            "node": "Trả: Shipping docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create conversation": {
+      "main": [
+        [
+          {
+            "node": "Trả: Create conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message": {
+      "main": [
+        [
+          {
+            "node": "Trả: Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

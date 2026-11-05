@@ -1,0 +1,278 @@
+{
+  "seed": 13,
+  "catalog": "catalog.csv",
+  "train_products": [
+    "LOA-MARSHALL-EMBERTON3",
+    "TN-JBL-TUNE520BT",
+    "TN-XIAOMI-BUDS5",
+    "PK-CAP-BASEUS-C2C-2M",
+    "PK-SAC-ANKER20W-TRANG",
+    "LOA-JBL-GO4",
+    "TN-AIRPODSPRO2",
+    "PK-SAC-APPLE20W-TRANG",
+    "TN-SOUNDPEATS-AIR4",
+    "BP-LOGI-K380",
+    "PK-SAC-UGREEN65W-XAM",
+    "OP-IP16PM-DA",
+    "DT-SS-A56-128",
+    "DT-XIAOMI-RN14-256",
+    "PK-CAP-UGREEN-C2C-1M",
+    "PK-DP-ANKER-10000",
+    "KCL-IP16-KINGKONG",
+    "PK-CAP-ANKER-C2L-1M",
+    "DH-XIAOMI-BAND9",
+    "DT-IP15-128",
+    "PK-DP-BASEUS-MAGSAFE-5000",
+    "PK-DP-XIAOMI-20000"
+  ],
+  "dev_products": [
+    "OP-IP15-TRONG",
+    "TN-SONY-WF1000XM5",
+    "PK-SAC-BASEUS20W-TRANG",
+    "CHUOT-LOGI-M331",
+    "TN-AIRPODS4"
+  ],
+  "templates": {
+    "hoi_gia": {
+      "train": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "dev": [
+        0,
+        3,
+        9,
+        16,
+        18,
+        27
+      ]
+    },
+    "tu_van": {
+      "train": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12,
+        13,
+        14,
+        16,
+        17,
+        18,
+        20,
+        21,
+        22,
+        24,
+        25
+      ],
+      "dev": [
+        2,
+        11,
+        15,
+        19,
+        23
+      ]
+    },
+    "so_sanh": {
+      "train": [
+        0,
+        2,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "dev": [
+        1,
+        3,
+        12,
+        19
+      ]
+    },
+    "tra_don": {
+      "train": [
+        0,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        16,
+        17,
+        19
+      ],
+      "dev": [
+        1,
+        2,
+        15,
+        18
+      ]
+    },
+    "bao_hanh": {
+      "train": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        16,
+        17,
+        18
+      ],
+      "dev": [
+        5,
+        13,
+        15,
+        19
+      ]
+    },
+    "khieu_nai": {
+      "train": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        13,
+        14,
+        15,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "dev": [
+        0,
+        2,
+        12,
+        16
+      ]
+    },
+    "khac": {
+      "train": [
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        17,
+        19,
+        21,
+        23
+      ],
+      "dev": [
+        2,
+        16,
+        18,
+        20,
+        22
+      ]
+    }
+  },
+  "counts": {
+    "train": {
+      "tu_van": 300,
+      "hoi_gia": 300,
+      "so_sanh": 300,
+      "bao_hanh": 300,
+      "khac": 300,
+      "tra_don": 300,
+      "khieu_nai": 300
+    },
+    "dev": {
+      "hoi_gia": 80,
+      "tu_van": 80,
+      "so_sanh": 80,
+      "tra_don": 80,
+      "bao_hanh": 80,
+      "khieu_nai": 80,
+      "khac": 80
+    }
+  },
+  "entity_counts": {
+    "train": {
+      "NGAN_SACH": 126,
+      "LOAI": 402,
+      "SAN_PHAM": 1146,
+      "MAU": 83,
+      "MA_DON": 188,
+      "DUNG_LUONG": 42,
+      "HANG": 100
+    },
+    "dev": {
+      "SAN_PHAM": 261,
+      "MAU": 52,
+      "LOAI": 175,
+      "HANG": 81,
+      "NGAN_SACH": 10,
+      "MA_DON": 58
+    }
+  }
+}

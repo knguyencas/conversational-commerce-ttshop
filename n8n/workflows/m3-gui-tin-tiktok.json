@@ -1,0 +1,327 @@
+{
+  "id": "m3GuiTinTikTok01",
+  "name": "M3 · Gửi tin TikTok",
+  "active": false,
+  "nodes": [
+    {
+      "id": "9169bb6a-a8d7-5f6e-8921-134a36f46544",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -340
+      ],
+      "parameters": {
+        "content": "## M3 · Gửi tin TikTok\nGửi một tin nhắn cho khách qua Customer Service API. Vào: `{conversation_id?, buyer_user_id?, text}`; ra: `{ok, conversation_id, message_id, error}`.\n\nCó `conversation_id` (chatbot trả lời) thì gửi luôn; chỉ có `buyer_user_id` (báo mã vận đơn) thì mở cuộc chat trước. **Không ném lỗi** khi gửi thất bại (vd chưa được cấp Customer Service API), bên gọi tự xem `ok`.",
+        "height": 260,
+        "width": 760,
+        "color": 7
+      }
+    },
+    {
+      "id": "42dcdee0-0ac2-5532-aa41-ba3f0b23f868",
+      "name": "Được gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "093fe9d4-8eb6-5482-aa80-92a3a9b7b24a",
+      "name": "Chuẩn bị",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm dữ liệu vào và xem đã có cuộc chat chưa\nconst x = $input.first().json;\nif (!x.text) throw new Error('Thiếu nội dung tin nhắn (text)');\nif (!x.conversation_id && !x.buyer_user_id) throw new Error('Cần conversation_id hoặc buyer_user_id');\nreturn [{ json: { ...x, has_conversation: x.conversation_id ? 'yes' : 'no' } }];\n"
+      }
+    },
+    {
+      "id": "80113507-8abd-5f68-9575-5db38d91749f",
+      "name": "Đã có cuộc chat?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "91e5e0c9-376f-543f-b194-35768a9d0033",
+              "leftValue": "={{ $json.has_conversation }}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d7e26293-5d37-5f77-a953-4ab71b4a4e3f",
+      "name": "Yêu cầu mở cuộc chat",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        160
+      ],
+      "parameters": {
+        "jsCode": "const x = $input.first().json;\nreturn [{ json: { method: 'POST', path: '/customer_service/202309/conversations', body: { buyer_user_id: String(x.buyer_user_id) } } }];\n"
+      }
+    },
+    {
+      "id": "6d25e815-3300-5e7d-89b2-fedd295f2e4b",
+      "name": "Mở cuộc chat",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        160
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "d4589140-7ddb-5610-b184-4ac57be00d4a",
+      "name": "Soạn yêu cầu gửi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Lấy conversation_id: có sẵn, hoặc vừa tạo ở bước trước\nconst x = $('Chuẩn bị').first().json;\nlet cid = x.conversation_id;\nif (!cid) {\n  const r = $('Mở cuộc chat').first().json;\n  if (!r.ok || !r.data || !r.data.conversation_id) {\n    return [{ json: { skip: true, error: `Không mở được cuộc chat: ${r.code} ${r.message}` } }];\n  }\n  cid = r.data.conversation_id;\n}\nreturn [{ json: { method: 'POST', path: `/customer_service/202309/conversations/${cid}/messages`,\n  body: { type: 'TEXT', content: JSON.stringify({ content: x.text }) }, conversation_id: cid } }];\n"
+      }
+    },
+    {
+      "id": "9cb64171-1a1d-5fa2-9310-52e393db3edf",
+      "name": "Gửi được?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "17fd8753-25bf-5eb1-bdfe-fb38714dcb28",
+              "leftValue": "={{ String(!$json.skip) }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f19c0b5e-39b9-5e3e-932a-7391c246b5b4",
+      "name": "Gửi tin",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1540,
+        -80
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "65d10901-9694-573f-9d5e-34870b506918",
+      "name": "Kết quả",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const req = $('Soạn yêu cầu gửi').first().json;\nif (req.skip) return [{ json: { ok: false, conversation_id: null, message_id: null, error: req.error } }];\nconst r = $input.first().json;\nreturn [{ json: { ok: !!r.ok, conversation_id: req.conversation_id, message_id: r.data ? r.data.message_id ?? null : null,\n  error: r.ok ? null : `${r.code} ${r.message}` } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Được gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn bị",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn bị": {
+      "main": [
+        [
+          {
+            "node": "Đã có cuộc chat?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đã có cuộc chat?": {
+      "main": [
+        [
+          {
+            "node": "Soạn yêu cầu gửi",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Yêu cầu mở cuộc chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu mở cuộc chat": {
+      "main": [
+        [
+          {
+            "node": "Mở cuộc chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mở cuộc chat": {
+      "main": [
+        [
+          {
+            "node": "Soạn yêu cầu gửi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soạn yêu cầu gửi": {
+      "main": [
+        [
+          {
+            "node": "Gửi được?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gửi được?": {
+      "main": [
+        [
+          {
+            "node": "Gửi tin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gửi tin": {
+      "main": [
+        [
+          {
+            "node": "Kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

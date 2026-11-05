@@ -1,0 +1,73 @@
+{
+  "id": "m2OdooVanChuyen1",
+  "name": "M2 · Cập nhật Odoo (vận chuyển)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "9169bb6a-a8d7-5f6e-8921-134a36f46544",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -300
+      ],
+      "parameters": {
+        "content": "## M2 · Cập nhật Odoo (vận chuyển) — GIỮ CHỖ\n**Người làm: Thành viên 2.** Hợp đồng: `contracts/internal/van_chuyen.md` (mục 3).\n\n- `action = ghi_van_don`: ghi `tracking_number`, link phiếu gửi hàng vào phiếu xuất kho / Sales Order.\n- `action = cap_nhat_trang_thai`: ghi trạng thái TikTok vào Sales Order (vd trường `x_tiktok_status`); `nhom = giao_that_bai` thì theo dõi hàng hoàn.\n\nM3 gọi và không chờ kết quả. Sửa xong nhớ **Publish**.",
+        "height": 260,
+        "width": 700,
+        "color": 7
+      }
+    },
+    {
+      "id": "13b21794-135b-5fcb-8965-f749ebecab75",
+      "name": "M3 gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "d7f4e4ee-6556-5c3b-9943-d06edb3cedcf",
+      "name": "Chưa làm (giữ chỗ)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return $input.all().map((i) => ({ json: { ...i.json, placeholder: true } }));\n"
+      }
+    }
+  ],
+  "connections": {
+    "M3 gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Chưa làm (giữ chỗ)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

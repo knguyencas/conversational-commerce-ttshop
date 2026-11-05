@@ -1,0 +1,14 @@
+{
+  "event_id": "7430215561234567001",
+  "event_type": "ORDER_STATUS_CHANGE",
+  "type_code": 1,
+  "shop_id": "7494049642642441621",
+  "sent_at": "2026-10-26T10:00:00+07:00",
+  "received_at": "2026-10-26T10:00:01+07:00",
+  "data": {
+    "order_id": "579123456789012345",
+    "order_status": "AWAITING_SHIPMENT",
+    "is_on_hold_order": false,
+    "update_time": 1792983598
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "id": "m3TikTokApi00001",
+  "name": "M3 · TikTok API",
+  "active": false,
+  "nodes": [
+    {
+      "id": "cbd380f4-c707-56f2-ae25-520917e6643a",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -320
+      ],
+      "parameters": {
+        "content": "## M3 · TikTok API\nCửa duy nhất để gọi TikTok Shop API. Hợp đồng: `contracts/internal/tiktok_api.md`.\n\nVào: `{method, path, query, body, shop}`. Ra: `{ok, http_status, code, message, request_id, data, auth_error}`.\n\nTự đọc token trong bảng `tokens`, thêm `app_key`, `timestamp`, `shop_cipher`, ký HMAC-SHA256 và gắn header `x-tts-access-token`. Không ai khác cần tự ký.",
+        "height": 280,
+        "width": 700,
+        "color": 7
+      }
+    },
+    {
+      "id": "8c0fef27-b883-5a10-bdb3-dd437fca82f0",
+      "name": "Được gọi tới",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "7e4fd87e-2a53-593c-9c66-06f57375cf55",
+      "name": "Đọc token",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT shop_id, shop_cipher, access_token, access_token_expires_at\nFROM tokens ORDER BY updated_at DESC LIMIT 1;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "52585ce7-8501-5add-8635-6d460ba2e196",
+      "name": "Ký và gọi TikTok",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n// Chữ ký TikTok Shop API 202309 (cần đối chiếu khi có app thật, xem contracts/internal/tiktok_api.md)\nfunction tiktokSign(path, query, bodyStr, secret) {\n  const keys = Object.keys(query).filter((k) => k !== 'sign' && k !== 'access_token').sort();\n  let s = path + keys.map((k) => k + query[k]).join('');\n  if (bodyStr) s += bodyStr;\n  return crypto.createHmac('sha256', secret).update(secret + s + secret).digest('hex');\n}\n// Node Code của n8n không có URLSearchParams: tự ghép query\nconst toQuery = (q) => Object.keys(q).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k])).join('&');\nconst appKey = $env.TIKTOK_APP_KEY || '';\nconst appSecret = $env.TIKTOK_APP_SECRET || '';\nif (!appKey || !appSecret) throw new Error('Thiếu TIKTOK_APP_KEY hoặc TIKTOK_APP_SECRET trong .env');\nconst API_BASE = ($env.TIKTOK_API_BASE || 'https://open-api.tiktokglobalshop.com').replace(/\\/$/, '');\nconst AUTH_BASE = ($env.TIKTOK_AUTH_BASE || 'https://auth.tiktok-shops.com').replace(/\\/$/, '');\nconst parse = (raw) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch (e) { return { code: -1, message: String(raw).slice(0, 300) }; } };\n// Hạn token TikTok trả về là thời điểm (Unix giây); phòng khi là số giây còn lại thì đổi ra thời điểm\nconst toEpoch = (v) => (Number(v) < 1e9 ? Math.floor(Date.now() / 1000) + Number(v) : Number(v));\n\nconst req = $('Được gọi tới').first().json;\nconst tok = $input.first().json;\nif (!req.path || !String(req.path).startsWith('/')) throw new Error('path phải bắt đầu bằng / (vd /order/202309/orders)');\nif (!tok.access_token) throw new Error('Chưa có token TikTok: chủ shop (M1) cần bấm link ủy quyền app');\n\nconst method = String(req.method || 'GET').toUpperCase();\nconst query = { ...(req.query || {}), app_key: appKey, timestamp: Math.floor(Date.now() / 1000) };\nif (req.shop !== false) query.shop_cipher = tok.shop_cipher;\nconst bodyStr = req.body == null ? '' : JSON.stringify(req.body);\nquery.sign = tiktokSign(req.path, query, bodyStr, appSecret);\n\nconst url = API_BASE + req.path + '?' + toQuery(query);\nlet res;\ntry {\n  res = await this.helpers.httpRequest({\n    method, url, body: bodyStr || undefined, json: false, timeout: 20000,\n    returnFullResponse: true, ignoreHttpStatusErrors: true,\n    headers: { 'x-tts-access-token': tok.access_token, 'content-type': 'application/json' },\n  });\n} catch (e) {\n  return [{ json: { ok: false, http_status: 0, code: -1, message: 'Không gọi được TikTok: ' + e.message,\n                    request_id: null, data: null, auth_error: false } }];\n}\nconst body = parse(res.body) || {};\nconst ok = res.statusCode >= 200 && res.statusCode < 300 && body.code === 0;\nconst auth_error = res.statusCode === 401 || /token|credential|authoriz/i.test(String(body.message || ''));\nreturn [{ json: {\n  ok, http_status: res.statusCode, code: body.code ?? null, message: body.message ?? null,\n  request_id: body.request_id ?? null, data: body.data ?? null, auth_error: !ok && auth_error,\n} }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Được gọi tới": {
+      "main": [
+        [
+          {
+            "node": "Đọc token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc token": {
+      "main": [
+        [
+          {
+            "node": "Ký và gọi TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

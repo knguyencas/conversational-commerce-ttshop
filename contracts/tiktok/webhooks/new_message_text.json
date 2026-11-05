@@ -1,0 +1,18 @@
+{
+  "type": 14,
+  "tts_notification_id": "7430215561234567004",
+  "shop_id": "7494049642642441621",
+  "timestamp": 1792980000,
+  "data": {
+    "conversation_id": "7430100000000000111",
+    "message_id": "7430100000000000222",
+    "type": "TEXT",
+    "content": "{\"content\":\"Shop ơi củ sạc Anker 20W còn màu trắng không ạ, giá bao nhiêu?\"}",
+    "sender": {
+      "im_user_id": "7430999999999999333",
+      "role": "BUYER"
+    },
+    "create_time": 1792979999,
+    "is_visible": true
+  }
+}

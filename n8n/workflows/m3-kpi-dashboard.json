@@ -1,0 +1,323 @@
+{
+  "id": "m3KpiDashboard01",
+  "name": "M3 · KPI cho dashboard",
+  "active": false,
+  "nodes": [
+    {
+      "id": "bae8c0f2-3176-5d31-8518-221287f10356",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -420
+      ],
+      "parameters": {
+        "content": "## M3 · KPI cho dashboard\nGET `/webhook/kpi-dashboard?bang=tong_hop`, header `x-kpi-key: <KPI_SECRET>`.\n\nBảng: tong_hop, chatbot, y_dinh, chat_ra_don, xu_ly_don, mua_kem, ab_mua_kem.\n\nGoogle Sheet của M4 kéo về bằng Apps Script, xem `docs/huong-dan-kpi-dashboard.md`.",
+        "height": 300,
+        "width": 560
+      }
+    },
+    {
+      "id": "b83f867f-d70e-5092-b6ec-241567ab5c67",
+      "name": "Webhook KPI",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "kpi-dashboard",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "8677c73b-4e88-5eb4-bb7e-d02351ca03f3"
+    },
+    {
+      "id": "4633e349-d03e-5473-b7fa-8feb2d8b4739",
+      "name": "Kiểm mã và chọn bảng",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã truy cập và chọn view KPI theo tham số bang\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst q = w.query || {};\nconst expected = $env.KPI_SECRET || '';\nif (!expected) throw new Error('Chưa đặt KPI_SECRET trong .env');\nconst got = String((w.headers || {})['x-kpi-key'] || q.key || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nif (!crypto.timingSafeEqual(h(got), h(expected))) return [{ json: { verdict: 'sai_ma' } }];\nconst views = {\n  tong_hop: 'kpi_tong_hop_ngay',\n  chatbot: 'kpi_chatbot_ngay',\n  y_dinh: 'kpi_y_dinh_ngay',\n  chat_ra_don: 'kpi_chat_ra_don_ngay',\n  xu_ly_don: 'kpi_xu_ly_don',\n  mua_kem: 'upsell_offer_report',\n  ab_mua_kem: 'upsell_report',\n};\nconst bang = String(q.bang || 'tong_hop');\nif (!views[bang]) return [{ json: { verdict: 'sai_bang', loi: 'bang phải là một trong: ' + Object.keys(views).join(', ') } }];\nreturn [{ json: { verdict: 'ok', view: views[bang] } }];\n"
+      }
+    },
+    {
+      "id": "5e0a4ff5-508c-5122-9378-a37e59a37874",
+      "name": "Kết quả kiểm tra",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5b27dec0-abe2-5534-9f7d-c8874724c1fd",
+                    "leftValue": "={{ $json.verdict }}",
+                    "rightValue": "ok",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hợp lệ"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "fb125e2d-c5d9-57b5-9ea8-ab55e3fd3b25",
+                    "leftValue": "={{ $json.verdict }}",
+                    "rightValue": "sai_bang",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sai bảng"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "96fcd0fb-ab05-556a-b924-552142c109fb",
+                    "leftValue": "={{ $json.verdict }}",
+                    "rightValue": "sai_ma",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sai mã"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "060ac2d7-457b-53c4-9acc-13309c54e0cf",
+      "name": "Đọc view KPI",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        -140
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT (SELECT json_agg(column_name::text ORDER BY ordinal_position)\n          FROM information_schema.columns\n         WHERE table_schema = 'public' AND table_name = '{{ $json.view }}') AS cols,\n       row_to_json(v) AS r\nFROM (SELECT 1) AS mot\nLEFT JOIN {{ $json.view }} v ON true;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "2124f08e-2d0d-5a5a-842d-9323a6acd5af",
+      "name": "Đổi sang CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "// Ghép các dòng kết quả thành CSV có dòng tiêu đề, mới nhất lên đầu\nconst items = $input.all().map((i) => i.json);\nconst cols = (items[0] || {}).cols || [];\nconst rows = items.map((j) => j.r).filter(Boolean);\nif (cols[0] === 'ngay') rows.sort((a, b) => String(b.ngay).localeCompare(String(a.ngay)));\nconst cell = (v) => {\n  if (v === null || v === undefined) return '';\n  const s = typeof v === 'object' ? JSON.stringify(v) : String(v);\n  return /[\",\\n]/.test(s) ? '\"' + s.replace(/\"/g, '\"\"') + '\"' : s;\n};\nconst csv = [cols.join(','), ...rows.map((r) => cols.map((c) => cell(r[c])).join(','))].join('\\n');\nreturn [{ json: { csv } }];\n"
+      }
+    },
+    {
+      "id": "791fc1e0-97ca-5026-8a71-5e3372bfbb0e",
+      "name": "Trả CSV",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        -140
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.csv }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/csv; charset=utf-8"
+              },
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "afea1f20-27e1-59d9-a99f-9e71432733db",
+      "name": "Trả 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        40
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, error: $json.loi } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "bf6d964f-00ee-5ab0-ae76-0ac020f31908",
+      "name": "Trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, error: 'sai mã KPI' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook KPI": {
+      "main": [
+        [
+          {
+            "node": "Kiểm mã và chọn bảng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm mã và chọn bảng": {
+      "main": [
+        [
+          {
+            "node": "Kết quả kiểm tra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kết quả kiểm tra": {
+      "main": [
+        [
+          {
+            "node": "Đọc view KPI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trả 400",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc view KPI": {
+      "main": [
+        [
+          {
+            "node": "Đổi sang CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đổi sang CSV": {
+      "main": [
+        [
+          {
+            "node": "Trả CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,605 @@
+{
+  "id": "m3DatVanChuyen01",
+  "name": "M3 · Đặt vận chuyển",
+  "active": false,
+  "nodes": [
+    {
+      "id": "9169bb6a-a8d7-5f6e-8921-134a36f46544",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -420
+      ],
+      "parameters": {
+        "content": "## M3 · Đặt vận chuyển\nOdoo báo phiếu **xuất kho** đã Done (đã đóng gói, quét serial) → tìm mã đơn TikTok trong `order_status_log` → lấy `package_id` → **Ship Package** (lấy hàng tại shop) → lấy **phiếu gửi hàng** (PDF + mã vận đơn) → ghi `order_status_log` (`shipping_arranged`) → báo M2 ghi vào Odoo.\n\nOdoo gọi: `POST /webhook/odoo-picking-done?secret=<ODOO_WEBHOOK_SECRET>` (hợp đồng: `contracts/internal/van_chuyen.md`).\n\nĐã đặt rồi thì không đặt lại. Đơn không còn ở `AWAITING_SHIPMENT` (vd đã hủy) thì **dừng và báo lỗi**. Lỗi nào cũng vào `failed_jobs` để đặt tay trong Seller Center.",
+        "height": 300,
+        "width": 1400,
+        "color": 7
+      }
+    },
+    {
+      "id": "b62763c9-8ff3-5d03-a8e1-e682333f9a5f",
+      "name": "Odoo báo đã đóng gói",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "odoo-picking-done",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "fd5217dc-2254-5c02-a3c2-0e4879ff421e"
+    },
+    {
+      "id": "35c4f33b-71e9-5994-9040-a88caa4e36f4",
+      "name": "Kiểm tra phiếu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã bí mật và chỉ nhận phiếu xuất kho đã Done\nconst w = $input.first().json;\nconst secret = (w.query || {}).secret || (w.headers || {})['x-odoo-secret'] || '';\nconst expected = $env.ODOO_WEBHOOK_SECRET || '';\nif (!expected) throw new Error('Chưa đặt ODOO_WEBHOOK_SECRET trong .env');\nif (secret !== expected) return [{ json: { verdict: 'bad_secret' } }];\nconst b = w.body || {};\nconst name = String(b.name || '');\nconst outgoing = b.picking_type_code === 'outgoing' || name.includes('/OUT/');\nif ((b._model && b._model !== 'stock.picking') || b.state !== 'done' || !outgoing) {\n  return [{ json: { verdict: 'ignore', reason: `bỏ qua phiếu ${name || '?'} (${b.state}, ${b.picking_type_code || 'không rõ loại'})` } }];\n}\nreturn [{ json: { verdict: 'ok', picking: name, picking_id: b.id ?? b._id ?? null,\n  odoo_sale_order: String(b.origin || ''), tiktok_order_id: b.client_order_ref ? String(b.client_order_ref) : '' } }];\n"
+      }
+    },
+    {
+      "id": "4ca9528a-dbba-51b5-9081-5ef2674a802a",
+      "name": "Kết quả kiểm tra",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "68c22ca2-5f68-509d-b2a0-66bef187a0d4",
+                    "leftValue": "={{ $json.verdict }}",
+                    "rightValue": "ok",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Xử lý"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "de792ca8-a1c1-506b-b5bf-3b225e6fc5d0",
+                    "leftValue": "={{ $json.verdict }}",
+                    "rightValue": "ignore",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Bỏ qua"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "06aa9acc-514a-5a94-88f9-942c7e07cbe0",
+                    "leftValue": "={{ $json.verdict }}",
+                    "rightValue": "bad_secret",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sai mã"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "25ffdc07-92e9-524a-943b-768f08a5b048",
+      "name": "Trả 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        -140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "d969a46d-e21e-56a3-9726-522da190f99d",
+      "name": "Trả 200 (bỏ qua)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        40
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, ignored: $json.reason } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "fc2199ae-f801-5f6d-b0e9-3a6f521a272f",
+      "name": "Trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, error: 'sai mã bí mật' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "b21df481-522d-5009-946d-ea52d929fc58",
+      "name": "Tìm đơn TikTok",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        880,
+        -140
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH o AS (\n  SELECT COALESCE(NULLIF($1, ''),\n    (SELECT tiktok_order_id FROM order_status_log WHERE odoo_sale_order = NULLIF($2, '')\n      ORDER BY changed_at DESC LIMIT 1)) AS tiktok_order_id\n)\nSELECT o.tiktok_order_id,\n       EXISTS (SELECT 1 FROM order_status_log l\n                WHERE l.tiktok_order_id = o.tiktok_order_id AND l.status = 'shipping_arranged') AS already_arranged\nFROM o;",
+        "options": {
+          "queryReplacement": "={{ [ $('Kiểm tra phiếu').first().json.tiktok_order_id, $('Kiểm tra phiếu').first().json.odoo_sale_order ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "ec5503a2-712b-55aa-9349-a64c3ce609ac",
+      "name": "Yêu cầu chi tiết đơn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Kiểm tra phiếu').first().json;\nconst f = $input.first().json;\nif (!f.tiktok_order_id) throw new Error(`Không tìm thấy mã đơn TikTok cho ${p.odoo_sale_order || p.picking}: M2 · Tạo đơn chưa ghi order_status_log (xem contracts/internal/van_chuyen.md)`);\nif (f.already_arranged) return [];\nreturn [{ json: { method: 'GET', path: '/order/202309/orders', query: { ids: f.tiktok_order_id } } }];\n"
+      }
+    },
+    {
+      "id": "8655ed2c-375b-502b-84db-8796aa56809b",
+      "name": "Lấy chi tiết đơn",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        -140
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "3a4ed8d9-e2a5-5961-ba17-47c2679af597",
+      "name": "Chọn gói hàng",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const f = $('Tìm đơn TikTok').first().json;\nconst r = $input.first().json;\nif (!r.ok) throw new Error(`Lấy chi tiết đơn ${f.tiktok_order_id} lỗi: ${r.code} ${r.message}`);\nconst order = (r.data && r.data.orders || [])[0];\nif (!order) throw new Error(`TikTok không trả về đơn ${f.tiktok_order_id}`);\nif (order.status !== 'AWAITING_SHIPMENT') {\n  throw new Error(`Đơn ${f.tiktok_order_id} đang ở trạng thái ${order.status} trên TikTok, KHÔNG đặt vận chuyển. Kiểm tra lại trước khi giao (đơn hủy thì nhập hàng lại kho).`);\n}\nconst pkg = (order.packages || [])[0];\nif (!pkg || !pkg.id) throw new Error(`Đơn ${f.tiktok_order_id} chưa có package_id`);\nreturn [{ json: { method: 'POST', path: `/fulfillment/202309/packages/${pkg.id}/ship`,\n  body: { handover_method: 'PICKUP' }, package_id: String(pkg.id), buyer_user_id: order.user_id ?? null } }];\n"
+      }
+    },
+    {
+      "id": "20201ec7-f62a-50aa-ac8f-c0e988588a02",
+      "name": "Đặt lấy hàng",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        -140
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "93b65c95-aec8-52fd-a64c-24902890bbe6",
+      "name": "Yêu cầu phiếu gửi hàng",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const prev = $('Chọn gói hàng').first().json;\nconst r = $input.first().json;\nif (!r.ok) throw new Error(`Đặt lấy hàng (Ship Package) lỗi: ${r.code} ${r.message}. Đặt tay trong Seller Center.`);\nreturn [{ json: { method: 'GET', path: `/fulfillment/202309/packages/${prev.package_id}/shipping_documents`,\n  query: { document_type: 'SHIPPING_LABEL' } } }];\n"
+      }
+    },
+    {
+      "id": "4c675583-c267-57a0-85d6-c4cff82c7eae",
+      "name": "Lấy phiếu gửi hàng",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2200,
+        -140
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "962fe15b-3333-5afe-bde0-cc706c005be4",
+      "name": "Gom kết quả",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const p = $('Kiểm tra phiếu').first().json;\nconst f = $('Tìm đơn TikTok').first().json;\nconst pk = $('Chọn gói hàng').first().json;\nconst r = $input.first().json;\nconst doc = r.ok && r.data ? r.data : {};\nreturn [{ json: {\n  tiktok_order_id: f.tiktok_order_id, odoo_sale_order: p.odoo_sale_order, picking: p.picking,\n  package_id: pk.package_id, tracking_number: doc.tracking_number || null, label_url: doc.doc_url || null,\n  label_error: r.ok ? null : `${r.code} ${r.message}`,\n} }];\n"
+      }
+    },
+    {
+      "id": "7ac4374b-e6e3-53b1-bfd0-96f9dcfd64df",
+      "name": "Ghi order_status_log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2640,
+        -140
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO order_status_log (tiktok_order_id, odoo_sale_order, status, source, tracking_number, detail)\nVALUES ($1, NULLIF($2, ''), 'shipping_arranged', 'n8n', NULLIF($3, ''), $4::jsonb)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.tiktok_order_id, $json.odoo_sale_order, $json.tracking_number || '', JSON.stringify({ picking: $json.picking, package_id: $json.package_id, label_url: $json.label_url, label_error: $json.label_error }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "79829fc6-f78b-5fa0-9749-7135d41c06f1",
+      "name": "Dữ liệu cho M2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const s = $('Gom kết quả').first().json;\nreturn [{ json: { action: 'ghi_van_don', ...s } }];\n"
+      }
+    },
+    {
+      "id": "4d5ec6fe-6520-5927-a305-3f779413c41c",
+      "name": "Báo M2 ghi vào Odoo",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3080,
+        -140
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m2OdooVanChuyen1",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Odoo báo đã đóng gói": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra phiếu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra phiếu": {
+      "main": [
+        [
+          {
+            "node": "Kết quả kiểm tra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kết quả kiểm tra": {
+      "main": [
+        [
+          {
+            "node": "Trả 200",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trả 200 (bỏ qua)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trả 200": {
+      "main": [
+        [
+          {
+            "node": "Tìm đơn TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tìm đơn TikTok": {
+      "main": [
+        [
+          {
+            "node": "Yêu cầu chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Lấy chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Chọn gói hàng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chọn gói hàng": {
+      "main": [
+        [
+          {
+            "node": "Đặt lấy hàng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đặt lấy hàng": {
+      "main": [
+        [
+          {
+            "node": "Yêu cầu phiếu gửi hàng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu phiếu gửi hàng": {
+      "main": [
+        [
+          {
+            "node": "Lấy phiếu gửi hàng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy phiếu gửi hàng": {
+      "main": [
+        [
+          {
+            "node": "Gom kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gom kết quả": {
+      "main": [
+        [
+          {
+            "node": "Ghi order_status_log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi order_status_log": {
+      "main": [
+        [
+          {
+            "node": "Dữ liệu cho M2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dữ liệu cho M2": {
+      "main": [
+        [
+          {
+            "node": "Báo M2 ghi vào Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

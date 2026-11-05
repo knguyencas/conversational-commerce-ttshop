@@ -1,0 +1,18 @@
+{
+  "type": 14,
+  "tts_notification_id": "7430215561234567005",
+  "shop_id": "7494049642642441621",
+  "timestamp": 1792980060,
+  "data": {
+    "conversation_id": "7430100000000000111",
+    "message_id": "7430100000000000223",
+    "type": "PRODUCT_CARD",
+    "content": "{\"product_id\":\"1731234567890123456\"}",
+    "sender": {
+      "im_user_id": "7430999999999999333",
+      "role": "BUYER"
+    },
+    "create_time": 1792980059,
+    "is_visible": true
+  }
+}

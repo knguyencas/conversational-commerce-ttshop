@@ -1,0 +1,11 @@
+{
+  "event_id": "7430215561234567004",
+  "conversation_id": "7430100000000000111",
+  "message_id": "7430100000000000222",
+  "buyer_user_id": "7430999999999999333",
+  "message_type": "TEXT",
+  "text": "Shop ơi củ sạc Anker 20W còn màu trắng không ạ, giá bao nhiêu?",
+  "product_id": null,
+  "sent_at": "2026-10-26T08:59:59+07:00",
+  "received_at": "2026-10-26T09:00:00+07:00"
+}

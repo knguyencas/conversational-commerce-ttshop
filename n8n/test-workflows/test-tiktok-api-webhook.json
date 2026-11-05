@@ -1,0 +1,116 @@
+{
+  "id": "testTikTokApiWh1",
+  "name": "TEST · Gọi TikTok API",
+  "active": false,
+  "nodes": [
+    {
+      "id": "cbd380f4-c707-56f2-ae25-520917e6643a",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -260
+      ],
+      "parameters": {
+        "content": "## TEST · Gọi TikTok API\n`POST /webhook/tiktok-api-test` với body là dữ liệu vào của `M3 · TikTok API`. **Unpublish sau khi test.**",
+        "height": 200,
+        "width": 620,
+        "color": 7
+      }
+    },
+    {
+      "id": "cf290a15-884a-585f-87b7-fd7a702a7ee7",
+      "name": "Webhook test",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-api-test",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "45020504-7995-5f36-92d8-889b709992b7"
+    },
+    {
+      "id": "cf345485-8c3c-5c91-8916-065103b6f3ec",
+      "name": "Lấy body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json.body || {} }];\n"
+      }
+    },
+    {
+      "id": "56f0f83c-4fb9-51a0-98c4-e609f5d00ea9",
+      "name": "Gọi M3 · TikTok API",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook test": {
+      "main": [
+        [
+          {
+            "node": "Lấy body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy body": {
+      "main": [
+        [
+          {
+            "node": "Gọi M3 · TikTok API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

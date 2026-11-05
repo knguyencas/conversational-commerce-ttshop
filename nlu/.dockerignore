@@ -1,0 +1,7 @@
+# Chỉ cần nlu_lib.py và service/ để build image
+outputs/
+data/
+tests/
+*.ipynb
+__pycache__/
+.ipynb_checkpoints/
