@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
 set -a; source .env; set +a
 
-ORDER=579123456789012345
+ORDER=579123456789012344
 CONV=mock-conv-1
 BUYER=7430999999999999333
 RUN="dientap$(date +%s)"
@@ -46,8 +46,9 @@ webhook() {
   local file="$1" id="$2"
   python -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); d['tts_notification_id']=sys.argv[2]; \
 d.get('data',{}).get('conversation_id') and d['data'].update(conversation_id=sys.argv[3]); \
+d.get('data',{}).get('order_id') and d['data'].update(order_id=sys.argv[5]); \
 open(sys.argv[4],'w',encoding='utf-8').write(json.dumps(d,ensure_ascii=False))" \
-    "$file" "$id" "$CONV" "$TMP/$id.json"
+    "$file" "$id" "$CONV" "$TMP/$id.json" "$ORDER"
   bash scripts/send-test-webhook.sh "$TMP/$id.json" "$N8N/webhook/tiktok-events" | grep -oE 'HTTP [0-9]+' | cut -d' ' -f2
 }
 
@@ -95,6 +96,7 @@ for id in testTikTokGia001 testGeminiGia001; do
 done
 "${DC_TEST[@]}" up -d n8n >/dev/null 2>&1
 wait_n8n
+curl -s -o "$TMP/out" -X POST "$N8N/webhook/tiktok-mock/reset"
 sql "INSERT INTO tokens (shop_id, shop_cipher, shop_name, access_token, access_token_expires_at,
                          refresh_token, refresh_token_expires_at)
      VALUES ('dien-tap-shop', 'mock_cipher', 'Shop diễn tập', 'mock_at_dientap', now() + interval '7 days',
