@@ -26,6 +26,12 @@ Thành viên ──Tailscale──▶ Odoo, n8n                └──▶ Post
 | `scripts/backup.sh`, `scripts/restore.sh` | Sao lưu ngay (database + workflow JSON); khôi phục một database |
 | `scripts/fix-docker-desktop.ps1` | Sửa lỗi Docker Desktop sập khi khởi động trên máy trưởng nhóm |
 | `backups/` | Bản sao lưu database và workflow (không đưa lên GitHub) |
+| `cua-hang/` | **M1**: sản phẩm, `sku-map`, bộ test chatbot, câu test NLU |
+| `odoo/` | **M2**: cấu hình Odoo, hướng dẫn đóng gói, kết quả test |
+| `noi-dung/` | **M4**: kịch bản video, Apps Script KPI, A/B, GMV Max, dashboard |
+| `bao-cao/` | Báo cáo cuối, mỗi người một file |
+
+**Làm việc nhóm:** ai giữ thư mục nào, cách tạo nhánh, mở pull request và đưa workflow n8n vào repo xem [CONTRIBUTING.md](CONTRIBUTING.md). Bảng phân công: [docs/phan-cong-nhom.xlsx](docs/phan-cong-nhom.xlsx) (bản đang dùng nằm trên Google Sheet).
 
 ## Phần dành cho trưởng nhóm: dựng lần đầu
 

@@ -1,0 +1,15 @@
+# Người duyệt bắt buộc theo thư mục. Thay ten-github-m1... bằng tên GitHub thật của từng bạn.
+*                       @ten-github-m3
+
+/cua-hang/              @ten-github-m1 @ten-github-m3
+/danh-gia/              @ten-github-m1 @ten-github-m3
+
+/odoo/                  @ten-github-m2
+/n8n/workflows/m2-*     @ten-github-m2 @ten-github-m3
+/contracts/odoo/        @ten-github-m2
+
+/noi-dung/              @ten-github-m4
+/n8n/workflows/m4-*     @ten-github-m4 @ten-github-m3
+
+/contracts/             @ten-github-m3 @ten-github-m2
+/bao-cao/               @ten-github-m3
