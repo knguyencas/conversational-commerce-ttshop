@@ -22,9 +22,10 @@ Môn Công nghệ thông tin trong thương mại điện tử · Nhóm 4 ngư�
 
 | Thành phần | Số lượng |
 |---|---|
-| Container Docker | 5: PostgreSQL, Odoo, n8n, ngrok, NLU |
-| Workflow n8n | 14 (11 của M3, 3 giữ chỗ cho M2) + 4 workflow test; M2 còn tự tạo thêm Đồng bộ tồn kho và Tra sản phẩm Odoo |
-| Bảng dữ liệu middleware | 11 bảng, 4 view |
+| Container Docker | 6: PostgreSQL, Odoo, n8n, ngrok, sao lưu, NLU |
+| Workflow n8n | 16 (12 của M3, 4 giữ chỗ cho M2) + 4 workflow test; M2 còn tự tạo thêm Tra sản phẩm Odoo |
+| Bảng dữ liệu middleware | 11 bảng, 8 view (3 báo cáo, 5 KPI) |
+| Kiểm tra cả luồng | Script diễn tập 13 bước, đạt 13/13 ngày 06/11/2026 |
 | Mô hình AI nhóm tự làm | 2 PhoBERT (ý định, thông tin) + 1 mô hình mua kèm + 1 bandit |
 | Chi phí hạ tầng | 0đ (tự host, gói miễn phí) |
 
@@ -67,6 +68,8 @@ TẦNG 3 · MIDDLEWARE: n8n (M3) ── chạy trên máy chủ nhóm bằng Doc
   │     └─ sắp hết ủy quyền ─────► M3 · Token
   ├─ M3 · TikTok API (ký mọi lệnh gọi TikTok) ── dùng chung cho mọi workflow
   ├─ M3 · Đặt vận chuyển ◄── Odoo báo "đã đóng gói"
+  ├─ M2 · Đồng bộ tồn kho ◄── lịch 15 phút, sau tạo/hủy đơn
+  ├─ M3 · KPI cho dashboard ◄── Google Sheet của M4 hỏi mỗi giờ
   └─ M3 · Xử lý lỗi ◄── mọi workflow lỗi
         │ JSON-RPC            │ HTTP nội bộ        │ HTTPS
         ▼                     ▼                    ▼
@@ -75,10 +78,10 @@ TẦNG 4 · HỆ THỐNG NỘI BỘ VÀ AI
   tồn kho, đơn, serial        ý định + thông tin    trả lời (không quyết
   (nguồn sự thật)             (nhóm tự train)       định số liệu)
         │
-  PostgreSQL: DB odoo · DB n8n · DB middleware (11 bảng dùng chung)
-        │
+  PostgreSQL: DB odoo · DB n8n · DB middleware (11 bảng, 8 view)
+        │                         └─ container backup: dump mỗi 24 giờ, giữ 14 ngày
 TẦNG 5 · ĐO LƯỜNG
-  chat_logs, order_status_log, upsell_report ─► Google Sheet ─► Looker Studio (M4)
+  view kpi_* ─► M3 · KPI (CSV) ─► ngrok ─► Apps Script ─► Google Sheet ─► Looker Studio (M4)
 ```
 
 ### 1.3. Năm nguyên tắc thiết kế
@@ -183,7 +186,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
   1. Cài Docker Desktop cho Windows (dùng WSL 2), bật *Start when you sign in*.
   2. `cp .env.example .env`, điền mật khẩu, khóa (xem README).
   3. `docker compose up -d`.
-- **Năm container:**
+- **Sáu container:**
 
   | Container | Image | Cổng ra máy | Vai trò |
   |---|---|---|---|
@@ -191,7 +194,11 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
   | `odoo` | `odoo:19` | `8069` | ERP kho, đơn |
   | `n8n` | `n8nio/n8n` (2.45) | `5678` | Middleware |
   | `ngrok` | `ngrok/ngrok` | `127.0.0.1:4040` (trang xem request) | Đường hầm HTTPS cho TikTok |
+  | `backup` | `postgres:17` | không mở | Sao lưu tự động mọi database và tệp của Odoo (mục 3.6) |
   | `nlu` | `cntttmdt-nlu` (tự build) | `127.0.0.1:8000` | Mô hình PhoBERT; chỉ chạy khi bật `COMPOSE_PROFILES=nlu` |
+
+- **Container sao lưu:** dùng lại image `postgres:17` để có sẵn `pg_dump`, chạy `scripts/backup-loop.sh`. Mỗi giờ script xem bản sao lưu mới nhất; nếu đã cũ hơn 24 giờ thì dump mọi database (`pg_dump -Fc`), tài khoản PostgreSQL (`pg_dumpall --globals-only`) và filestore của Odoo (ảnh, tệp đính kèm) vào `backups/db/<ngày-giờ>/`, rồi xóa bản cũ hơn 14 ngày. Laptop tắt qua đêm thì lần bật sau sao lưu bù. Bản đang ghi dở mang đuôi `.partial`, nên không bao giờ bị nhầm là bản hoàn chỉnh.
+- **File ghi đè `docker-compose.dien-tap.yml`:** khi diễn tập, n8n được khởi động lại với địa chỉ TikTok và Gemini trỏ vào workflow giả nằm ngay trong n8n. Cách này dùng tính năng gộp nhiều file compose (`-f a.yml -f b.yml`), không phải sửa `.env`.
 
 - **Chức năng dùng:**
   - **volume** giữ dữ liệu qua các lần khởi động lại (`db-data`, `odoo-data`, `n8n-data`);
@@ -214,7 +221,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
   - khóa chính, `UNIQUE`, `CHECK` (vd `mode IN ('bot','staff')`);
   - **`INSERT ... ON CONFLICT DO NOTHING`** để chống xử lý trùng;
   - **CTE ghi dữ liệu** (`WITH ... UPDATE ... RETURNING`): làm nhiều việc trong một câu lệnh, ví dụ vừa thưởng bandit vừa ghi đơn;
-  - **view** cho báo cáo; kiểu `jsonb` để lưu dữ liệu gốc của sự kiện.
+  - **view** cho báo cáo và KPI (`percentile_cont` tính độ trễ p90, `FILTER` đếm có điều kiện, `generate_series` tạo đủ 90 ngày kể cả ngày không có số liệu); kiểu `jsonb` để lưu dữ liệu gốc của sự kiện.
 - **Bảo mật:** mật khẩu trong `.env`; cổng chỉ mở cho `127.0.0.1`; mọi truy vấn từ n8n dùng **tham số** (chống SQL injection).
 
 ### 2.6. n8n: middleware
@@ -225,11 +232,20 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
   - Tự host nên **không giới hạn số lần chạy**.
   - Cả nhóm cùng sửa qua trình duyệt.
   - Không phải viết backend từ đầu.
-- **Ai làm:** **M3** dựng và làm 11 workflow; M2, M4 có tài khoản riêng làm workflow của mình (tên bắt đầu `M2 ·`, `M4 ·`).
+- **Ai làm:** **M3** dựng và làm 12 workflow; M2, M4 có tài khoản riêng làm workflow của mình (tên bắt đầu `M2 ·`, `M4 ·`).
 - **Dựng thế nào:**
   1. Container `n8n` dùng database `n8n` trong PostgreSQL.
   2. Mở `http://<IP Tailscale>:5678`, tạo tài khoản owner, mời M2, M4.
   3. Chạy `scripts/import-n8n.sh` để nạp credential Postgres và toàn bộ workflow từ `n8n/workflows/`, publish, khởi động lại n8n.
+- **Giới hạn của bản Community miễn phí (đã thử thật trên n8n 2.45.4, ngày 05/11/2026):**
+
+  | Việc | Kết quả |
+  |---|---|
+  | Mời member, lấy link mời mà không cần cài máy chủ email | Được |
+  | Chia sẻ workflow hoặc credential cho người khác | Không: n8n trả *Plan lacks license for this feature* |
+  | Nâng member thành admin | Không, cùng lỗi trên |
+
+  Vì vậy member chỉ thấy và sửa được workflow, credential của chính mình. Workflow chạy thật phải nằm ở tài khoản owner với `id` cố định như trong `n8n/workflows/`, vì Router gọi workflow con theo `id`. Quy trình nhóm thống nhất: M2, M4 làm và thử trong tài khoản riêng, tải file JSON về, đổi `id` thành `id` của file giữ chỗ, gửi trưởng nhóm; trưởng nhóm chạy `scripts/import-n8n.sh` để nạp đè vào tài khoản owner. Chi tiết ở [huong-dan-tai-khoan-n8n.md](huong-dan-tai-khoan-n8n.md).
 - **Khái niệm cần nắm:**
 
   | Khái niệm | Nghĩa | Dùng ở đâu |
@@ -264,7 +280,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 - **Chức năng dùng:**
   - Sales Order (mã đơn TikTok ghi ở `client_order_ref`);
   - phiếu xuất kho (đóng gói, quét serial, bấm Validate);
-  - tồn kho (`qty_available`);
+  - tồn kho có thể bán (`free_qty`: tồn thực trừ hàng đã giữ cho đơn chưa giao), là số đẩy lên TikTok;
   - JSON-RPC API để n8n đọc/ghi;
   - Automation Rule để báo n8n.
 - **Bốn workflow M2 nối Odoo với middleware:** Tạo đơn, Hủy đơn, Đồng bộ tồn kho, Cập nhật Odoo (vận chuyển). Thêm `M2 · Tra sản phẩm Odoo` để chatbot chuyển từ dữ liệu giả sang dữ liệu thật.
@@ -339,8 +355,20 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 - **Google Sheets:**
   - sheet sản phẩm chuẩn (M1): SKU, tên, giá, thông số, phụ kiện tương thích; là nguồn để import vào Odoo;
   - sheet bộ test chatbot (M1);
-  - sheet số liệu n8n xuất mỗi ngày (M4).
-- **Looker Studio (M4):** dashboard KPI đọc thẳng Google Sheet. Gồm CTR, ROI quảng cáo, tỉ lệ chat ra đơn, giá trị đơn trung bình, độ chính xác và thời gian trả lời của bot, độ trễ xử lý đơn, tỉ lệ nhận lời mời mua kèm. Nguồn số liệu: `chat_logs`, `order_status_log`, `upsell_report`, Ads Manager.
+  - sheet KPI do Apps Script kéo từ middleware về mỗi giờ (M4).
+- **Looker Studio (M4):** dashboard KPI đọc thẳng Google Sheet. Gồm CTR, ROI quảng cáo, tỉ lệ chat ra đơn, giá trị đơn trung bình, độ chính xác và thời gian trả lời của bot, độ trễ xử lý đơn, tỉ lệ nhận lời mời mua kèm.
+- **Số liệu đi từ middleware tới dashboard thế nào:**
+
+  ```
+  PostgreSQL (view kpi_*) → M3 · KPI cho dashboard (CSV) → ngrok → Apps Script trong Google Sheet → Looker Studio
+  ```
+
+  1. Các view `kpi_*` tính sẵn chỉ số theo ngày từ `chat_logs`, `conversations`, `order_status_log`, `processed_events`, `upsell_offers`, `upsell_order_stats` (mục 3.3).
+  2. Workflow `M3 · KPI cho dashboard` trả một view dưới dạng CSV khi có mã truy cập đúng.
+  3. Trong Google Sheet của M4, một hàm Apps Script chạy mỗi giờ, gọi workflow qua domain ngrok với header `x-kpi-key` và `ngrok-skip-browser-warning` (header thứ hai để vượt trang cảnh báo của ngrok bản miễn phí), rồi ghi mỗi bảng vào một tab. Không dùng hàm `=IMPORTDATA()` vì hàm này không gửi được header.
+  4. Looker Studio đọc tab `tong_hop`, ghép với số liệu Ads Manager theo cột `ngay`.
+
+  Máy chủ nhóm tắt thì lần chạy đó báo lỗi và Sheet giữ số cũ; lần sau lấy lại đủ 90 ngày. Hướng dẫn cài đặt: [huong-dan-kpi-dashboard.md](huong-dan-kpi-dashboard.md).
 
 ### 2.15. Creatomate và FPT.AI TTS: video tự động
 
@@ -358,8 +386,8 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 
 ### 2.16. Google Drive và GitHub: lưu trữ và chia sẻ
 
-- **Drive:** ảnh và video sản phẩm, mô hình đã train (`nlu/outputs`, `upsell/outputs`), bản sao lưu workflow.
-- **GitHub:** mã nguồn repo (workflow JSON, SQL, script, hợp đồng dữ liệu, tài liệu). `.gitignore` đã chặn `.env`, `backups/` và mô hình.
+- **Drive:** ảnh và video sản phẩm, mô hình đã train (`nlu/outputs`, `upsell/outputs`), bản sao của thư mục `backups/`.
+- **GitHub:** mã nguồn repo (workflow JSON, SQL, script, hợp đồng dữ liệu, tài liệu). `.gitignore` đã chặn `.env`, `backups/` và mô hình. Repo đã có trên máy trưởng nhóm (nhánh `main`); trước commit đầu tiên đã quét toàn repo để chắc không có giá trị nào trong `.env` lọt vào file. Chưa đẩy lên GitHub vì cần tài khoản của trưởng nhóm; khi đẩy thì để chế độ **Private**.
 
 ---
 
@@ -380,10 +408,11 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 | **M3 · Đặt vận chuyển** | M3 | Webhook `POST /webhook/odoo-picking-done` | Đóng gói xong thì đặt lấy hàng, lấy phiếu, ghi log | TikTok API, M2 · Cập nhật Odoo |
 | **M3 · Trạng thái đơn** | M3 | Router | Ghi trạng thái giao, nhắn mã vận đơn, báo hàng hoàn | TikTok API, Gửi tin TikTok, M2 · Cập nhật Odoo |
 | **M3 · Ghi nhận mua kèm** | M3 | Router (đơn mới), lịch mỗi giờ | Thưởng/phạt bandit, thống kê đơn | TikTok API |
+| **M3 · KPI cho dashboard** | M3 | Webhook `GET /webhook/kpi-dashboard?bang=…` | Kiểm mã truy cập, đọc một view `kpi_*`, trả CSV | PostgreSQL |
 | M2 · Tạo đơn | M2 | Router | (giữ chỗ) Tạo Sales Order, ghi `order_status_log` | Odoo |
 | M2 · Hủy đơn | M2 | Router | (giữ chỗ) Hủy Sales Order | Odoo |
 | M2 · Cập nhật Odoo (vận chuyển) | M2 | M3 gọi | (giữ chỗ) Ghi mã vận đơn, trạng thái vào Odoo | Odoo |
-| M2 · Đồng bộ tồn kho | M2 | Lịch 15 phút + sau xuất kho | (chưa có) Đẩy tồn kho lên TikTok | Odoo, TikTok API |
+| M2 · Đồng bộ tồn kho | M2 | Lịch 15 phút (đang tắt) + Tạo đơn, Hủy đơn gọi | (giữ chỗ) Đẩy số có thể bán từ Odoo lên TikTok | Odoo, TikTok API |
 | TEST · … (4 workflow) | M3 | Webhook | TikTok giả, Gemini giả, gọi chatbot / TikTok API bằng script. **Chỉ publish khi test** | — |
 
 ### 3.2. Từng workflow, từng bước
@@ -483,6 +512,36 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
   3. Ghi `upsell_order_stats` (giá trị đơn, nhóm `offer`/`control`, số món mua kèm).
 - **Mỗi giờ:** lượt mời quá 48 giờ mà không mua thì `reward = 0`, `beta + 1`.
 
+#### M3 · KPI cho dashboard
+1. Google Sheet của M4 gọi `GET /webhook/kpi-dashboard?bang=<tên bảng>`, mã truy cập đặt trong header `x-kpi-key`.
+2. **Kiểm mã:** so với `KPI_SECRET` trong `.env`. Hai bên được băm SHA-256 rồi so bằng `timingSafeEqual`, để thời gian so sánh không lộ mã đúng tới đâu. Sai thì trả **401**.
+3. **Chọn view theo danh sách trắng:**
+
+   | `bang` | View |
+   |---|---|
+   | `tong_hop` | `kpi_tong_hop_ngay` |
+   | `chatbot` | `kpi_chatbot_ngay` |
+   | `y_dinh` | `kpi_y_dinh_ngay` |
+   | `chat_ra_don` | `kpi_chat_ra_don_ngay` |
+   | `xu_ly_don` | `kpi_xu_ly_don` |
+   | `mua_kem` | `upsell_offer_report` |
+   | `ab_mua_kem` | `upsell_report` |
+
+   Tên khác thì trả **400** kèm danh sách tên đúng. Tên view luôn lấy từ bảng trên, không bao giờ từ tham số người gọi, nên không thể chèn SQL qua `bang`.
+4. **Đọc view:** mỗi dòng đổi thành JSON bằng `row_to_json` (giữ đúng thứ tự cột, ngày ở dạng `2026-11-06` thay vì bị đổi múi giờ); tên cột lấy từ `information_schema.columns`, nên bảng chưa có dòng nào vẫn có dòng tiêu đề.
+5. **Ghép CSV**, ngày mới nhất lên đầu, trả `text/csv; charset=utf-8`.
+
+#### M2 · Đồng bộ tồn kho (giữ chỗ)
+- **Kích hoạt:** lịch 15 phút một lần để bắt kịp nhập hàng tay (node đang tắt, M2 bật khi làm xong); và `M2 · Tạo đơn`, `M2 · Hủy đơn` gọi ở bước cuối, không chờ kết quả.
+- **Vào:** `{ly_do, seller_skus, tiktok_order_id}`; danh sách SKU trống nghĩa là đồng bộ tất cả. Node *Chuẩn hóa yêu cầu* đã gom hai nguồn kích hoạt về một dạng.
+- **M2 làm tiếp:**
+  1. đọc `free_qty` trong Odoo theo SKU;
+  2. đổi SKU sang mã TikTok qua `sku_map`;
+  3. lấy mã kho TikTok một lần rồi nhớ trong static data của workflow;
+  4. gọi `M3 · TikTok API` với `POST /product/202309/products/{product_id}/inventory/update`, gom theo sản phẩm, số âm gửi 0.
+- **Vì sao không gọi khi đóng gói:** hàng đã được giữ từ lúc xác nhận Sales Order, nên phiếu xuất kho chuyển *Done* không làm đổi số có thể bán.
+- **Hợp đồng:** `contracts/internal/ton_kho.md`, kèm 4 phép thử khi làm xong.
+
 #### M3 · Xử lý lỗi
 Error Trigger → gom tên workflow, node, mã lần chạy, thông báo lỗi → ghi `failed_jobs` (`open`) → soạn tin → gửi nhóm chat. Node gửi đang tắt, chờ nhóm chọn Discord hoặc Telegram.
 
@@ -502,7 +561,24 @@ Error Trigger → gom tên workflow, node, mã lần chạy, thông báo lỗi �
 | `upsell_offers` | `id` | cuộc chat, người mua, ngữ cảnh, SKU mời, `reward` | Chatbot, Ghi nhận mua kèm | Báo cáo |
 | `upsell_order_stats` | `order_id` | tổng tiền, nhóm offer/control, số món mua kèm | Ghi nhận mua kèm | `upsell_report` |
 
-**View:** `order_latest_status` (trạng thái mới nhất mỗi đơn), `upsell_report` (giá trị đơn theo nhóm), `upsell_offer_report` (tỉ lệ nhận lời theo món).
+**View báo cáo:** `order_latest_status` (trạng thái mới nhất mỗi đơn), `upsell_report` (giá trị đơn theo nhóm), `upsell_offer_report` (tỉ lệ nhận lời theo món).
+
+**View KPI** (`init/04-kpi.sql`, ngày tính theo giờ Việt Nam):
+
+| View | Một dòng là | Chỉ số |
+|---|---|---|
+| `kpi_chatbot_ngay` | một ngày có chat | số tin, số cuộc chat, thời gian trả lời trung bình và p90, tỉ lệ đúng giá, tỉ lệ phải viết lại, tỉ lệ chuyển người |
+| `kpi_y_dinh_ngay` | một ngày × một ý định | số tin theo từng ý định |
+| `kpi_chat_ra_don_ngay` | ngày bắt đầu cuộc chat | số cuộc chat mới, số cuộc có đơn trong 7 ngày, tỉ lệ chat ra đơn |
+| `kpi_xu_ly_don` | một đơn | các mốc nhận đơn, tạo Sales Order, đặt vận chuyển, giao xong; thời gian giữa các mốc |
+| `kpi_tong_hop_ngay` | một ngày, 90 ngày gần nhất | gộp các chỉ số trên, cùng số đơn, giá trị đơn trung bình (chung, nhóm được mời, nhóm không mời), số lời mời mua kèm, tỉ lệ nhận lời |
+
+Cách tính các chỉ số chính:
+- **Tỉ lệ đúng giá:** phần trăm câu trả lời qua bước soát giá ngay lần đầu.
+- **Tỉ lệ chat ra đơn:** cuộc chat mới mà người mua có đơn (`upsell_order_stats`) trong 7 ngày sau đó.
+- **Thời gian tạo đơn:** từ lúc Router nhận sự kiện đơn (`processed_events`) tới dòng `odoo_created`. **Thời gian đóng gói:** từ `odoo_created` tới `shipping_arranged`.
+- **Hiệu quả mua kèm (A/B):** giá trị đơn trung bình nhóm `offer` so với nhóm `control`.
+- Độ chính xác trên bộ 100 câu không nằm trong log; lấy từ kết quả `danh-gia/cham_chatbot.py` và nhập tay vào dashboard.
 
 ### 3.4. Hợp đồng dữ liệu (`contracts/`)
 
@@ -513,6 +589,7 @@ Error Trigger → gom tên workflow, node, mã lần chạy, thông báo lỗi �
 | `internal/tiktok_api.md` | Mọi workflow ↔ `M3 · TikTok API` |
 | `internal/tool_san_pham.md` | Chatbot (M3) ↔ dữ liệu sản phẩm Odoo (M2) |
 | `internal/van_chuyen.md`, `odoo_picking_done.json` | Odoo (M2) ↔ Đặt vận chuyển / Trạng thái đơn (M3) |
+| `internal/ton_kho.md` | Odoo (M2) → TikTok qua `M3 · TikTok API`: khi nào đồng bộ, dữ liệu vào, body cập nhật tồn kho, cách kiểm |
 
 ### 3.5. Bảo mật
 
@@ -521,6 +598,7 @@ Error Trigger → gom tên workflow, node, mã lần chạy, thông báo lỗi �
 | Kẻ lạ gửi webhook giả vào link ngrok | Chữ ký HMAC-SHA256 bằng App Secret; sai thì 401 |
 | Link ủy quyền giả | Tham số `state` bí mật (`TIKTOK_OAUTH_STATE`) |
 | Kẻ lạ gọi giả "Odoo đã đóng gói" | Mã bí mật `ODOO_WEBHOOK_SECRET` trong URL webhook |
+| Kẻ lạ đọc số liệu kinh doanh qua link KPI | Mã `KPI_SECRET` trong header (không nằm trong URL nên không lưu vào log); tên bảng chọn theo danh sách trắng |
 | Lộ mật khẩu, khóa | Chỉ nằm trong `.env` (không lên GitHub) và Credentials n8n (mã hóa) |
 | Lộ database, Odoo ra internet | Postgres chỉ mở `127.0.0.1`; Odoo chỉ vào được qua Tailscale |
 | SQL injection từ tin nhắn khách | Mọi câu SQL dùng tham số `$1, $2` |
@@ -541,6 +619,35 @@ Error Trigger → gom tên workflow, node, mã lần chạy, thông báo lỗi �
 | Chưa có Customer Service API | Bot vẫn chạy và ghi log; demo qua khung chat thử |
 | Odoo gửi lại webhook đóng gói | Không đặt vận chuyển lần 2 |
 | TikTok báo trạng thái cũ | Không ghi trùng, không nhắn khách lần 2 |
+| Đơn đã hủy hoặc đã giao mà kho vẫn báo đóng gói | Đặt vận chuyển kiểm trạng thái đơn trên TikTok trước, không đúng `AWAITING_SHIPMENT` thì dừng và ghi lỗi |
+| Hỏng ổ đĩa, xóa nhầm dữ liệu | Sao lưu tự động mỗi 24 giờ, giữ 14 ngày; khôi phục bằng một lệnh |
+| Sửa workflow làm hỏng luồng mà không biết | Chạy script diễn tập trước mỗi lần ghép và trước demo |
+
+**Sao lưu và khôi phục.**
+- **Tự động:** container `backup` (mục 2.4) dump mọi database và filestore Odoo vào `backups/db/<ngày-giờ>/`.
+- **Sao lưu ngay**, cuối mỗi buổi làm: `scripts/backup.sh`. Script dump database, rồi xuất toàn bộ workflow ra JSON vào `backups/n8n/<ngày-giờ>/`, gồm cả workflow M2, M4 sửa trong giao diện. Lần chạy thử ngày 05/11 xuất được 20 workflow.
+- **Khôi phục:** `scripts/restore.sh <ngày-giờ> <tên database> --yes`. Script tạm dừng n8n và Odoo, chạy `pg_restore --clean`, rồi bật lại. Thiếu `--yes` thì script từ chối chạy, vì lệnh này ghi đè dữ liệu.
+- **Đã thử khôi phục:** nạp bản sao lưu database `middleware` vào một database tạm, được đủ 19 bảng và view cùng 21 luật mua kèm, khớp với bản gốc; sau đó xóa database tạm. Không thử trên database thật.
+- **Khóa:** database `n8n` chứa credential đã mã hóa bằng `N8N_ENCRYPTION_KEY`. Bản `.env` được giữ riêng trong trình quản lý mật khẩu, không để chung với bản sao lưu.
+
+**Diễn tập cả luồng** (`scripts/dien-tap.sh`, khoảng 3 phút). Script chạy trên chính hệ thống thật, nhưng trỏ n8n vào TikTok giả và Gemini giả:
+1. Nạp và publish hai workflow `TEST · TikTok giả`, `TEST · Gemini giả`; khởi động lại n8n với `docker-compose.dien-tap.yml`; chép lại bảng `bandit_arms`; tạo token giả.
+2. Gửi lần lượt các webhook có chữ ký như TikTok thật, rồi chờ kết quả trong database. Mỗi bước in `[ĐẠT]` hoặc `[HỎNG]`:
+
+   | Bước | Kiểm |
+   |---|---|
+   | Khách hỏi giá | Router trả 200; chatbot trả lời, đúng giá, ghi `chat_logs` |
+   | Khách đặt đơn | Router trả 200; đơn vào thống kê mua kèm; gửi lại cùng webhook không tạo bản trùng |
+   | Kho đóng gói xong | Đặt vận chuyển trả 200 và ghi `shipping_arranged`; sai mã bí mật bị chặn (401) |
+   | Hãng vận chuyển cập nhật | Router trả 200; ghi `IN_TRANSIT` kèm mã vận đơn |
+   | An toàn và đo lường | Webhook sai chữ ký bị chặn (401); KPI hôm nay có tin nhắn và đơn; không có lỗi mới trong `failed_jobs` |
+
+   Bước Tạo đơn của M2 còn là giữ chỗ, nên script tự ghi dòng `odoo_created` thay cho M2.
+3. **Dọn sạch**, kể cả khi bị ngắt giữa chừng: xóa mọi dòng thử, trả `bandit_arms` về như cũ để lần diễn tập không làm lệch việc học của bandit, gỡ publish workflow giả, đưa n8n về cấu hình thật.
+
+TikTok giả có một đơn thử (mã đuôi `344`) mang trạng thái `AWAITING_SHIPMENT` cho tới khi gói hàng được đặt ship, sau đó chuyển sang `IN_TRANSIT`, giống đơn thật. Lần chạy đầu dùng đơn luôn ở `IN_TRANSIT` nên hỏng 2 bước: Đặt vận chuyển từ chối đặt ship cho đơn "đang giao", đúng như chốt an toàn phải làm. **Kết quả ngày 06/11/2026: 13/13 bước đạt**, không có lỗi mới, dữ liệu thử đã được dọn hết.
+
+Không chạy diễn tập khi shop đang có khách thật, vì trong mấy phút đó n8n gọi TikTok giả.
 
 ---
 
@@ -575,7 +682,7 @@ Nguyên tắc: **mô hình quyết định *mời gì* và *hiểu gì*; LLM ch�
 | 11. Hỏi đơn | Khách hỏi "đơn tới đâu rồi": chatbot đọc `order_latest_status` | Chatbot | 1–2 giây |
 | 12. Nhận hàng | `DELIVERED`/`COMPLETED` được ghi lại; TikTok chuyển tiền (đã trừ phí, thuế) về tài khoản shop | TikTok | — |
 | Ngoại lệ | Hủy trước khi giao: M2 · Hủy đơn trả hàng về kho. Hủy sau khi giao cho hãng: báo nhóm theo dõi hàng hoàn. Khiếu nại: chuyển người (M1) | — | — |
-| Chạy nền | Token làm mới mỗi ngày; lượt mời quá 48 giờ được đóng mỗi giờ; mọi lỗi vào `failed_jobs`; số liệu xuất mỗi ngày cho dashboard | — | — |
+| Chạy nền | Token làm mới mỗi ngày; lượt mời quá 48 giờ được đóng mỗi giờ; mọi lỗi vào `failed_jobs`; Google Sheet lấy KPI mỗi giờ cho dashboard; sao lưu mỗi 24 giờ | — | — |
 
 ---
 
@@ -636,9 +743,9 @@ Mục tiêu KPI đặt theo mức trung bình ngành điện tử (CTR 0,64%, RO
 | Thành viên | Phần | Nền tảng | Nối vào middleware qua |
 |---|---|---|---|
 | **M1** | Cửa hàng, dữ liệu sản phẩm, trực chat, bộ test | Seller Center, Google Sheets | `sku_map`; bấm link ủy quyền; trực cuộc chat bị chuyển (`conversations.mode = staff`); bộ 100 câu cho `danh-gia/cham_chatbot.py`; tập test NLU |
-| **M2** | Kho và đơn hàng | Odoo, n8n | Workflow `M2 ·` nhận sự kiện từ Router; ghi `order_status_log`; webhook Odoo `odoo-picking-done`; `M2 · Tra sản phẩm Odoo` theo `tool_san_pham.md`; `M2 · Cập nhật Odoo (vận chuyển)` theo `van_chuyen.md`; gọi TikTok qua `M3 · TikTok API` |
+| **M2** | Kho và đơn hàng | Odoo, n8n | Workflow `M2 ·` nhận sự kiện từ Router; ghi `order_status_log`; webhook Odoo `odoo-picking-done`; `M2 · Tra sản phẩm Odoo` theo `tool_san_pham.md`; `M2 · Cập nhật Odoo (vận chuyển)` theo `van_chuyen.md`; `M2 · Đồng bộ tồn kho` theo `ton_kho.md`; gọi TikTok qua `M3 · TikTok API` |
 | **M3** | Hạ tầng, middleware, chatbot, lớp AI, ghép nối | Docker, n8n, PostgreSQL, ngrok, Tailscale, Partner Center, Gemini, Colab, FastAPI | Giữ quy ước, hợp đồng dữ liệu; chủ trì 3 lần ghép |
-| **M4** | Nội dung, quảng cáo, đo lường | TikTok Studio, Ads Manager, Creatomate, FPT.AI, Looker Studio | Workflow `M4 · Video`; đọc `chat_logs`, `order_status_log`, `upsell_report` cho dashboard |
+| **M4** | Nội dung, quảng cáo, đo lường | TikTok Studio, Ads Manager, Creatomate, FPT.AI, Looker Studio | Workflow `M4 · Video`; Google Sheet lấy KPI qua `M3 · KPI cho dashboard` (mã `KPI_SECRET` do trưởng nhóm gửi riêng) |
 
 **Ba lần ghép:**
 1. **Chatbot đọc dữ liệu thật** (M1, M2, M3): đổi Tool sản phẩm giả sang `M2 · Tra sản phẩm Odoo`. Đạt khi bot trả đúng giá 5 SKU bất kỳ và qua bộ test 100 câu.
@@ -654,24 +761,30 @@ Mục tiêu KPI đặt theo mức trung bình ngành điện tử (CTR 0,64%, RO
 1. Cài Docker Desktop, Git for Windows (Git Bash), Tailscale.
 2. Lấy repo về; `cp .env.example .env`; điền mật khẩu và khóa:
    - `openssl rand -hex 32` cho `N8N_ENCRYPTION_KEY`;
-   - `openssl rand -hex 16` cho `ODOO_WEBHOOK_SECRET`;
+   - `openssl rand -hex 16` cho `ODOO_WEBHOOK_SECRET` và `KPI_SECRET`;
    - `openssl rand -hex 8` cho `TIKTOK_OAUTH_STATE`;
    - token và domain ngrok.
-3. `docker compose up -d`. Lần đầu tải image vài phút; PostgreSQL tự chạy `init/*.sql`.
-4. `scripts/import-n8n.sh`: nạp credential, 14 workflow, publish. Chờ 30 giây.
+3. `docker compose up -d`. Lần đầu tải image vài phút; PostgreSQL tự chạy `init/*.sql` (database, bảng middleware, bảng mua kèm, view KPI).
+4. `scripts/import-n8n.sh`: nạp credential, 16 workflow, publish. Chờ 30 giây.
 5. Mở n8n, tạo owner, mời M2, M4. Mở Odoo, M2 tạo database.
-6. Kiểm tra: `scripts/send-test-webhook.sh contracts/tiktok/webhooks/order_status_change.json` trả `HTTP 200`.
+6. Kiểm tra nhanh: `scripts/send-test-webhook.sh contracts/tiktok/webhooks/order_status_change.json` trả `HTTP 200`. Kiểm tra đủ: `scripts/dien-tap.sh` ra 13/13 bước đạt.
+
+Máy đã dựng trước ngày 05/11/2026 có database cũ, nên `init/04-kpi.sql` không tự chạy. Chạy tay một lần: `docker compose exec -T db psql -U odoo -d postgres < init/04-kpi.sql`, rồi `docker compose up -d` để thêm container `backup` và biến `KPI_SECRET`, và `scripts/import-n8n.sh` để nạp 2 workflow mới.
 
 ### 8.2. Vận hành hằng ngày
 
 | Việc | Lệnh / nơi xem |
 |---|---|
-| Hệ thống có chạy không | `docker compose ps` (cả 4 container `running`) |
+| Hệ thống có chạy không | `docker compose ps` (`db`, `odoo`, `n8n`, `ngrok`, `backup` đều `running`; thêm `nlu` khi bật profile) |
 | Docker không lên (lỗi socket) | `powershell -ExecutionPolicy Bypass -File scripts\fix-docker-desktop.ps1` |
 | Lỗi chưa xử lý | `select * from failed_jobs where status = 'open';` |
 | Xem log n8n | `docker compose logs -f n8n` |
 | Xem request TikTok gửi vào | `http://localhost:4040` (ngrok) |
-| Sao lưu cuối buổi | `MSYS_NO_PATHCONV=1 docker compose exec n8n n8n export:workflow --all --separate --output=/backups/workflows/` và `pg_dump` database middleware (README, mục Sao lưu) |
+| Sao lưu tự động có chạy không | `docker compose logs backup` (dòng "sao lưu xong") và `ls backups/db` |
+| Sao lưu cuối buổi | `scripts/backup.sh` |
+| Khôi phục một database | `scripts/restore.sh <ngày-giờ> <database> --yes` |
+| Trước buổi ghép, trước demo | `scripts/dien-tap.sh` (13/13 bước đạt) |
+| Xem KPI hôm nay | `select * from kpi_tong_hop_ngay order by ngay desc limit 1;` |
 | Thử bot | n8n → `M3 · Chat thử` → Open chat |
 
 ### 8.3. Di chuyển sang máy khác hoặc máy chủ đám mây
@@ -679,7 +792,7 @@ Mục tiêu KPI đặt theo mức trung bình ngành điện tử (CTR 0,64%, RO
 Hệ thống đóng gói hoàn toàn bằng Docker, nên di chuyển gồm 5 bước:
 
 1. **Sao lưu ở máy cũ:**
-   - `docker compose exec db pg_dumpall -U odoo > backups/all.sql` (cả 3 database);
+   - `scripts/backup.sh` đã có bản dump từng database trong `backups/db/`; muốn một file duy nhất thì dùng `docker compose exec db pg_dumpall -U odoo > backups/all.sql` (cả 3 database);
    - sao lưu thư mục dữ liệu Odoo (ảnh, tệp đính kèm), chạy trong Git Bash: `MSYS_NO_PATHCONV=1 docker run --rm -v cntttmdt_odoo-data:/d -v "$(pwd -W)/backups:/b" alpine tar czf /b/odoo-data.tgz -C /d .`;
    - giữ lại file **`.env`**, đặc biệt **`N8N_ENCRYPTION_KEY`** (mất khóa này thì mọi Credentials n8n không đọc được).
 2. **Máy mới:** cài Docker, chép repo, `.env`, thư mục `backups/`.
@@ -691,7 +804,7 @@ Hệ thống đóng gói hoàn toàn bằng Docker, nên di chuyển gồm 5 bư
    - ngrok dùng cùng domain tĩnh (chỉ một nơi chạy cùng lúc, nên tắt máy cũ trước);
    - Tailscale: đăng nhập máy mới, gửi IP mới cho nhóm;
    - đường dẫn webhook không đổi nên Partner Center **không phải khai lại**.
-5. **Kiểm tra** như mục 8.1, bước 6.
+5. **Kiểm tra** như mục 8.1, bước 6 (chạy cả `scripts/dien-tap.sh`).
 
 Lên máy chủ đám mây (VPS Linux) làm y hệt. Khi đó có thể thay ngrok bằng tên miền riêng có HTTPS, và máy chủ không phụ thuộc laptop phải luôn bật.
 
@@ -703,25 +816,33 @@ Lên máy chủ đám mây (VPS Linux) làm y hệt. Khi đó có thể thay ngr
 
 ---
 
-## 9. Hiện trạng (cập nhật 03/11/2026)
+## 9. Hiện trạng (cập nhật 06/11/2026)
 
 **Đã chạy được và đã test bằng dữ liệu giả:**
-- hạ tầng, 11 bảng;
+- hạ tầng 6 container, 11 bảng, 8 view;
 - Router, Xử lý lỗi, TikTok API, Token;
 - Chatbot (gồm mua kèm, gửi TikTok), Gửi tin TikTok;
 - Đặt vận chuyển, Trạng thái đơn, Ghi nhận mua kèm;
+- KPI cho dashboard: trả CSV đúng thứ tự cột; sai mã trả 401, sai tên bảng trả 400;
+- sao lưu tự động, sao lưu ngay, khôi phục (đã thử vào database tạm);
+- diễn tập cả luồng: 13/13 bước đạt;
+- giữ chỗ và hợp đồng Đồng bộ tồn kho cho M2;
 - service NLU;
 - notebook train NLU và mua kèm;
-- script chấm chatbot.
+- script chấm chatbot;
+- repo Git trên máy trưởng nhóm (nhánh `main`), đã quét không lộ khóa.
 
 **Chờ để chạy thật:**
 
 | Việc | Chờ ai |
 |---|---|
 | App TikTok, Customer Service API, ủy quyền, đối chiếu chữ ký và tên API | Shop được duyệt (M1) |
-| Database Odoo, 4 workflow `M2 ·`, webhook đóng gói | M2 |
-| Token và domain ngrok, Tailscale, tài khoản n8n cho nhóm, key Gemini | M3 (tài khoản cá nhân) |
-| Train NLU và mua kèm trên Colab | M3 |
+| Database Odoo, 4 workflow `M2 ·`, `M2 · Tra sản phẩm Odoo`, webhook đóng gói | M2 |
+| Tài khoản owner n8n (chưa tạo) và mời M2, M4 | M3 |
+| Token và domain ngrok (container `ngrok` đang tắt vì chưa có token), Tailscale, key Gemini | M3 (tài khoản cá nhân) |
+| Đẩy repo lên GitHub ở chế độ riêng tư | M3 |
+| Gửi riêng `ODOO_WEBHOOK_SECRET` cho M2, `KPI_SECRET` cho M4 | M3 |
+| Train NLU và mua kèm trên Colab (chưa có mô hình thật) | M3 |
 | Bộ 100 câu test chatbot, tập test NLU | M1 |
-| Google Form thu câu thật, dashboard | M4 |
+| Google Form thu câu thật; Google Sheet + Apps Script + Looker Studio | M4 |
 | Kênh nhóm chat nhận báo lỗi | Cả nhóm chọn |
