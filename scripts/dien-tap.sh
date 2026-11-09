@@ -73,7 +73,10 @@ cleanup() {
            DROP TABLE dien_tap_bandit_arms;
          END IF;
        END \$\$;" >/dev/null || true
+  local giu="testGiaLapForm01 testGiaLapDs0001"
+  grep -q '^TIKTOK_API_BASE=.*tiktok-mock' .env && giu="$giu testTikTokGia001"
   for id in testTikTokGia001 testGeminiGia001; do
+    case " $giu " in *" $id "*) continue ;; esac
     docker compose exec -T n8n n8n unpublish:workflow --id="$id" >/dev/null 2>&1 || true
   done
   docker compose up -d n8n >/dev/null 2>&1 || true

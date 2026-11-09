@@ -1,0 +1,265 @@
+{
+  "id": "testGiaLapForm01",
+  "name": "TEST · Giả lập TikTok (form)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "702dfd20-340a-5d6c-bf27-7a6879d87e4a",
+      "name": "Form giả lập",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "formTitle": "Giả lập TikTok Shop",
+        "formDescription": "Gửi sự kiện y như TikTok gửi (đơn mới, hủy, đang giao, đã giao) và báo đóng gói thay Odoo, để chạy thử các workflow khi chưa có đơn thật.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Mã nhóm",
+              "fieldType": "password",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Việc",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Khách đặt đơn mới"
+                  },
+                  {
+                    "option": "Kho đóng gói xong (thay Odoo báo)"
+                  },
+                  {
+                    "option": "Đơn đang giao"
+                  },
+                  {
+                    "option": "Khách đã nhận hàng"
+                  },
+                  {
+                    "option": "Khách hủy đơn"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Mã đơn",
+              "placeholder": "Để trống khi đặt đơn mới"
+            },
+            {
+              "fieldLabel": "Sản phẩm",
+              "placeholder": "Chỉ khi đặt đơn mới. SKU*số lượng, cách nhau dấu phẩy. Vd: PK-CAP-C2C-1M*2, PK-GIA-DO-DT"
+            },
+            {
+              "fieldLabel": "Tổng tiền",
+              "fieldType": "number",
+              "placeholder": "Chỉ khi đặt đơn mới, vd 250000"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {
+          "path": "gia-lap-tiktok",
+          "appendAttribution": false
+        }
+      },
+      "webhookId": "3aaf4c8e-6629-5785-8317-6c4670032ea8"
+    },
+    {
+      "id": "e684fc42-75b3-5f10-baed-1ef4891f11ee",
+      "name": "Kiểm và dựng sự kiện",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm, đọc form và dựng sự kiện giống TikTok gửi\nconst crypto = require('crypto');\nconst f = $input.first().json;\nconst fail = (msg) => [{ json: { ok: false, title: 'Chưa gửi được', msg } }];\nconst expected = $env.GIA_LAP_MA || '';\nif (!expected) return fail('Chế độ giả lập đang tắt. Nhờ M3 chạy scripts/gia-lap.sh bat.');\nconst h = (s) => crypto.createHash('sha256').update(String(s)).digest();\nif (!crypto.timingSafeEqual(h(f['Mã nhóm'] || ''), h(expected))) return fail('Sai mã nhóm.');\nconst VIEC = {\n  'Khách đặt đơn mới': 'dat_don',\n  'Kho đóng gói xong (thay Odoo báo)': 'dong_goi',\n  'Đơn đang giao': 'dang_giao',\n  'Khách đã nhận hàng': 'da_giao',\n  'Khách hủy đơn': 'huy_don',\n};\nconst viec = VIEC[f['Việc']];\nif (!viec) return fail('Chọn một việc.');\nlet orderId = String(f['Mã đơn'] || '').trim();\nlet items = [];\nif (viec === 'dat_don') {\n  items = String(f['Sản phẩm'] || '').split(',').map((s) => s.trim()).filter(Boolean).map((s) => {\n    const [sku, n] = s.split('*').map((x) => x.trim());\n    return { seller_sku: sku.toUpperCase(), quantity: Math.max(1, parseInt(n, 10) || 1) };\n  });\n  if (!items.length) return fail('Nhập ít nhất một SKU ở ô Sản phẩm, vd PK-CAP-C2C-1M*2.');\n  orderId = '5799' + String(Date.now()).slice(-12) + String(Math.floor(Math.random() * 100)).padStart(2, '0');\n} else if (!/^\\d{6,}$/.test(orderId)) {\n  return fail('Nhập mã đơn (dãy số hiện ra sau khi đặt đơn mới).');\n}\nconst STATUS = { dat_don: 'AWAITING_SHIPMENT', dang_giao: 'IN_TRANSIT', da_giao: 'DELIVERED', huy_don: 'CANCELLED', dong_goi: '' };\nconst ts = Math.floor(Date.now() / 1000);\nconst base = { tts_notification_id: 'gialap' + Date.now(), shop_id: 'gia-lap-shop', timestamp: ts };\nlet event = null;\nif (['dat_don', 'dang_giao', 'da_giao'].includes(viec)) {\n  event = { type: 1, ...base, data: { order_id: orderId, order_status: STATUS[viec], is_on_hold_order: false, update_time: ts } };\n} else if (viec === 'huy_don') {\n  event = { type: 11, ...base, data: { order_id: orderId, cancellations_role: 'BUYER', cancel_status: 'CANCELLATION_REQUEST_COMPLETE', update_time: ts } };\n}\nreturn [{ json: { ok: true, viec, viec_vi: f['Việc'], order_id: orderId, status: STATUS[viec],\n  items: JSON.stringify(items), total: Number(f['Tổng tiền']) || 0, event } }];\n"
+      }
+    },
+    {
+      "id": "e9deea47-3b6a-5a71-a91b-4905336526db",
+      "name": "Hợp lệ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "422bfe99-d89b-5801-97d0-ae94c07d41bf",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f939f691-9afb-5a30-a6bf-58c2fddbbf55",
+      "name": "Ghi đơn giả lập",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH it AS (\n  SELECT jsonb_agg(i || jsonb_build_object('sku_id', COALESCE(m.tiktok_sku_id, 'gia-' || (i->>'seller_sku')))) AS items\n  FROM jsonb_array_elements($3::jsonb) i\n  LEFT JOIN sku_map m ON m.seller_sku = i->>'seller_sku'\n), ins AS (\n  INSERT INTO gia_lap_don (order_id, status, line_items, total_amount)\n  SELECT $1, $2, (SELECT items FROM it), $4::numeric\n  WHERE $5 = 'dat_don'\n  ON CONFLICT (order_id) DO NOTHING\n  RETURNING order_id, status\n), upd AS (\n  UPDATE gia_lap_don\n     SET status = COALESCE(NULLIF($2, ''), status),\n         tracking_number = CASE WHEN $2 IN ('IN_TRANSIT', 'DELIVERED')\n                                THEN COALESCE(tracking_number, 'VNGL' || right(order_id, 6))\n                                ELSE tracking_number END,\n         updated_at = now()\n   WHERE order_id = $1 AND $5 <> 'dat_don'\n  RETURNING order_id, status\n)\nSELECT order_id, status FROM ins\nUNION ALL\nSELECT order_id, status FROM upd;",
+        "options": {
+          "queryReplacement": "={{ [ $json.order_id, $json.status, $json.items, $json.total, $json.viec ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "14337274-70b1-550d-9cea-45432c3a0190",
+      "name": "Gửi vào hệ thống",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Ký sự kiện như TikTok rồi gửi vào Router, hoặc báo đóng gói vào Đặt vận chuyển như Odoo\nconst crypto = require('crypto');\nconst s = $('Kiểm và dựng sự kiện').first().json;\nconst row = $input.first().json;\nif (!row.order_id) {\n  return [{ json: { title: 'Không thấy đơn', msg: `Chưa có đơn giả lập ${s.order_id}. Chọn \"Khách đặt đơn mới\" trước.` } }];\n}\nlet res;\nif (s.viec === 'dong_goi') {\n  const body = { _model: 'stock.picking', id: 0, name: `WH/OUT/GL${s.order_id.slice(-5)}`, origin: 'GIA-LAP',\n    state: 'done', picking_type_code: 'outgoing', client_order_ref: s.order_id };\n  res = await this.helpers.httpRequest({\n    method: 'POST',\n    url: `http://localhost:5678/webhook/odoo-picking-done?secret=${encodeURIComponent($env.ODOO_WEBHOOK_SECRET || '')}`,\n    json: true, body, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 20000,\n  });\n} else {\n  const raw = JSON.stringify(s.event);\n  const sig = crypto.createHmac('sha256', $env.TIKTOK_APP_SECRET || '').update($env.TIKTOK_APP_KEY || '').update(raw).digest('hex');\n  res = await this.helpers.httpRequest({\n    method: 'POST', url: 'http://localhost:5678/webhook/tiktok-events',\n    headers: { 'Content-Type': 'application/json', Authorization: sig },\n    body: raw, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 20000,\n  });\n}\nconst NEXT = {\n  dat_don: 'Tiếp theo: M2 · Tạo đơn chạy. Khi muốn giao, chọn \"Kho đóng gói xong\" với mã đơn này.',\n  dong_goi: 'Tiếp theo: M3 · Đặt vận chuyển gọi TikTok giả đặt lấy hàng. Sau đó chọn \"Đơn đang giao\".',\n  dang_giao: 'Tiếp theo: M3 · Trạng thái đơn ghi trạng thái và nhắn mã vận đơn cho khách.',\n  da_giao: 'Đơn đã giao xong.',\n  huy_don: 'Tiếp theo: M2 · Hủy đơn chạy.',\n};\nconst ok = res.statusCode >= 200 && res.statusCode < 300;\nreturn [{ json: {\n  title: ok ? `Đã gửi: ${s.viec_vi}` : `Hệ thống trả lỗi ${res.statusCode}`,\n  msg: `Mã đơn: ${s.order_id}. ${ok ? NEXT[s.viec] : 'Xem n8n > Executions để biết lỗi.'} Kết quả từng bước xem trong n8n > Executions.`,\n} }];\n"
+      }
+    },
+    {
+      "id": "a9a07ebb-0601-5b75-b81e-c8a370d70442",
+      "name": "Kết quả",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "={{ $json.title }}",
+        "completionMessage": "={{ $json.msg }}"
+      },
+      "webhookId": "02147d59-c0e3-5c3f-a824-ac940690a2e8"
+    },
+    {
+      "id": "eea18526-0801-561c-8640-cf36f9a2675e",
+      "name": "Báo lỗi",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        660,
+        120
+      ],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "={{ $json.title }}",
+        "completionMessage": "={{ $json.msg }}"
+      },
+      "webhookId": "d52f054e-3e04-5b92-849a-86e535646e85"
+    }
+  ],
+  "connections": {
+    "Form giả lập": {
+      "main": [
+        [
+          {
+            "node": "Kiểm và dựng sự kiện",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm và dựng sự kiện": {
+      "main": [
+        [
+          {
+            "node": "Hợp lệ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hợp lệ?": {
+      "main": [
+        [
+          {
+            "node": "Ghi đơn giả lập",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Báo lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi đơn giả lập": {
+      "main": [
+        [
+          {
+            "node": "Gửi vào hệ thống",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gửi vào hệ thống": {
+      "main": [
+        [
+          {
+            "node": "Kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

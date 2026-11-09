@@ -1,0 +1,229 @@
+{
+  "id": "testGiaLapDs0001",
+  "name": "TEST · Danh sách đơn giả lập",
+  "active": false,
+  "nodes": [
+    {
+      "id": "609f2e54-7c66-5438-a9cb-4cf1c3402c38",
+      "name": "Mở danh sách",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "gia-lap-don",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "4682f16a-43d3-522f-b248-bc342e6b6ef0"
+    },
+    {
+      "id": "9d8f8a8d-85fa-56ed-9509-bc5c28fb6885",
+      "name": "Kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong link\nconst crypto = require('crypto');\nconst q = $input.first().json.query || {};\nconst expected = $env.GIA_LAP_MA || '';\nconst h = (s) => crypto.createHash('sha256').update(String(s)).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(q.ma || ''), h(expected));\nreturn [{ json: { ok } }];\n"
+      }
+    },
+    {
+      "id": "bb928a98-040e-5fe2-8dfc-b3354ccaca0f",
+      "name": "Đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f8d1d487-e4e2-532d-a20e-200a83d5ecad",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "925211c6-25b4-57a2-afc2-76e29733bc41",
+      "name": "Đọc đơn",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT g.order_id, g.status, g.tracking_number, g.line_items,\n       to_char(g.created_at, 'DD/MM HH24:MI') AS luc,\n       (SELECT string_agg(l.status, ' → ' ORDER BY l.changed_at) FROM order_status_log l\n         WHERE l.tiktok_order_id = g.order_id) AS nhat_ky\nFROM gia_lap_don g\nORDER BY g.created_at DESC\nLIMIT 20;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "232428bd-e4c6-50a7-92b2-789cc84f0ed9",
+      "name": "Viết danh sách",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Viết danh sách đơn giả lập thành trang chữ dễ đọc\nconst VI = { AWAITING_SHIPMENT: 'chờ đóng gói', IN_TRANSIT: 'đang giao', DELIVERED: 'đã giao', CANCELLED: 'đã hủy' };\nconst rows = $input.all().map((i) => i.json).filter((r) => r.order_id);\nconst lines = rows.map((r) => {\n  const items = (typeof r.line_items === 'string' ? JSON.parse(r.line_items) : r.line_items || [])\n    .map((it) => `${it.seller_sku} x${it.quantity}`).join(', ');\n  const log = r.nhat_ky ? ` | hệ thống: ${r.nhat_ky}` : '';\n  return `${r.order_id} | ${VI[r.status] || r.status}${r.tracking_number ? ' | vận đơn ' + r.tracking_number : ''} | ${items} | ${r.luc}${log}`;\n});\nconst text = ['ĐƠN GIẢ LẬP GẦN NHẤT (mới nhất ở trên)', '', ...(lines.length ? lines : ['Chưa có đơn nào. Mở form và chọn \"Khách đặt đơn mới\".'])].join('\\n');\nreturn [{ json: { text } }];\n"
+      }
+    },
+    {
+      "id": "f4a4a8c1-178e-513a-a60b-888246f23089",
+      "name": "Trả danh sách",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.text }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "debad39e-2e5a-516c-bbba-5668bec82135",
+      "name": "Trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        120
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Sai mã nhóm. Link đúng có dạng .../webhook/gia-lap-don?ma=<mã nhóm>",
+        "options": {
+          "responseCode": 401,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Mở danh sách": {
+      "main": [
+        [
+          {
+            "node": "Kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "Đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "Đọc đơn",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc đơn": {
+      "main": [
+        [
+          {
+            "node": "Viết danh sách",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Viết danh sách": {
+      "main": [
+        [
+          {
+            "node": "Trả danh sách",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
