@@ -13,7 +13,7 @@
         -320
       ],
       "parameters": {
-        "content": "## M3 · Chat thử\nMở workflow này, bấm **Open chat** để nói chuyện với chatbot y như khách. Mỗi câu trả lời kèm dòng ý định, model và độ trễ để kiểm tra.\n\n- Gõ `/reset` để trả cuộc chat về cho bot sau khi đã bị chuyển người.\n- Muốn Gemini viết câu: điền `GEMINI_API_KEY` vào `.env` rồi `docker compose up -d n8n`; chưa có key thì bot dùng câu mẫu.\n- Dữ liệu sản phẩm là **dữ liệu giả** (xem M3 · Tool sản phẩm).",
+        "content": "## M3 · Chat thử\nMở workflow này, bấm **Open chat** để nói chuyện với chatbot y như khách. Mỗi câu trả lời kèm dòng ý định, model và độ trễ để kiểm tra.\n\n- Gõ `/reset` để trả cuộc chat về cho bot sau khi đã bị chuyển người.\n- Muốn AI viết câu: điền `LLM_API_KEY` (Groq) hoặc `GEMINI_API_KEY` vào `.env` theo `LLM_PROVIDER`, rồi `docker compose up -d n8n`; chưa có key thì bot dùng câu mẫu.\n- Dữ liệu sản phẩm là **dữ liệu giả** (xem M3 · Tool sản phẩm).",
         "height": 260,
         "width": 760,
         "color": 7

@@ -105,7 +105,9 @@ sql "INSERT INTO tokens (shop_id, shop_cipher, shop_name, access_token, access_t
 echo "== 1. Khách hỏi giá trong khung chat"
 check "Router nhận tin nhắn, trả 200" "$([ "$(webhook contracts/tiktok/webhooks/new_message_text.json "${RUN}1")" = 200 ] && echo 1 || echo 0)"
 check "Chatbot trả lời và ghi chat_logs" "$(wait_for "SELECT EXISTS (SELECT 1 FROM chat_logs WHERE conversation_id = '$CONV' AND bot_reply IS NOT NULL)")"
+check "Câu trả lời do AI viết, không phải câu mẫu" "$([ "$(sql "SELECT COALESCE(model, '') <> 'mau-cau' FROM chat_logs WHERE conversation_id = '$CONV' ORDER BY id DESC LIMIT 1")" = t ] && echo 1 || echo 0)"
 sql "SELECT '    ý định: ' || COALESCE(intent, '?') || ' | soát giá: ' || COALESCE(price_check_passed::text, '?')
+            || ' | AI: ' || COALESCE(model, '?')
             || E'\n    bot: ' || left(regexp_replace(bot_reply, '\s+', ' ', 'g'), 160)
      FROM chat_logs WHERE conversation_id = '$CONV' ORDER BY id DESC LIMIT 1"
 

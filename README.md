@@ -102,7 +102,7 @@ Kết quả đúng là `{"status":"ok"}`.
 3. Credentials dùng chung:
    - **Postgres · middleware**: đã được `scripts/import-n8n.sh` tạo sẵn (Host `db`, Database `middleware`).
    - **Odoo**: URL `http://odoo:8069`, database `cntttmdt`, user tích hợp và API key do Thành viên 2 tạo.
-   - **Gemini**: API key từ Google AI Studio.
+   - **AI viết câu**: không cần credential trong n8n; key nằm trong `.env` (xem mục Chatbot).
 4. Quy ước tên workflow: `M2 · Tạo đơn`, `M3 · Router`...
 
 ### 6. Mời cả nhóm vào qua Tailscale
@@ -211,7 +211,14 @@ Sau mỗi lần n8n khởi động lại, webhook cần **khoảng 30 giây** m�
 
 **Thử bot:** mở workflow `M3 · Chat thử` trong n8n, bấm **Open chat**, nhắn như khách. Cuối mỗi câu trả lời có dòng `[ý định · model · độ trễ]` để kiểm tra. Gõ `/reset` để trả cuộc chat về cho bot sau khi đã bị chuyển người.
 
-**Cho Gemini viết câu:** lấy key ở aistudio.google.com, điền `GEMINI_API_KEY` trong `.env`, rồi chạy `docker compose up -d n8n`. Chưa có key hoặc Gemini lỗi thì bot dùng câu mẫu, không bao giờ im lặng.
+**Cho AI viết câu:** node `AI viết câu` gọi được hai loại API, chọn bằng `LLM_PROVIDER` trong `.env`:
+
+| `LLM_PROVIDER` | Dùng | Cần điền |
+|---|---|---|
+| `openai` (mặc định trong `.env.example`) | Mọi API chuẩn OpenAI. Mặc định là **Groq**, miễn phí, không cần thẻ | `LLM_API_KEY` lấy ở console.groq.com → API Keys. Đổi nhà khác thì sửa `LLM_BASE_URL`, `LLM_MODEL` |
+| `gemini` | Google Gemini | `GEMINI_API_KEY` lấy ở aistudio.google.com. Một số tài khoản bị Google chặn gói miễn phí (lỗi 403 *free tier is not available*) |
+
+Sửa `.env` xong chạy `docker compose up -d n8n`. Chưa có key hoặc AI lỗi thì bot dùng câu mẫu, vẫn đúng giá và tồn kho, không bao giờ im lặng.
 
 **Luồng một tin nhắn:**
 
@@ -284,7 +291,7 @@ docker compose exec db psql -U odoo -d middleware
 scripts/dien-tap.sh
 ```
 
-Script tạm trỏ n8n vào TikTok giả và Gemini giả (`docker-compose.dien-tap.yml`), rồi chạy lần lượt: khách hỏi giá → chatbot trả lời; khách đặt đơn → ghi đơn, gửi lại webhook không tạo bản trùng; giả lập M2 tạo Sales Order; Odoo báo đóng gói → đặt vận chuyển; TikTok báo đang giao → nhắn khách; webhook sai chữ ký và sai mã bí mật bị chặn; KPI có số. Mỗi bước in `[ĐẠT]` hoặc `[HỎNG]`. Cuối cùng script xóa mọi dữ liệu thử, trả bandit về như cũ và đưa n8n về cấu hình thật, kể cả khi bị ngắt giữa chừng. Mất khoảng 3 phút.
+Script tạm trỏ n8n vào TikTok giả và AI giả (`docker-compose.dien-tap.yml`), rồi chạy lần lượt: khách hỏi giá → chatbot trả lời bằng AI (không phải câu mẫu); khách đặt đơn → ghi đơn, gửi lại webhook không tạo bản trùng; giả lập M2 tạo Sales Order; Odoo báo đóng gói → đặt vận chuyển; TikTok báo đang giao → nhắn khách; webhook sai chữ ký và sai mã bí mật bị chặn; KPI có số. Mỗi bước in `[ĐẠT]` hoặc `[HỎNG]`. Cuối cùng script xóa mọi dữ liệu thử, trả bandit về như cũ và đưa n8n về cấu hình thật, kể cả khi bị ngắt giữa chừng. Mất khoảng 3 phút.
 
 Không chạy khi shop đang có khách thật, vì trong lúc diễn tập n8n gọi TikTok giả.
 
