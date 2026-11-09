@@ -18,17 +18,17 @@ Dòng đầu là tên cột, giữ nguyên. Dòng thứ hai là ví dụ, sửa 
 
 | Cột | Ví dụ | Ghi chú |
 |---|---|---|
-| `sku` | `PK-SAC-ANKER20W-TRANG` | Theo quy tắc SKU trong [contracts/README.md](../contracts/README.md). Viết giống hệt ở Odoo và TikTok |
-| `name` | Củ sạc Anker 20W | Tên hiển thị |
-| `brand` | Anker | |
-| `category` | củ sạc | Chữ thường, có dấu; dùng các nhóm: điện thoại, củ sạc, cáp, sạc dự phòng, tai nghe, ốp lưng, kính cường lực, loa bluetooth, đồng hồ thông minh, chuột, bàn phím |
-| `price` | 199000 | VND, chỉ ghi số |
-| `colors` | trắng\|đen | Nhiều giá trị thì ngăn bằng `\|` |
-| `capacity` | 20W | Dung lượng, công suất hoặc độ dài; để trống nếu không có |
-| `aliases` | sạc anker 20w\|anker 20w | Các cách khách hay gọi sản phẩm này |
-| `tuong_thich` | iPhone 15\|Samsung S24 | Máy dùng được, để chatbot tư vấn phụ kiện |
-| `mo_ta` | Sạc nhanh PD 20W một cổng USB-C | Một câu ngắn |
-| `ton_dau_ky` | 10 | Số hàng có lúc bắt đầu, để M2 nhập vào Odoo |
+| `sku` | `PK-CAP-C2C-1M` | Theo quy tắc SKU trong [contracts/README.md](../contracts/README.md). Viết giống hệt ở Odoo và TikTok |
+| `name` | Cáp sạc USB-C to C 1m bện dù | Tên hiển thị, không ghi tên hãng |
+| `brand` | Không thương hiệu | Shop chỉ bán hàng không thương hiệu, xem [hướng dẫn M1](../huong-dan/m1-cua-hang.md) |
+| `category` | cáp | Chữ thường, có dấu; dùng các nhóm: điện thoại, củ sạc, cáp, sạc dự phòng, tai nghe, ốp lưng, kính cường lực, loa bluetooth, đồng hồ thông minh, chuột, bàn phím |
+| `price` | 59000 | VND, chỉ ghi số |
+| `colors` | đen\|trắng | Nhiều giá trị thì ngăn bằng `\|` |
+| `capacity` | 1m | Dung lượng, công suất hoặc độ dài; để trống nếu không có |
+| `aliases` | cáp type c\|dây sạc type c | Các cách khách hay gọi sản phẩm này |
+| `tuong_thich` | thiết bị cổng USB-C | Dùng được với thiết bị nào, để chatbot tư vấn |
+| `mo_ta` | Cáp bện dù sạc nhanh 60W dài 1m | Một câu ngắn |
+| `ton_dau_ky` | 5 | Số hàng có lúc bắt đầu, để M2 nhập vào Odoo |
 
 ## `bo-test-chatbot.csv`
 

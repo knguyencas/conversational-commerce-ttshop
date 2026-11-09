@@ -184,7 +184,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 - **Ai làm:** **M3**.
 - **Dựng thế nào:**
   1. Cài Docker Desktop cho Windows (dùng WSL 2), bật *Start when you sign in*.
-  2. `cp .env.example .env`, điền mật khẩu, khóa (xem README).
+  2. `cp .env.example .env`, điền mật khẩu, khóa (xem [sổ tay vận hành](van-hanh-may-chu.md)).
   3. `docker compose up -d`.
 - **Sáu container:**
 
@@ -216,7 +216,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
   - `n8n`: workflow, credentials (mã hóa), lịch sử chạy;
   - **`middleware`**: 11 bảng dùng chung giữa các workflow (chi tiết ở mục 3.3).
 - **Ai làm:** **M3**.
-- **Dựng thế nào:** container tự chạy các file `init/*.sql` lần đầu, gồm tạo database, tạo bảng và luật mua kèm mặc định. Thêm bảng về sau thì chạy tay (README, mục *Sửa bảng middleware*).
+- **Dựng thế nào:** container tự chạy các file `init/*.sql` lần đầu, gồm tạo database, tạo bảng và luật mua kèm mặc định. Thêm bảng về sau thì chạy tay ([sổ tay vận hành](van-hanh-may-chu.md), mục *Sửa bảng middleware*).
 - **Chức năng dùng:**
   - khóa chính, `UNIQUE`, `CHECK` (vd `mode IN ('bot','staff')`);
   - **`INSERT ... ON CONFLICT DO NOTHING`** để chống xử lý trùng;

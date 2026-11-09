@@ -1,6 +1,6 @@
 # Làm việc chung trên repo
 
-Repo này là bản chung của cả nhóm. Ai làm phần nào thì sửa trong thư mục của phần đó, đẩy lên nhánh riêng, rồi mở pull request (PR) để người giữ thư mục duyệt trước khi vào `main`.
+Repo này là bản chung của cả nhóm. Mới vào thì đọc [huong-dan/00-cai-dat-chung.md](huong-dan/00-cai-dat-chung.md) trước. Ai làm phần nào thì sửa trong thư mục của phần đó, đẩy lên nhánh riêng, rồi mở pull request (PR) để người giữ thư mục duyệt trước khi vào `main`.
 
 ## Ai giữ thư mục nào
 
