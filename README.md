@@ -212,6 +212,8 @@ Sau mỗi lần n8n khởi động lại, webhook cần **khoảng 30 giây** m�
 | `openai` (mặc định trong `.env.example`) | Mọi API chuẩn OpenAI. Mặc định là **Groq**, miễn phí, không cần thẻ | `LLM_API_KEY` lấy ở console.groq.com → API Keys. Đổi nhà khác thì sửa `LLM_BASE_URL`, `LLM_MODEL` |
 | `gemini` | Google Gemini | `GEMINI_API_KEY` lấy ở aistudio.google.com. Một số tài khoản bị Google chặn gói miễn phí (lỗi 403 *free tier is not available*) |
 
+Với Groq, model chính là `qwen/qwen3.8-27b` (tiếng Việt tự nhiên nhất trong các model Groq cho dùng miễn phí, trả lời khoảng 1–2 giây). Groq miễn phí thỉnh thoảng báo quá tải, nên mỗi lần gọi chỉ chờ 10 giây rồi thử `LLM_MODEL_FALLBACK` (mặc định `openai/gpt-oss-120b`). Xem danh sách model key của mình dùng được ở console.groq.com → Models.
+
 Sửa `.env` xong chạy `docker compose up -d n8n`. Chưa có key hoặc AI lỗi thì bot dùng câu mẫu, vẫn đúng giá và tồn kho, không bao giờ im lặng.
 
 **Luồng một tin nhắn:**
