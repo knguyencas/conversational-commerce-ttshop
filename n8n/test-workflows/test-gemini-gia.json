@@ -46,7 +46,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Gemini giả để test: trả lời theo dữ liệu trong prompt\nconst body = $input.first().json.body || {};\nconst prompt = (body.contents || []).map((c) => (c.parts || []).map((p) => p.text || '').join('')).join('\\n');\nconst dm = prompt.match(/<<<DU_LIEU\\n([\\s\\S]*?)\\nDU_LIEU>>>/);\nconst data = dm ? JSON.parse(dm[1]) : {};\nconst mm = prompt.match(/TIN NHẮN KHÁCH: (\".*\")/);\nconst msg = mm ? JSON.parse(mm[1]) : '';\nconst hasFeedback = prompt.includes('GÓP Ý TỪ BƯỚC SOÁT');\nconst wrong = msg.includes('SAI_HAI_LAN') || (msg.includes('THU_VIET_LAI') && !hasFeedback);\nconst fmt = (v) => String(v).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.') + 'đ';\nlet reply = 'Dạ shop có thể giúp gì thêm cho anh/chị ạ?', skus = [];\nconst ps = data.san_pham || [];\nif (ps.length) {\n  const p = ps[0];\n  reply = `Dạ ${p.name} giá ${fmt(wrong ? p.price + 10000 : p.price)}, hiện còn ${p.stock} cái ạ.`;\n  skus = [p.sku];\n  const u = (data.goi_y_mua_kem || [])[0];\n  if (u) { reply += ` Anh/chị có thể mua kèm ${u.name} giá ${fmt(u.price)} ạ.`; skus.push(u.sku); }\n} else if (data.don_hang && data.don_hang.status) {\n  reply = `Dạ đơn ${data.don_hang.tiktok_order_id} đang ở trạng thái ${data.don_hang.status} ạ.`;\n}\nconst out = { reply, skus, need_human: msg.includes('XIN_GAP_NGUOI'), reason: 'gemini-gia' };\nreturn [{ json: { candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(out) }] } }], modelVersion: 'gemini-gia' } }];\n"
+        "jsCode": "// AI giả để test (định dạng Gemini hoặc OpenAI): trả lời theo dữ liệu trong prompt\nconst body = $input.first().json.body || {};\nconst isOpenAI = Array.isArray(body.messages);\nconst prompt = isOpenAI\n  ? body.messages.filter((m) => m.role === 'user').map((m) => m.content || '').join('\\n')\n  : (body.contents || []).map((c) => (c.parts || []).map((p) => p.text || '').join('')).join('\\n');\nconst dm = prompt.match(/<<<DU_LIEU\\n([\\s\\S]*?)\\nDU_LIEU>>>/);\nconst data = dm ? JSON.parse(dm[1]) : {};\nconst mm = prompt.match(/TIN NHẮN KHÁCH: (\".*\")/);\nconst msg = mm ? JSON.parse(mm[1]) : '';\nconst hasFeedback = prompt.includes('GÓP Ý TỪ BƯỚC SOÁT');\nconst wrong = msg.includes('SAI_HAI_LAN') || (msg.includes('THU_VIET_LAI') && !hasFeedback);\nconst fmt = (v) => String(v).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.') + 'đ';\nlet reply = 'Dạ shop có thể giúp gì thêm cho anh/chị ạ?', skus = [];\nconst ps = data.san_pham || [];\nif (ps.length) {\n  const p = ps[0];\n  reply = `Dạ ${p.name} giá ${fmt(wrong ? p.price + 10000 : p.price)}, hiện còn ${p.stock} cái ạ.`;\n  skus = [p.sku];\n  const u = (data.goi_y_mua_kem || [])[0];\n  if (u) { reply += ` Anh/chị có thể mua kèm ${u.name} giá ${fmt(u.price)} ạ.`; skus.push(u.sku); }\n} else if (data.don_hang && data.don_hang.status) {\n  reply = `Dạ đơn ${data.don_hang.tiktok_order_id} đang ở trạng thái ${data.don_hang.status} ạ.`;\n}\nconst out = { reply, skus, need_human: msg.includes('XIN_GAP_NGUOI'), reason: isOpenAI ? 'openai-gia' : 'gemini-gia' };\nif (isOpenAI) return [{ json: { choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify(out) } }], model: body.model || 'openai-gia' } }];\nreturn [{ json: { candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(out) }] } }], modelVersion: 'gemini-gia' } }];\n"
       }
     },
     {
@@ -62,6 +62,23 @@
         "respondWith": "firstIncomingItem",
         "options": {}
       }
+    },
+    {
+      "id": "97353a94-0ee0-54e2-8d80-6c262b861524",
+      "name": "Webhook OpenAI giả",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "llm-mock/chat/completions",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "fb2d02f3-a975-5db2-946c-f3b10331721c"
     }
   ],
   "connections": {
@@ -81,6 +98,17 @@
         [
           {
             "node": "Trả JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook OpenAI giả": {
+      "main": [
+        [
+          {
+            "node": "Trả lời theo dữ liệu",
             "type": "main",
             "index": 0
           }
