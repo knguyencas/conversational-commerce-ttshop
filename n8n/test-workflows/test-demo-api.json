@@ -1,0 +1,1730 @@
+{
+  "id": "testDemoApi00001",
+  "name": "DEMO · API shop giả lập",
+  "active": false,
+  "nodes": [
+    {
+      "id": "8bdc67d9-869c-55ea-950a-a384ae1f0943",
+      "name": "Ghi chú",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -380
+      ],
+      "parameters": {
+        "width": 620,
+        "height": 300,
+        "content": "## DEMO · API shop giả lập\nAPI JSON cho giao diện web demo (thay cho app TikTok khi chưa có API thật).\n\nHợp đồng: `contracts/internal/demo_api.md`. Header `x-ma-nhom` = mã nhóm (GIA_LAP_MA).\n\nChỉ bật khi chế độ giả lập đang bật (`scripts/gia-lap.sh bat`)."
+      }
+    },
+    {
+      "id": "75309b31-ab33-5180-871b-614b804aca03",
+      "name": "san-pham: nhận",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "demo/san-pham",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "6bf60c3a-7870-52a5-b735-5fd92ff4daad"
+    },
+    {
+      "id": "6fd735ea-6374-5821-a731-aefa6e9d37e4",
+      "name": "san-pham: kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong header x-ma-nhom (hoặc ?ma=), giữ lại body và query\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst expected = $env.GIA_LAP_MA || '';\nconst got = String((w.headers || {})['x-ma-nhom'] || (w.query || {}).ma || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(got), h(expected));\nreturn [{ json: { ok, body: w.body || {}, query: w.query || {} } }];\n"
+      }
+    },
+    {
+      "id": "cb645327-0ba1-563e-a0f1-ec40114d07ab",
+      "name": "san-pham: đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1c893007-b55e-5446-9340-23aa0670a098",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "eac10ef9-e107-5ac2-9561-3bbaecb49522",
+      "name": "san-pham: trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: 'Sai mã nhóm (header x-ma-nhom)' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "77c4b328-4afd-57b5-bc07-c52385213a9e",
+      "name": "san-pham: yêu cầu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Hỏi tool sản phẩm danh sách đầy đủ\nreturn [{ json: { calls: [{ tool: 'danh_sach', args: {} }] } }];\n"
+      }
+    },
+    {
+      "id": "326ea21a-b5d2-5680-826c-60d5ae5f7663",
+      "name": "san-pham: gọi tool",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3ToolSanPham001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "0b6836f8-f0d1-59b6-ac98-09688e35b91e",
+      "name": "san-pham: gói kết quả",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Lấy danh sách sản phẩm từ kết quả tool\nconst r = $input.first().json;\nconst first = (r.results || [])[0] || {};\nreturn [{ json: { ok: !!first.ok, source: r.source || null, products: first.products || [], loi: first.error || null } }];\n"
+      }
+    },
+    {
+      "id": "830d8696-bc73-519b-8ebd-df68ca9a97ba",
+      "name": "san-pham: trả",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "7822caed-db16-563b-972f-a6896ad4db06",
+      "name": "chat: nhận",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        400
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo/chat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "30159bfe-8f20-5bb6-bb51-0e21efa903c9"
+    },
+    {
+      "id": "deaf2d66-4149-57a1-a21f-f474706cab53",
+      "name": "chat: kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong header x-ma-nhom (hoặc ?ma=), giữ lại body và query\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst expected = $env.GIA_LAP_MA || '';\nconst got = String((w.headers || {})['x-ma-nhom'] || (w.query || {}).ma || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(got), h(expected));\nreturn [{ json: { ok, body: w.body || {}, query: w.query || {} } }];\n"
+      }
+    },
+    {
+      "id": "9c3f9ce0-68b9-555c-8c8d-aa50e764920e",
+      "name": "chat: đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d4ac274c-90fe-53a2-bbdb-1cc5ef34866b",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "dde17cef-8081-532c-b37a-07bb35459482",
+      "name": "chat: trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        540
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: 'Sai mã nhóm (header x-ma-nhom)' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "233816f6-489a-5412-b558-9b1ff3dc5f93",
+      "name": "chat: dựng tin nhắn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Đổi body {conversation_id, text, buyer_user_id} sang dữ liệu vào của chatbot\nconst b = $input.first().json.body || {};\nreturn [{ json: {\n  conversation_id: String(b.conversation_id || 'demo-khach'),\n  message_id: 'demo-' + Date.now(),\n  buyer_user_id: String(b.buyer_user_id || 'gia-lap-khach'),\n  message_type: 'TEXT',\n  text: String(b.text || '').slice(0, 1000),\n  product_id: b.product_id || null,\n  channel: 'demo',\n  received_at: new Date().toISOString(),\n} }];\n"
+      }
+    },
+    {
+      "id": "924fd650-7ed3-523a-a043-eba409c70004",
+      "name": "chat: gọi chatbot",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        400
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3Chatbot0000001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "445618a6-651d-588a-9996-8b770b586eaf",
+      "name": "chat: gói trả lời",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Chọn các trường giao diện cần từ kết quả chatbot\nconst r = $input.first().json;\nreturn [{ json: { ok: true, reply: r.reply, intent: r.intent, handed_off: !!r.handed_off, handoff_reason: r.handoff_reason || null,\n  price_check_passed: r.price_check_passed, model: r.model, skus: r.skus || [], upsell: r.upsell || [], latency_ms: r.latency_ms } }];\n"
+      }
+    },
+    {
+      "id": "f0475db8-f89f-588d-b294-062457be074b",
+      "name": "chat: trả",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        400
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "3e2b9f5c-a9c1-5fb9-a732-55a9e15d823c",
+      "name": "dat-don: nhận",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        800
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo/don",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "3447506a-4897-5064-a574-eb2dc938fcb5"
+    },
+    {
+      "id": "4e64577f-2063-5b89-a154-17f7de69ed78",
+      "name": "dat-don: kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        800
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong header x-ma-nhom (hoặc ?ma=), giữ lại body và query\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst expected = $env.GIA_LAP_MA || '';\nconst got = String((w.headers || {})['x-ma-nhom'] || (w.query || {}).ma || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(got), h(expected));\nreturn [{ json: { ok, body: w.body || {}, query: w.query || {} } }];\n"
+      }
+    },
+    {
+      "id": "77ce6f57-6cc6-53ec-bf03-3bcbfa172446",
+      "name": "dat-don: đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        800
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c89e44c1-a668-59b8-ac3d-9c3a357630e4",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6f8476d3-53fc-52f5-a162-030878f108e3",
+      "name": "dat-don: trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        940
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: 'Sai mã nhóm (header x-ma-nhom)' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "43649e06-e527-5634-aba5-e2de8fc91bce",
+      "name": "dat-don: đọc giỏ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        800
+      ],
+      "parameters": {
+        "jsCode": "// Hỏi tool sản phẩm danh sách để tính giá giỏ hàng\nreturn [{ json: { calls: [{ tool: 'danh_sach', args: {} }] } }];\n"
+      }
+    },
+    {
+      "id": "65af1b6a-ee8c-5b55-9681-972eb5bcaaea",
+      "name": "dat-don: gọi tool",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        800
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3ToolSanPham001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "62312648-ecdb-5786-b647-dcecc5731e15",
+      "name": "dat-don: tính đơn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        800
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm giỏ hàng theo danh sách sản phẩm, tính tổng tiền, dựng sự kiện đơn mới như TikTok\nconst body = $('dat-don: kiểm mã').first().json.body || {};\nconst products = (($input.first().json.results || [])[0] || {}).products || [];\nconst bySku = Object.fromEntries(products.map((p) => [p.sku, p]));\nconst raw = Array.isArray(body.items) ? body.items : [];\nif (!raw.length) return [{ json: { ok: false, loi: 'Giỏ hàng trống: gửi items = [{ sku, quantity }]' } }];\nconst items = [];\nlet total = 0;\nfor (const it of raw) {\n  const sku = String(it.sku || '').trim().toUpperCase();\n  const qty = Math.max(1, parseInt(it.quantity, 10) || 1);\n  const p = bySku[sku];\n  if (!p) return [{ json: { ok: false, loi: `Không có sản phẩm ${sku}` } }];\n  if (p.stock < qty) return [{ json: { ok: false, loi: `${p.name} chỉ còn ${p.stock}` } }];\n  items.push({ seller_sku: sku, quantity: qty });\n  total += p.price * qty;\n}\nconst orderId = '5799' + String(Date.now()).slice(-12) + String(Math.floor(Math.random() * 100)).padStart(2, '0');\nconst ts = Math.floor(Date.now() / 1000);\nconst event = { type: 1, tts_notification_id: 'gialap' + Date.now(), shop_id: 'gia-lap-shop', timestamp: ts,\n  data: { order_id: orderId, order_status: 'AWAITING_SHIPMENT', is_on_hold_order: false, update_time: ts } };\nreturn [{ json: { ok: true, viec: 'dat_don', order_id: orderId, status: 'AWAITING_SHIPMENT', items: JSON.stringify(items),\n  total, buyer_user_id: String(body.buyer_user_id || 'gia-lap-khach'), event } }];\n"
+      }
+    },
+    {
+      "id": "6d48a30e-8db9-50de-bfda-07eccf229e56",
+      "name": "dat-don: giỏ hợp lệ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        800
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d7f7cf16-170c-5576-88d3-7adda6a5feac",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "98f2c99c-28b9-5d29-a484-767987a4334c",
+      "name": "dat-don: ghi đơn",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1540,
+        740
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH it AS (\n  SELECT jsonb_agg(i || jsonb_build_object('sku_id', COALESCE(m.tiktok_sku_id, 'gia-' || (i->>'seller_sku')))) AS items\n  FROM jsonb_array_elements($3::jsonb) i\n  LEFT JOIN sku_map m ON m.seller_sku = i->>'seller_sku'\n), ins AS (\n  INSERT INTO gia_lap_don (order_id, buyer_user_id, status, line_items, total_amount)\n  SELECT $1, COALESCE(NULLIF($6, ''), 'gia-lap-khach'), $2, (SELECT items FROM it), $4::numeric\n  WHERE $5 = 'dat_don'\n  ON CONFLICT (order_id) DO NOTHING\n  RETURNING order_id, status\n), upd AS (\n  UPDATE gia_lap_don\n     SET status = COALESCE(NULLIF($2, ''), status),\n         tracking_number = CASE WHEN $2 IN ('IN_TRANSIT', 'DELIVERED')\n                                THEN COALESCE(tracking_number, 'VNGL' || right(order_id, 6))\n                                ELSE tracking_number END,\n         updated_at = now()\n   WHERE order_id = $1 AND $5 <> 'dat_don'\n  RETURNING order_id, status\n)\nSELECT order_id, status FROM ins\nUNION ALL\nSELECT order_id, status FROM upd;",
+        "options": {
+          "queryReplacement": "={{ [ $json.order_id, $json.status, $json.items, $json.total, $json.viec, $json.buyer_user_id || '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "3f543d0d-e176-5d20-bc57-2e0fdaac9d43",
+      "name": "dat-don: gửi vào hệ thống",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        740
+      ],
+      "parameters": {
+        "jsCode": "// Ký sự kiện như TikTok rồi gửi vào Router, hoặc báo đóng gói vào Đặt vận chuyển như Odoo\nconst crypto = require('crypto');\nconst s = $('dat-don: tính đơn').first().json;\nconst row = $input.first().json;\nif (!row.order_id) return [{ json: { ok: false, loi: `Không có đơn ${s.order_id}` } }];\nlet res;\nif (s.viec === 'dong_goi') {\n  const body = { _model: 'stock.picking', id: 0, name: `WH/OUT/GL${s.order_id.slice(-5)}`, origin: 'GIA-LAP',\n    state: 'done', picking_type_code: 'outgoing', client_order_ref: s.order_id };\n  res = await this.helpers.httpRequest({\n    method: 'POST', url: `http://localhost:5678/webhook/odoo-picking-done?secret=${encodeURIComponent($env.ODOO_WEBHOOK_SECRET || '')}`,\n    json: true, body, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 20000,\n  });\n} else {\n  const raw = JSON.stringify(s.event);\n  const sig = crypto.createHmac('sha256', $env.TIKTOK_APP_SECRET || '').update($env.TIKTOK_APP_KEY || '').update(raw).digest('hex');\n  res = await this.helpers.httpRequest({\n    method: 'POST', url: 'http://localhost:5678/webhook/tiktok-events',\n    headers: { 'Content-Type': 'application/json', Authorization: sig },\n    body: raw, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 20000,\n  });\n}\nconst ok = res.statusCode >= 200 && res.statusCode < 300;\nreturn [{ json: { ok, order_id: s.order_id, viec: s.viec, status: row.status, total: s.total ?? null,\n  loi: ok ? null : `Hệ thống trả lỗi ${res.statusCode}` } }];\n"
+      }
+    },
+    {
+      "id": "cbd92cee-2f00-5c8a-bcc5-24a10275c45f",
+      "name": "dat-don: trả",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1980,
+        740
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "8753f73e-b006-544d-808b-6b6079f3a599",
+      "name": "dat-don: trả lỗi",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        880
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: $json.loi } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "ee864d08-961a-5aad-b6db-d1172a1c1747",
+      "name": "viec: nhận",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1200
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "demo/don/viec",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "a74fede2-c00e-5068-a1dc-29be9667cc5c"
+    },
+    {
+      "id": "75146bbf-a66d-5f62-acae-71b5c903b195",
+      "name": "viec: kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong header x-ma-nhom (hoặc ?ma=), giữ lại body và query\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst expected = $env.GIA_LAP_MA || '';\nconst got = String((w.headers || {})['x-ma-nhom'] || (w.query || {}).ma || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(got), h(expected));\nreturn [{ json: { ok, body: w.body || {}, query: w.query || {} } }];\n"
+      }
+    },
+    {
+      "id": "35a21d4d-813b-53bd-b4b5-fdd332a67af7",
+      "name": "viec: đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        1200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6ebc5d5e-aaf3-5194-84d1-1a21c814219e",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "82d6db65-e744-507f-8a74-4d0ddf30042d",
+      "name": "viec: trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        1340
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: 'Sai mã nhóm (header x-ma-nhom)' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "e1a8e44a-73c2-50b0-9bc8-e46d5aff45cd",
+      "name": "viec: dựng sự kiện",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "// Đọc {order_id, viec} và dựng sự kiện như TikTok gửi (hoặc báo đóng gói như Odoo)\nconst b = $input.first().json.body || {};\nconst orderId = String(b.order_id || '').trim();\nconst STATUS = { dong_goi: '', dang_giao: 'IN_TRANSIT', da_giao: 'DELIVERED', huy_don: 'CANCELLED' };\nconst viec = String(b.viec || '');\nif (!(viec in STATUS)) return [{ json: { ok: false, loi: 'viec phải là dong_goi, dang_giao, da_giao hoặc huy_don' } }];\nif (!/^\\d{6,}$/.test(orderId)) return [{ json: { ok: false, loi: 'Thiếu order_id' } }];\nconst ts = Math.floor(Date.now() / 1000);\nconst base = { tts_notification_id: 'gialap' + Date.now(), shop_id: 'gia-lap-shop', timestamp: ts };\nlet event = null;\nif (viec === 'dang_giao' || viec === 'da_giao') {\n  event = { type: 1, ...base, data: { order_id: orderId, order_status: STATUS[viec], is_on_hold_order: false, update_time: ts } };\n} else if (viec === 'huy_don') {\n  event = { type: 11, ...base, data: { order_id: orderId, cancellations_role: 'BUYER', cancel_status: 'CANCELLATION_REQUEST_COMPLETE', update_time: ts } };\n}\nreturn [{ json: { ok: true, viec, order_id: orderId, status: STATUS[viec], items: '[]', total: 0, buyer_user_id: '', event } }];\n"
+      }
+    },
+    {
+      "id": "534c91d0-1da5-5b94-929e-6608901bba88",
+      "name": "viec: hợp lệ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        1200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9bd763b7-d7a0-5759-976c-8c279ccc2fb1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "613f2ce8-0cec-56b7-a40c-5aca53a524d9",
+      "name": "viec: ghi trạng thái",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1100,
+        1140
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH it AS (\n  SELECT jsonb_agg(i || jsonb_build_object('sku_id', COALESCE(m.tiktok_sku_id, 'gia-' || (i->>'seller_sku')))) AS items\n  FROM jsonb_array_elements($3::jsonb) i\n  LEFT JOIN sku_map m ON m.seller_sku = i->>'seller_sku'\n), ins AS (\n  INSERT INTO gia_lap_don (order_id, buyer_user_id, status, line_items, total_amount)\n  SELECT $1, COALESCE(NULLIF($6, ''), 'gia-lap-khach'), $2, (SELECT items FROM it), $4::numeric\n  WHERE $5 = 'dat_don'\n  ON CONFLICT (order_id) DO NOTHING\n  RETURNING order_id, status\n), upd AS (\n  UPDATE gia_lap_don\n     SET status = COALESCE(NULLIF($2, ''), status),\n         tracking_number = CASE WHEN $2 IN ('IN_TRANSIT', 'DELIVERED')\n                                THEN COALESCE(tracking_number, 'VNGL' || right(order_id, 6))\n                                ELSE tracking_number END,\n         updated_at = now()\n   WHERE order_id = $1 AND $5 <> 'dat_don'\n  RETURNING order_id, status\n)\nSELECT order_id, status FROM ins\nUNION ALL\nSELECT order_id, status FROM upd;",
+        "options": {
+          "queryReplacement": "={{ [ $json.order_id, $json.status, $json.items, $json.total, $json.viec, $json.buyer_user_id || '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "f20ada9e-0b8e-588e-ae00-7de38bae9248",
+      "name": "viec: gửi vào hệ thống",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        1140
+      ],
+      "parameters": {
+        "jsCode": "// Ký sự kiện như TikTok rồi gửi vào Router, hoặc báo đóng gói vào Đặt vận chuyển như Odoo\nconst crypto = require('crypto');\nconst s = $('viec: dựng sự kiện').first().json;\nconst row = $input.first().json;\nif (!row.order_id) return [{ json: { ok: false, loi: `Không có đơn ${s.order_id}` } }];\nlet res;\nif (s.viec === 'dong_goi') {\n  const body = { _model: 'stock.picking', id: 0, name: `WH/OUT/GL${s.order_id.slice(-5)}`, origin: 'GIA-LAP',\n    state: 'done', picking_type_code: 'outgoing', client_order_ref: s.order_id };\n  res = await this.helpers.httpRequest({\n    method: 'POST', url: `http://localhost:5678/webhook/odoo-picking-done?secret=${encodeURIComponent($env.ODOO_WEBHOOK_SECRET || '')}`,\n    json: true, body, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 20000,\n  });\n} else {\n  const raw = JSON.stringify(s.event);\n  const sig = crypto.createHmac('sha256', $env.TIKTOK_APP_SECRET || '').update($env.TIKTOK_APP_KEY || '').update(raw).digest('hex');\n  res = await this.helpers.httpRequest({\n    method: 'POST', url: 'http://localhost:5678/webhook/tiktok-events',\n    headers: { 'Content-Type': 'application/json', Authorization: sig },\n    body: raw, returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: 20000,\n  });\n}\nconst ok = res.statusCode >= 200 && res.statusCode < 300;\nreturn [{ json: { ok, order_id: s.order_id, viec: s.viec, status: row.status, total: s.total ?? null,\n  loi: ok ? null : `Hệ thống trả lỗi ${res.statusCode}` } }];\n"
+      }
+    },
+    {
+      "id": "4a4942b3-a960-5dcd-ab00-e03c776b2de5",
+      "name": "viec: trả",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        1140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "36a8470e-d5fb-5067-8ea3-8d40f2dfeba0",
+      "name": "viec: trả lỗi",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1280
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: $json.loi } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "e8f145bc-cd55-55bd-bb57-1a782493bbe8",
+      "name": "don: nhận",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        1600
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "demo/don",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "6489ba90-87ff-5f2b-a3b1-ec2f616718e9"
+    },
+    {
+      "id": "bfa16e47-4324-5ef8-9872-30aabef993b6",
+      "name": "don: kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        1600
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong header x-ma-nhom (hoặc ?ma=), giữ lại body và query\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst expected = $env.GIA_LAP_MA || '';\nconst got = String((w.headers || {})['x-ma-nhom'] || (w.query || {}).ma || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(got), h(expected));\nreturn [{ json: { ok, body: w.body || {}, query: w.query || {} } }];\n"
+      }
+    },
+    {
+      "id": "e0856d57-27b5-559d-9c99-35be46dd2c41",
+      "name": "don: đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        1600
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "84a2d02d-2453-5976-bebf-05723df030cd",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7fb40098-2ed0-5191-ab27-fb1e95fde0dc",
+      "name": "don: trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        1740
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: 'Sai mã nhóm (header x-ma-nhom)' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "8a40b0bd-c83f-547a-afcf-3348e94e58aa",
+      "name": "don: đọc",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        1600
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(json_agg(t ORDER BY t.created_at DESC), '[]'::json) AS orders FROM (\n  SELECT g.order_id, g.buyer_user_id, g.status, g.tracking_number, g.line_items AS items, g.total_amount,\n         g.created_at, g.updated_at,\n         (SELECT COALESCE(json_agg(json_build_object('status', l.status, 'tracking_number', l.tracking_number,\n                                                     'luc', l.changed_at) ORDER BY l.changed_at), '[]'::json)\n            FROM order_status_log l WHERE l.tiktok_order_id = g.order_id) AS lich_su\n  FROM gia_lap_don g\n  ORDER BY g.created_at DESC\n  LIMIT 50\n) t;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "4e2b5155-d8b0-5abd-9509-be04dd6c5b7c",
+      "name": "don: gói kết quả",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        1600
+      ],
+      "parameters": {
+        "jsCode": "// Trả danh sách đơn giả lập kèm lịch sử trạng thái\nreturn [{ json: { ok: true, orders: $input.first().json.orders || [] } }];\n"
+      }
+    },
+    {
+      "id": "edbdea4b-1103-571b-9c2a-6fb18e64350e",
+      "name": "don: trả",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        1600
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "55ee5063-dbaa-5dca-9c8d-2a4bf59d8ce4",
+      "name": "tin-nhan: nhận",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        2000
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "demo/tin-nhan",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "4fe62e35-2a0f-5f6d-a205-c34c6f20aeaa"
+    },
+    {
+      "id": "2b7d9c21-cdf7-59d7-ae07-e464c908c9c0",
+      "name": "tin-nhan: kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        2000
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong header x-ma-nhom (hoặc ?ma=), giữ lại body và query\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst expected = $env.GIA_LAP_MA || '';\nconst got = String((w.headers || {})['x-ma-nhom'] || (w.query || {}).ma || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(got), h(expected));\nreturn [{ json: { ok, body: w.body || {}, query: w.query || {} } }];\n"
+      }
+    },
+    {
+      "id": "77ddcfac-6480-50e6-a730-22c4e629c05f",
+      "name": "tin-nhan: đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        2000
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "190e5cef-dfe7-5563-900b-c7e20e3a739e",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "07cbbd3e-119a-5374-bf69-127e407e8213",
+      "name": "tin-nhan: trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        2140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: 'Sai mã nhóm (header x-ma-nhom)' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "8aaf13c8-cf2c-59a7-829f-6f3935f3b12a",
+      "name": "tin-nhan: đọc",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        2000
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(json_agg(t ORDER BY t.id DESC), '[]'::json) AS messages FROM (\n  SELECT id, conversation_id, noi_dung, gui_luc FROM gia_lap_tin_nhan ORDER BY id DESC LIMIT 50\n) t;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "21b9b595-1b5e-56f7-b4ab-fd5d0d8c9a1a",
+      "name": "tin-nhan: gói kết quả",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        2000
+      ],
+      "parameters": {
+        "jsCode": "// Trả các tin shop đã gửi khách\nreturn [{ json: { ok: true, messages: $input.first().json.messages || [] } }];\n"
+      }
+    },
+    {
+      "id": "ba656614-c8be-5155-abeb-916b1b88dbdb",
+      "name": "tin-nhan: trả",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        2000
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "b2b8e911-16d9-58d0-a692-a911f614eb6e",
+      "name": "kpi: nhận",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        2400
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "demo/kpi",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "webhookId": "c3dd5f7f-79f0-564b-8f05-3c4e73a53fff"
+    },
+    {
+      "id": "befba0f4-0948-544c-9ac1-1bac0b960695",
+      "name": "kpi: kiểm mã",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        2400
+      ],
+      "parameters": {
+        "jsCode": "// Kiểm mã nhóm trong header x-ma-nhom (hoặc ?ma=), giữ lại body và query\nconst crypto = require('crypto');\nconst w = $input.first().json;\nconst expected = $env.GIA_LAP_MA || '';\nconst got = String((w.headers || {})['x-ma-nhom'] || (w.query || {}).ma || '');\nconst h = (s) => crypto.createHash('sha256').update(s).digest();\nconst ok = !!expected && crypto.timingSafeEqual(h(got), h(expected));\nreturn [{ json: { ok, body: w.body || {}, query: w.query || {} } }];\n"
+      }
+    },
+    {
+      "id": "0be50271-ef3f-5daf-a59d-ba6a561fad41",
+      "name": "kpi: đúng mã?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        2400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3b512b6b-8ed3-55c9-b548-81e0a6071e5b",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "11027004-cece-5a9b-90b0-dfa8ad5e240e",
+      "name": "kpi: trả 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        2540
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, loi: 'Sai mã nhóm (header x-ma-nhom)' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "dd57ef68-c605-53fc-990a-01cb6cf03b71",
+      "name": "kpi: đọc",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        660,
+        2400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT to_jsonb(k) AS hom_nay FROM kpi_tong_hop_ngay k\nWHERE k.ngay = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "cc9aaea5-a8bd-5618-9f96-c520d4247bd3",
+      "name": "kpi: gói kết quả",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        2400
+      ],
+      "parameters": {
+        "jsCode": "// Trả số liệu KPI hôm nay\nreturn [{ json: { ok: true, hom_nay: $input.first().json.hom_nay || null } }];\n"
+      }
+    },
+    {
+      "id": "1f92d770-6075-536b-bfdb-8cfc0db3487b",
+      "name": "kpi: trả",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        2400
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "san-pham: nhận": {
+      "main": [
+        [
+          {
+            "node": "san-pham: kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "san-pham: kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "san-pham: đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "san-pham: đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "san-pham: yêu cầu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "san-pham: trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "san-pham: yêu cầu": {
+      "main": [
+        [
+          {
+            "node": "san-pham: gọi tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "san-pham: gọi tool": {
+      "main": [
+        [
+          {
+            "node": "san-pham: gói kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "san-pham: gói kết quả": {
+      "main": [
+        [
+          {
+            "node": "san-pham: trả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: nhận": {
+      "main": [
+        [
+          {
+            "node": "chat: kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "chat: đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "chat: dựng tin nhắn",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "chat: trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: dựng tin nhắn": {
+      "main": [
+        [
+          {
+            "node": "chat: gọi chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: gọi chatbot": {
+      "main": [
+        [
+          {
+            "node": "chat: gói trả lời",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: gói trả lời": {
+      "main": [
+        [
+          {
+            "node": "chat: trả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: nhận": {
+      "main": [
+        [
+          {
+            "node": "dat-don: kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "dat-don: đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "dat-don: đọc giỏ",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "dat-don: trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: đọc giỏ": {
+      "main": [
+        [
+          {
+            "node": "dat-don: gọi tool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: gọi tool": {
+      "main": [
+        [
+          {
+            "node": "dat-don: tính đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: tính đơn": {
+      "main": [
+        [
+          {
+            "node": "dat-don: giỏ hợp lệ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: giỏ hợp lệ?": {
+      "main": [
+        [
+          {
+            "node": "dat-don: ghi đơn",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "dat-don: trả lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: ghi đơn": {
+      "main": [
+        [
+          {
+            "node": "dat-don: gửi vào hệ thống",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dat-don: gửi vào hệ thống": {
+      "main": [
+        [
+          {
+            "node": "dat-don: trả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "viec: nhận": {
+      "main": [
+        [
+          {
+            "node": "viec: kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "viec: kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "viec: đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "viec: đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "viec: dựng sự kiện",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "viec: trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "viec: dựng sự kiện": {
+      "main": [
+        [
+          {
+            "node": "viec: hợp lệ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "viec: hợp lệ?": {
+      "main": [
+        [
+          {
+            "node": "viec: ghi trạng thái",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "viec: trả lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "viec: ghi trạng thái": {
+      "main": [
+        [
+          {
+            "node": "viec: gửi vào hệ thống",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "viec: gửi vào hệ thống": {
+      "main": [
+        [
+          {
+            "node": "viec: trả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "don: nhận": {
+      "main": [
+        [
+          {
+            "node": "don: kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "don: kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "don: đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "don: đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "don: đọc",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "don: trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "don: đọc": {
+      "main": [
+        [
+          {
+            "node": "don: gói kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "don: gói kết quả": {
+      "main": [
+        [
+          {
+            "node": "don: trả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tin-nhan: nhận": {
+      "main": [
+        [
+          {
+            "node": "tin-nhan: kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tin-nhan: kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "tin-nhan: đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tin-nhan: đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "tin-nhan: đọc",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "tin-nhan: trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tin-nhan: đọc": {
+      "main": [
+        [
+          {
+            "node": "tin-nhan: gói kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tin-nhan: gói kết quả": {
+      "main": [
+        [
+          {
+            "node": "tin-nhan: trả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "kpi: nhận": {
+      "main": [
+        [
+          {
+            "node": "kpi: kiểm mã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "kpi: kiểm mã": {
+      "main": [
+        [
+          {
+            "node": "kpi: đúng mã?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "kpi: đúng mã?": {
+      "main": [
+        [
+          {
+            "node": "kpi: đọc",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "kpi: trả 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "kpi: đọc": {
+      "main": [
+        [
+          {
+            "node": "kpi: gói kết quả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "kpi: gói kết quả": {
+      "main": [
+        [
+          {
+            "node": "kpi: trả",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "any",
+    "errorWorkflow": "m3XuLyLoi0000001"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

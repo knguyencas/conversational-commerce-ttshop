@@ -342,6 +342,43 @@
         }
       },
       "alwaysOutputData": true
+    },
+    {
+      "id": "0875e7b1-0de2-55e2-9bc4-07dc1c83a0c1",
+      "name": "Lưu tin gửi khách",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        1440
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO gia_lap_tin_nhan (conversation_id, noi_dung)\nSELECT $1, $2 WHERE $3::int = 0 AND $2 <> ''\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [ 'mock-conv-1', String(($json.data || {}).echo || ''), String($json.code) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "6d3afa5c-eb6c-5b0c-a005-1ef309e28014",
+      "name": "Trả kết quả gửi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        1440
+      ],
+      "parameters": {
+        "jsCode": "// Trả lại kết quả gửi tin như TikTok trả, sau khi đã lưu tin cho giao diện demo\nreturn [{ json: $('Trả: Send message').first().json }];\n"
+      }
     }
   ],
   "connections": {
@@ -460,6 +497,28 @@
         [
           {
             "node": "Trả: Order detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trả: Send message": {
+      "main": [
+        [
+          {
+            "node": "Lưu tin gửi khách",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lưu tin gửi khách": {
+      "main": [
+        [
+          {
+            "node": "Trả kết quả gửi",
             "type": "main",
             "index": 0
           }

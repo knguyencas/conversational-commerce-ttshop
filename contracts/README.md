@@ -24,6 +24,7 @@
 | `internal/chatbot_input.json` | Router truyền gì cho Chatbot | M3 | Nhóm tự quy định |
 | `internal/van_chuyen.md` | Vận chuyển: M2 ghi đơn, Odoo báo đóng gói, middleware báo ngược Odoo | M2, M3 | Nhóm tự quy định; API TikTok cần đối chiếu |
 | `internal/tiktok_api.md` | Gọi TikTok API qua `M3 · TikTok API`: dữ liệu vào/ra, cách ký | M2, M3 | Cách ký cần đối chiếu khi có app |
+| `internal/demo_api.md` | API JSON cho giao diện web demo (shop giả lập): sản phẩm, chat, đặt đơn, trạng thái, tin nhắn, KPI | Giao diện gọi, M3 làm | Nhóm tự quy định |
 | `internal/ton_kho.md` | Đồng bộ tồn kho Odoo → TikTok: khi nào chạy, dữ liệu vào, cách gọi API | M2 làm, M3 cung cấp API | Nhóm tự quy định; API TikTok cần đối chiếu |
 | `internal/tool_san_pham.md` | Chatbot hỏi gì và nhận về dạng gì khi tra sản phẩm | M3 gọi, **M2 làm bản đọc Odoo** | Nhóm tự quy định |
 | `internal/odoo_picking_done.json` | Odoo gửi gì khi phiếu xuất kho Done | M2 cài, M3 nhận | ☐ (M2 thay bằng bản thật) |

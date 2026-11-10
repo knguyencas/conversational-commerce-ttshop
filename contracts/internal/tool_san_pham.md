@@ -25,6 +25,7 @@ Khi bản thật chạy đúng hợp đồng, chỉ cần đổi workflow mà Ch
 |---|---|---|
 | `tra_san_pham` | `query` (chữ khách gõ hoặc SKU), `color` (có thể null) | Tìm tối đa 3 sản phẩm khớp tên, tên gọi tắt hoặc SKU |
 | `tim_theo_ngan_sach` | `category`, `budget_min`, `budget_max`, `brand` (đều có thể null), `limit` | Sản phẩm còn hàng trong khoảng giá, giá cao nhất trước |
+| `danh_sach` | không có | Mọi sản phẩm (dùng cho giao diện demo, `GET /webhook/demo/san-pham`) |
 | `phu_kien_tuong_thich` | `sku` hoặc `device` (vd "iphone 15"), `category` (có thể null), `limit` | Phụ kiện dùng được cho máy đó |
 
 Chatbot gửi chữ khách gõ gần như nguyên văn vào `query`, có thể không dấu hoặc viết tắt. Bên tra cứu tự so khớp mềm: bỏ dấu, chữ thường, so với tên và tên gọi tắt.

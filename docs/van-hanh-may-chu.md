@@ -313,6 +313,7 @@ scripts/gia-lap.sh tat         # tắt: n8n gọi TikTok thật
 - **Danh sách đơn**: `https://<NGROK_DOMAIN>/webhook/gia-lap-don?ma=<mã nhóm>`, trang chữ liệt kê 20 đơn gần nhất, trạng thái và các bước hệ thống đã ghi. Dùng để lấy mã đơn cho bước tiếp theo.
 - **Mã nhóm** (`GIA_LAP_MA` trong `.env`) chặn người lạ dùng form; gửi riêng cho nhóm.
 - Đơn giả lập nằm trong bảng `gia_lap_don`; TikTok giả đọc chi tiết đơn từ đó, nên SKU, số lượng, tổng tiền, mã vận đơn đều khớp với những gì đã nhập. SKU có trong `sku_map` thì dùng SKU ID TikTok của nó.
+- **API cho giao diện demo**: `https://<NGROK_DOMAIN>/webhook/demo/...` (sản phẩm, chat, đặt đơn, đẩy bước, danh sách đơn, tin nhắn, KPI), header `x-ma-nhom`, cho phép gọi từ mọi domain. Hợp đồng: [contracts/internal/demo_api.md](../contracts/internal/demo_api.md).
 - `scripts/dien-tap.sh` chạy được khi đang bật giả lập và không tắt nó.
 
 Khi app TikTok đã được duyệt và có shop thật (hoặc shop thử trong sandbox), chạy `scripts/gia-lap.sh tat` rồi làm theo mục *Kết nối shop với hệ thống*.

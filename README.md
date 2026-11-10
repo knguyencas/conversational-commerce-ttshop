@@ -19,6 +19,8 @@ Mọi thứ chạy trên máy trưởng nhóm bằng Docker. Các bạn khác kh
 
 **Hiện trạng:** hệ thống đã chạy được trọn luồng (chat, đơn, đóng gói, giao hàng, báo khách, KPI). Shop chưa có đơn thật, nên nhóm dùng **chế độ giả lập**: một form trên web tạo đơn giả y như TikTok gửi, để mọi workflow chạy được mà không tốn tiền.
 
+**Đồ án cần những gì, triển khai thế nào:** [docs/nhom-viec/](docs/nhom-viec/README.md) chia đồ án thành 4 nhóm việc, mỗi file viết để đưa thẳng cho trợ lý AI đọc. Giao diện demo gọi API trong [contracts/internal/demo_api.md](contracts/internal/demo_api.md).
+
 ## Bắt đầu từ đây
 
 1. Ai cũng đọc trước: **[huong-dan/00-cai-dat-chung.md](huong-dan/00-cai-dat-chung.md)**. Cài GitHub Desktop và Tailscale, nhận lời mời, quy tắc giữ bí mật, cách dùng form giả lập.

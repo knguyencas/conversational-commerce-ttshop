@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
 MOCK=http://localhost:5678/webhook/tiktok-mock
-TEST_IDS=(testTikTokGia001 testGiaLapForm01 testGiaLapDs0001)
+TEST_IDS=(testTikTokGia001 testGiaLapForm01 testGiaLapDs0001 testDemoApi00001)
 
 set_env() {
   if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else printf '%s=%s\n' "$1" "$2" >> .env; fi
@@ -27,7 +27,7 @@ case "${1:-}" in
     set -a; source .env; set +a
     docker compose exec -T db psql -U "$PG_USER" -d postgres -q < init/05-gia-lap.sql
     mkdir -p backups/.tmp-gia-lap
-    cp n8n/test-workflows/test-tiktok-gia.json n8n/test-workflows/test-gia-lap-form.json n8n/test-workflows/test-gia-lap-ds.json backups/.tmp-gia-lap/
+    cp n8n/test-workflows/test-tiktok-gia.json n8n/test-workflows/test-gia-lap-form.json n8n/test-workflows/test-gia-lap-ds.json n8n/test-workflows/test-demo-api.json backups/.tmp-gia-lap/
     docker compose exec -T -u root n8n rm -rf /tmp/gl
     docker compose cp backups/.tmp-gia-lap n8n:/tmp/gl >/dev/null 2>&1
     rm -rf backups/.tmp-gia-lap
@@ -41,6 +41,7 @@ case "${1:-}" in
     echo "Chế độ giả lập đang BẬT. Mở bằng domain ngrok (localhost hay IP Tailscale thì form không gửi được):"
     echo "  Form giả lập:          https://${NGROK_DOMAIN:-<domain ngrok>}/form/gia-lap-tiktok"
     echo "  Danh sách đơn giả lập: https://${NGROK_DOMAIN:-<domain ngrok>}/webhook/gia-lap-don?ma=$GIA_LAP_MA"
+    echo "  API cho giao diện demo:   https://${NGROK_DOMAIN:-<domain ngrok>}/webhook/demo/... (xem contracts/internal/demo_api.md)"
     echo "  Mã nhóm (gửi riêng cho nhóm): $GIA_LAP_MA"
     ;;
   tat)
@@ -57,6 +58,7 @@ case "${1:-}" in
     sql "DELETE FROM order_status_log WHERE tiktok_order_id IN (SELECT order_id FROM gia_lap_don);
          DELETE FROM upsell_order_stats WHERE order_id IN (SELECT order_id FROM gia_lap_don);
          DELETE FROM processed_events WHERE event_id LIKE 'gialap%';
+         DELETE FROM gia_lap_tin_nhan;
          DELETE FROM gia_lap_don;"
     echo "Đã xóa mọi đơn giả lập và log của chúng."
     ;;

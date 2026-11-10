@@ -12,3 +12,10 @@ CREATE TABLE IF NOT EXISTS gia_lap_don (
   created_at       timestamptz NOT NULL DEFAULT now(),
   updated_at       timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS gia_lap_tin_nhan (
+  id               bigserial PRIMARY KEY,
+  conversation_id  text,
+  noi_dung         text NOT NULL,
+  gui_luc          timestamptz NOT NULL DEFAULT now()
+);

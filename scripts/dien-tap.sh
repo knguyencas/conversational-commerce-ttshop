@@ -66,6 +66,7 @@ cleanup() {
   echo "== Dọn dữ liệu thử và trả n8n về cấu hình thật"
   clean_rows || true
   sql "DELETE FROM failed_jobs WHERE created_at >= '$START';
+       DELETE FROM gia_lap_tin_nhan WHERE gui_luc >= '$START';
        DO \$\$ BEGIN
          IF to_regclass('dien_tap_bandit_arms') IS NOT NULL THEN
            DELETE FROM bandit_arms;
@@ -73,7 +74,7 @@ cleanup() {
            DROP TABLE dien_tap_bandit_arms;
          END IF;
        END \$\$;" >/dev/null || true
-  local giu="testGiaLapForm01 testGiaLapDs0001"
+  local giu="testGiaLapForm01 testGiaLapDs0001 testDemoApi00001"
   grep -q '^TIKTOK_API_BASE=.*tiktok-mock' .env && giu="$giu testTikTokGia001"
   for id in testTikTokGia001 testGeminiGia001; do
     case " $giu " in *" $id "*) continue ;; esac
