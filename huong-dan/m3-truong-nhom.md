@@ -30,7 +30,7 @@ Docker Desktop sập khi khởi động thì làm theo `scripts/fix-docker-deskt
 ## Việc trong lúc nhóm làm
 
 - **Nạp workflow nhóm gửi:** sau khi merge pull request, trên máy chủ chạy `git pull` rồi `bash scripts/import-n8n.sh`.
-- **Train mô hình trên Colab** (không train trên máy): [docs/huong-dan-train-ai.md](../docs/huong-dan-train-ai.md). Mô hình mua kèm làm ngay; PhoBERT chờ câu test của M1.
+- **Train mô hình trên Colab** (không train trên máy): bản bấm từng nút [m3-train-ai-nhanh.md](m3-train-ai-nhanh.md); giải thích chi tiết ở [docs/huong-dan-train-ai.md](../docs/huong-dan-train-ai.md). Mô hình mua kèm làm ngay; PhoBERT chờ câu test của M1.
 - **Chấm chatbot** bằng bộ test của M1: `python danh-gia/cham_chatbot.py --help`.
 - **Hai lần mỗi tuần** xem cột Kẹt trong sheet phân công.
 - **Khi shop được duyệt:** tạo app trên TikTok Partner Center, tìm mục Sandbox / test shop. Có test shop thì nối vào hệ thống và tắt giả lập (`scripts/gia-lap.sh tat`); không có thì giữ giả lập để demo.

@@ -71,6 +71,7 @@ Các file máy chủ nằm ở thư mục gốc vì Docker Compose cần vậy; 
 |---|---|
 | [docs/kien-truc-middleware.md](docs/kien-truc-middleware.md) | Kiến trúc chi tiết, từng nền tảng, mô hình kinh doanh; dùng cho báo cáo |
 | [docs/van-hanh-may-chu.md](docs/van-hanh-may-chu.md) | M3: dựng, chạy, sao lưu, diễn tập, chế độ giả lập |
+| [huong-dan/m3-train-ai-nhanh.md](huong-dan/m3-train-ai-nhanh.md) | M3: train AI, bản bấm từng nút |
 | [docs/huong-dan-train-ai.md](docs/huong-dan-train-ai.md) | M3: train PhoBERT và mô hình mua kèm trên Colab |
 | [docs/huong-dan-tai-khoan-n8n.md](docs/huong-dan-tai-khoan-n8n.md) | M2, M4: tài khoản n8n, cách đưa workflow vào repo |
 | [docs/huong-dan-kpi-dashboard.md](docs/huong-dan-kpi-dashboard.md) | M4: lấy số KPI vào Google Sheet, nối Looker Studio |

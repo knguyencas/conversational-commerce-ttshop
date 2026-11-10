@@ -1,6 +1,6 @@
 # Hướng dẫn train và đánh giá lớp AI (từng bước)
 
-Tài liệu cho Thành viên 3. Lớp AI nhóm tự làm gồm 4 phần:
+Tài liệu cho Thành viên 3. Muốn làm nhanh theo từng nút bấm thì xem [huong-dan/m3-train-ai-nhanh.md](../huong-dan/m3-train-ai-nhanh.md); tài liệu này giải thích chi tiết. Lớp AI nhóm tự làm gồm 4 phần:
 
 | Phần | Là gì | Có cần train không | Chạy ở đâu |
 |---|---|---|---|
@@ -145,6 +145,11 @@ Service tự nén mô hình int8 (khoảng 0,9 GB RAM, ~0,1 giây mỗi câu). M
    - **Hit@3:** trong 3 loại mời đầu tiên có ít nhất 1 loại khách thật sự mua.
    - **Recall@5:** tỉ lệ loại khách thật sự mua nằm trong 5 gợi ý đầu.
    - So với **baseline**: luôn mời loại hàng phổ biến nhất, không quan tâm khách đang mua gì.
+7. **So với hai cách gợi ý khác** để báo cáo có đối chứng:
+   - **Lift / PMI** = P(B | A) / P(B): đo B được mua kèm A nhiều hơn mức bình thường bao nhiêu lần (luật kết hợp). Hay đẩy loại hiếm lên đầu.
+   - **Phân rã ma trận ALS** (implicit feedback, Hu–Koren–Volinsky 2008): biểu diễn mỗi người và mỗi loại hàng bằng 8 con số ẩn, học từ ma trận ai đã mua loại nào, rồi gợi ý cho khách vừa mua A. Đây là kỹ thuật kinh điển của các hệ gợi ý (Netflix Prize).
+
+   Luật nạp vào hệ thống vẫn lấy từ P(B | A): dễ giải thích với khách và thầy, có số người làm căn cứ cho từng luật.
 
 ### B3. Chạy trên Colab
 
@@ -160,7 +165,8 @@ Các file nằm trong `MyDrive/cntttmdt/upsell/outputs/`:
 
 | File | Dùng làm gì |
 |---|---|
-| `metrics.json` | Hit@3, Recall@5 của mô hình và baseline, số ca kiểm tra, số người |
+| `metrics.json` | Hit@3, Recall@5 của 4 cách gợi ý (baseline, P(B\|A), Lift/PMI, ALS), số ca kiểm tra, số người |
+| `so_sanh_mo_hinh.png` | Biểu đồ cột Hit@3, Recall@5 của 4 cách gợi ý |
 | `xac_suat_mua_kem.png` | Bản đồ nhiệt P(B \| A) cho báo cáo |
 | `upsell_rules.csv` | Bảng luật: mỗi loại hàng thì mời 3 loại nào, kèm điểm và số người làm căn cứ |
 | `upsell_rules.sql` | File nạp luật vào hệ thống |

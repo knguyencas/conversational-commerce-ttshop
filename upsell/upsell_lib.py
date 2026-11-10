@@ -8,6 +8,7 @@ import re
 import time
 from collections import Counter, defaultdict
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -138,6 +139,73 @@ class CoPurchase:
     def rank(self, anchor: str, k: int) -> list[str]:
         others = [c for c in SHOP_CATEGORIES if c != anchor]
         return sorted(others, key=lambda b: -self.score(anchor, b))[:k]
+
+
+class Lift(CoPurchase):
+    """Lift = P(B|A) / P(B): B được mua kèm A nhiều hơn mức bình thường bao nhiêu lần. Xếp hạng giống PMI = log(lift)."""
+    name = "Lift / PMI"
+
+    def score(self, a: str, b: str) -> float:
+        return super().score(a, b) / max(self.prior.get(b, 0.0), 1e-9)
+
+
+class ALSMatrix:
+    """Phân rã ma trận người × loại hàng bằng implicit ALS (Hu, Koren, Volinsky 2008), gợi ý cho khách vừa mua A."""
+    name = "Phân rã ma trận ALS"
+
+    def __init__(self, ev: pd.DataFrame, factors: int = 8, reg: float = 0.1, alpha: float = 10.0,
+                 iters: int = 12, seed: int = 0, chunk: int = 200_000):
+        self.cats = list(SHOP_CATEGORIES)
+        idx = {c: i for i, c in enumerate(self.cats)}
+        g = ev.loc[ev.cat.isin(idx), ["user_id", "cat"]].drop_duplicates()
+        g = g[g.groupby("user_id").cat.transform("nunique") >= 2]
+        users = pd.factorize(g.user_id)[0]
+        R = np.zeros((int(users.max()) + 1 if len(users) else 0, len(self.cats)), dtype=np.float32)
+        R[users, g.cat.map(idx).to_numpy()] = 1.0
+        self.n_users, k, n_items = R.shape[0], factors, len(self.cats)
+        rng = np.random.default_rng(seed)
+        Y = rng.normal(0, 0.1, (n_items, k)).astype(np.float32)
+        X = np.zeros((self.n_users, k), dtype=np.float32)
+        lam = reg * np.eye(k, dtype=np.float32)
+        for _ in range(iters if self.n_users else 0):
+            X = self._solve_users(R, Y, lam, alpha, chunk)
+            Y = self._solve_items(R, X, lam, alpha)
+        self.Y, self.lam, self.alpha = Y, lam, alpha
+        self.table = {a: self._rank_new_user(idx[a]) for a in self.cats}
+
+    @staticmethod
+    def _solve_users(R, Y, lam, alpha, chunk):
+        """Bước cố định loại hàng, giải vector của mọi người theo từng khối (A_u x_u = b_u)."""
+        k = Y.shape[1]
+        YtY = Y.T @ Y + lam
+        YY = (Y[:, :, None] * Y[:, None, :]).reshape(len(Y), k * k)
+        X = np.empty((R.shape[0], k), dtype=np.float32)
+        for s in range(0, R.shape[0], chunk):
+            r = R[s:s + chunk]
+            A = YtY[None] + alpha * (r @ YY).reshape(-1, k, k)
+            b = (1 + alpha) * (r @ Y)
+            X[s:s + chunk] = np.linalg.solve(A, b[:, :, None])[:, :, 0]
+        return X
+
+    @staticmethod
+    def _solve_items(R, X, lam, alpha):
+        """Bước cố định người, giải vector của từng loại hàng."""
+        XtX = X.T @ X + lam
+        Y = np.empty((R.shape[1], X.shape[1]), dtype=np.float32)
+        for i in range(R.shape[1]):
+            Xi = X[R[:, i] > 0]
+            Y[i] = np.linalg.solve(XtX + alpha * Xi.T @ Xi, (1 + alpha) * Xi.sum(axis=0))
+        return Y
+
+    def _rank_new_user(self, a: int) -> list[str]:
+        """Khách mới chỉ mới mua loại A: tính vector của khách (fold-in) rồi xếp các loại còn lại."""
+        y = self.Y[a]
+        x = np.linalg.solve(self.Y.T @ self.Y + self.lam + self.alpha * np.outer(y, y), (1 + self.alpha) * y)
+        order = np.argsort(-(self.Y @ x))
+        return [self.cats[j] for j in order if j != a]
+
+    def rank(self, anchor: str, k: int) -> list[str]:
+        return self.table.get(anchor, [])[:k]
 
 
 def evaluate(model, cases) -> dict:
