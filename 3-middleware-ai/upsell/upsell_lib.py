@@ -163,7 +163,7 @@ def rules(model: CoPurchase, k: int = 3) -> list[dict]:
 
 def rules_sql(rows: list[dict]) -> str:
     esc = lambda s: s.replace("'", "''")
-    lines = ["-- Luật mua kèm học từ Amazon Reviews 2023 (sinh bởi upsell/train_upsell.ipynb)",
+    lines = ["-- Luật mua kèm học từ Amazon Reviews 2023 (sinh bởi 3-middleware-ai/upsell/train_upsell.ipynb)",
              "BEGIN;", "DELETE FROM upsell_rules WHERE source = 'amazon';"]
     for r in rows:
         lines.append("INSERT INTO upsell_rules (anchor_category, rec_category, rank, score, support, source) VALUES "

@@ -1,6 +1,6 @@
 # Sổ tay vận hành máy chủ (M3)
 
-Dành cho trưởng nhóm, người giữ máy chủ. Các bạn khác đọc [README](../README.md) và thư mục [huong-dan](../huong-dan/). Repo này dựng toàn bộ phần chạy chung của nhóm trên máy trưởng nhóm: **PostgreSQL, Odoo, n8n và ngrok**, tất cả bằng Docker.
+Dành cho trưởng nhóm, người giữ máy chủ. Các bạn khác đọc [README](../README.md) và thư mục [huong-dan](../README.md/). Repo này dựng toàn bộ phần chạy chung của nhóm trên máy trưởng nhóm: **PostgreSQL, Odoo, n8n và ngrok**, tất cả bằng Docker.
 
 ```
 TikTok Shop ──webhook──▶ ngrok (domain tĩnh) ──▶ n8n :5678 ──▶ Odoo :8069
@@ -15,10 +15,10 @@ Thành viên ──Tailscale──▶ Odoo, n8n                └──▶ Post
 | `.env.example` | Mẫu file cấu hình; copy thành `.env` rồi điền |
 | `init/` | SQL chạy một lần khi tạo database: DB `n8n`, `middleware`, bảng middleware, bảng mua kèm, view KPI |
 | `contracts/` | JSON mẫu của TikTok, Odoo và giữa các workflow; xem [contracts/README.md](../contracts/README.md) |
-| `n8n/workflows/` | Workflow n8n dạng JSON: 11 workflow M3 và 5 workflow giữ chỗ của M2 |
-| `nlu/` | Mô hình hiểu tin nhắn nhóm tự train (PhoBERT): sinh dữ liệu, gán nhãn, notebook Colab/Kaggle; xem [nlu/README.md](../nlu/README.md) |
-| `upsell/` | Mô hình mua kèm học từ Amazon Reviews 2023 (notebook Colab); xem [upsell/README.md](../upsell/README.md) |
-| `danh-gia/` | Script chấm chatbot bằng bộ câu test của M1 (`cham_chatbot.py`) |
+| `*/workflows/` | Workflow n8n dạng JSON: 11 workflow M3 và 5 workflow giữ chỗ của M2 |
+| `3-middleware-ai/nlu/` | Mô hình hiểu tin nhắn nhóm tự train (PhoBERT): sinh dữ liệu, gán nhãn, notebook Colab/Kaggle; xem [3-middleware-ai/nlu/README.md](../3-middleware-ai/nlu/README.md) |
+| `3-middleware-ai/upsell/` | Mô hình mua kèm học từ Amazon Reviews 2023 (notebook Colab); xem [3-middleware-ai/upsell/README.md](../3-middleware-ai/upsell/README.md) |
+| `3-middleware-ai/danh-gia/` | Script chấm chatbot bằng bộ câu test của M1 (`cham_chatbot.py`) |
 | `docs/` | [Kiến trúc middleware chi tiết](kien-truc-middleware.md), [hướng dẫn train AI từng bước](huong-dan-train-ai.md), [tài khoản n8n cho nhóm](huong-dan-tai-khoan-n8n.md), [KPI cho dashboard của M4](huong-dan-kpi-dashboard.md) |
 | `scripts/import-n8n.sh` | Nạp credential Postgres và các workflow vào n8n, publish, khởi động lại n8n |
 | `scripts/send-test-webhook.sh` | Gửi webhook mẫu có chữ ký vào n8n để test Router |
@@ -26,9 +26,9 @@ Thành viên ──Tailscale──▶ Odoo, n8n                └──▶ Post
 | `scripts/backup.sh`, `scripts/restore.sh` | Sao lưu ngay (database + workflow JSON); khôi phục một database |
 | `scripts/fix-docker-desktop.ps1` | Sửa lỗi Docker Desktop sập khi khởi động trên máy trưởng nhóm |
 | `backups/` | Bản sao lưu database và workflow (không đưa lên GitHub) |
-| `cua-hang/` | **M1**: sản phẩm, `sku-map`, bộ test chatbot, câu test NLU |
-| `odoo/` | **M2**: cấu hình Odoo, hướng dẫn đóng gói, kết quả test |
-| `noi-dung/` | **M4**: kịch bản video, Apps Script KPI, A/B, GMV Max, dashboard |
+| `1-cua-hang-tiktok/` | **M1**: sản phẩm, `sku-map`, bộ test chatbot, câu test NLU |
+| `2-kho-don-hang-odoo/` | **M2**: cấu hình Odoo, hướng dẫn đóng gói, kết quả test |
+| `4-noi-dung-do-luong/` | **M4**: kịch bản video, Apps Script KPI, A/B, GMV Max, dashboard |
 | `bao-cao/` | Báo cáo cuối, mỗi người một file |
 
 **Làm việc nhóm:** ai giữ thư mục nào, cách tạo nhánh, mở pull request và đưa workflow n8n vào repo xem [CONTRIBUTING.md](../CONTRIBUTING.md). Bảng phân công: [docs/phan-cong-nhom.xlsx](phan-cong-nhom.xlsx) (bản đang dùng nằm trên Google Sheet).
@@ -184,7 +184,7 @@ Xem từng request TikTok gửi vào: `http://localhost:4040`. Trang này hữu 
 | `M3 · Trạng thái đơn` | M3 | Chạy được (test bằng TikTok giả): ghi trạng thái giao hàng, nhắn mã vận đơn cho khách, báo nhóm khi hàng hoàn |
 | `M3 · Gửi tin TikTok` | M3 | Gửi tin cho khách qua Customer Service API (chờ TikTok cấp quyền) |
 | `M2 · Cập nhật Odoo (vận chuyển)` | M2 | Giữ chỗ: ghi mã vận đơn và trạng thái vào Odoo; hợp đồng `contracts/internal/van_chuyen.md` |
-| `TEST · …` (4 workflow) | M3 | Chỉ để test (`n8n/test-workflows/`), **không publish** khi không test |
+| `TEST · …` (4 workflow) | M3 | Chỉ để test (`3-middleware-ai/workflows-test/`), **không publish** khi không test |
 
 Router rẽ sự kiện như sau. Sự kiện khác chỉ được ghi vào `processed_events`, không gọi đi đâu.
 
@@ -203,7 +203,7 @@ Router rẽ sự kiện như sau. Sự kiện khác chỉ được ghi vào `pro
 - Sửa xong phải bấm **Publish**. Router chỉ gọi được workflow con đã publish; chưa publish thì báo lỗi *Workflow is not active*.
 - Giữ nguyên node trigger *Router gọi tới* và dạng dữ liệu vào (`contracts/internal/`).
 - Mọi workflow đặt **Settings > Error workflow** là `M3 · Xử lý lỗi`.
-- File trong `n8n/workflows/` chỉ là bản khởi đầu. Sau khi import, bản thật nằm trong n8n; sao lưu bằng lệnh ở mục *Sao lưu*. Chạy lại `scripts/import-n8n.sh` sẽ **ghi đè** các workflow cùng id.
+- File trong `*/workflows/` chỉ là bản khởi đầu. Sau khi import, bản thật nằm trong n8n; sao lưu bằng lệnh ở mục *Sao lưu*. Chạy lại `scripts/import-n8n.sh` sẽ **ghi đè** các workflow cùng id.
 
 Sau mỗi lần n8n khởi động lại, webhook cần **khoảng 30 giây** mới nhận request. Gọi sớm hơn sẽ bị 404.
 
@@ -234,7 +234,7 @@ Sửa `.env` xong chạy `docker compose up -d n8n`. Chưa có key hoặc AI l�
 
 **Test tự động bằng Gemini giả** (không cần key):
 
-1. Import và publish `n8n/test-workflows/*.json`.
+1. Import và publish `3-middleware-ai/workflows-test/*.json`.
 2. Trong `.env` đặt:
    - `GEMINI_API_KEY=test`
    - `GEMINI_BASE_URL=http://localhost:5678/webhook/2179f9fe-d27e-55de-8ecb-0387433a6b32/gemini-mock`

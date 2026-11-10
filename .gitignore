@@ -6,8 +6,8 @@ backups/*
 !backups/.gitkeep
 
 # Kết quả train NLU (mô hình nặng cỡ GB) và mô hình mua kèm
-nlu/outputs/
-upsell/outputs/
+3-middleware-ai/nlu/outputs/
+3-middleware-ai/upsell/outputs/
 
 # Linh tinh
 *.log

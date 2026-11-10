@@ -18,8 +18,8 @@ Máy cá nhân **không cần GPU** và không train gì nặng. Mọi bước t
 1. **Tài khoản Google** có Google Drive, còn trống khoảng 3 GB (mô hình NLU chiếm khoảng 1,1 GB).
 2. Trên Drive tạo thư mục `MyDrive/cntttmdt/`.
 3. Chép 2 thư mục từ repo (máy trưởng nhóm, `C:\Users\Nguyen\Folders code\spj\cntttmdt\`) lên Drive bằng *Mới → Tải thư mục lên*:
-   - `nlu/` thành `MyDrive/cntttmdt/nlu/`
-   - `upsell/` thành `MyDrive/cntttmdt/upsell/`
+   - `3-middleware-ai/nlu/` thành `MyDrive/cntttmdt/nlu/`
+   - `3-middleware-ai/upsell/` thành `MyDrive/cntttmdt/upsell/`
 4. Mở notebook: trên Drive bấm đúp file `.ipynb`, chọn *Mở bằng → Google Colaboratory*. Không thấy Colaboratory thì chọn *Kết nối thêm ứng dụng*, tìm "Colaboratory" để cài.
 
 ---
@@ -32,34 +32,34 @@ Shop mới chưa có hội thoại thật, nên dữ liệu đến từ 3 nguồ
 
 | Nguồn | Dùng để | Cách có |
 |---|---|---|
-| **Câu sinh tự động** | Train | `python nlu/gen_data.py` sinh 2.100 câu train + 560 câu dev từ mẫu câu (`nlu/templates_vi.py`) và danh mục sản phẩm (`nlu/data/catalog.csv`). Có sẵn câu không dấu, teencode, giá viết tắt. Đã chạy sẵn, file nằm ở `nlu/data/generated/` |
+| **Câu sinh tự động** | Train | `python 3-middleware-ai/nlu/gen_data.py` sinh 2.100 câu train + 560 câu dev từ mẫu câu (`3-middleware-ai/nlu/templates_vi.py`) và danh mục sản phẩm (`3-middleware-ai/nlu/data/catalog.csv`). Có sẵn câu không dấu, teencode, giá viết tắt. Đã chạy sẵn, file nằm ở `3-middleware-ai/nlu/data/generated/` |
 | **Câu thật từ Google Form** | Train thêm (tăng độ đa dạng) | M4 tạo Form "Bạn sẽ nhắn shop đồ công nghệ thế nào?", gửi bạn bè; được 200–300 câu thì gán nhãn |
 | **Tập test do người khác viết** | Chấm điểm (không train) | M1 viết khoảng 300 câu, mỗi ý định ít nhất 30 câu |
 
 Tùy chọn: nhờ Gemini viết thêm cách nói khác cho câu train:
 
 ```bash
-python nlu/paraphrase_gemini.py --per-intent 15 --variants 5
+python 3-middleware-ai/nlu/paraphrase_gemini.py --per-intent 15 --variants 5
 ```
 
 Lệnh này cần `GEMINI_API_KEY`; đọc lướt file kết quả và xóa câu sai trước khi train.
 
 ### A2. Gán nhãn câu thật
 
-1. Người gán nhãn đọc `nlu/HUONG_DAN_GAN_NHAN.md`: 7 ý định, 7 loại thông tin, các ca dễ nhầm.
+1. Người gán nhãn đọc `3-middleware-ai/nlu/HUONG_DAN_GAN_NHAN.md`: 7 ý định, 7 loại thông tin, các ca dễ nhầm.
 2. Gán trong Google Sheet, mỗi dòng gồm `text` và `intent`. Thông tin bọc dạng `[chữ](NHÃN)`, ví dụ `[sạc anker 20w](SAN_PHAM) màu [trắng](MAU) còn không`.
 3. *Tệp → Tải xuống → CSV*. Chuyển sang định dạng train:
 
    ```bash
-   python nlu/import_annotated.py test.csv nlu/data/test/test.jsonl --source test
+   python 3-middleware-ai/nlu/import_annotated.py test.csv 3-middleware-ai/nlu/data/test/test.jsonl --source test
    ```
 
    ```bash
-   python nlu/import_annotated.py form.csv nlu/data/human/form.jsonl --source form
+   python 3-middleware-ai/nlu/import_annotated.py form.csv 3-middleware-ai/nlu/data/human/form.jsonl --source form
    ```
 
    Script liệt kê dòng nào sai nhãn hay sai cú pháp; sửa trong Sheet rồi chạy lại.
-4. Chép lại thư mục `nlu/data/` lên Drive, đè bản cũ.
+4. Chép lại thư mục `3-middleware-ai/nlu/data/` lên Drive, đè bản cũ.
 
 ### A3. Train trên Colab
 
@@ -103,7 +103,7 @@ Ghi lại mỗi lần thử (tham số và F1 test) thành một bảng trong b�
 
 ### A6. Đưa mô hình vào hệ thống
 
-1. Trên Drive, tải `outputs/intent_model/`, `outputs/ner_model/`, `outputs/metrics.json` về máy trưởng nhóm, đặt vào `nlu/outputs/`.
+1. Trên Drive, tải `outputs/intent_model/`, `outputs/ner_model/`, `outputs/metrics.json` về máy trưởng nhóm, đặt vào `3-middleware-ai/nlu/outputs/`.
 2. Trong `.env` đặt `COMPOSE_PROFILES=nlu` và `NLU_URL=http://nlu:8000`.
 3. Bật service (lần đầu mất vài phút để build):
 
@@ -136,7 +136,7 @@ Service tự nén mô hình int8 (khoảng 0,9 GB RAM, ~0,1 giây mỗi câu). M
 
 ### B2. Cách mô hình học
 
-1. **Gán loại hàng của shop cho từng sản phẩm Amazon** theo cây danh mục (`upsell/category_map.py`). Ví dụ `Cell Phones & Accessories > Cases, Holsters & Sleeves > Basic Cases` thành **ốp lưng**. Phụ kiện của phụ kiện (đệm tai nghe, dây đồng hồ) thì bỏ.
+1. **Gán loại hàng của shop cho từng sản phẩm Amazon** theo cây danh mục (`3-middleware-ai/upsell/category_map.py`). Ví dụ `Cell Phones & Accessories > Cases, Holsters & Sleeves > Basic Cases` thành **ốp lưng**. Phụ kiện của phụ kiện (đệm tai nghe, dây đồng hồ) thì bỏ.
 2. **Coi là "mua cùng nhau"**: một người đánh giá hai món **khác loại** trong vòng **30 ngày**.
 3. **Đếm theo người.** Mỗi người góp tối đa 1 cho mỗi cặp loại, để người mua cực nhiều không lấn át.
 4. **Tính điểm:** P(B | A) = (số người mua cả A và B + α × độ phổ biến của B) / (số người mua A + α), với α = 20. Khi loại A ít dữ liệu, điểm tự kéo về mức phổ biến chung (làm mượt).
@@ -169,11 +169,11 @@ Notebook còn in bảng Hit@3 **theo từng loại hàng**, dùng để viết p
 
 ### B5. Đưa luật vào hệ thống
 
-1. Tải `upsell_rules.sql` từ Drive về `upsell/outputs/` trong repo.
+1. Tải `upsell_rules.sql` từ Drive về `3-middleware-ai/upsell/outputs/` trong repo.
 2. Chạy bằng Git Bash, từ thư mục repo:
 
    ```bash
-   docker compose exec -T db psql -U odoo -d middleware < upsell/outputs/upsell_rules.sql
+   docker compose exec -T db psql -U odoo -d middleware < 3-middleware-ai/upsell/outputs/upsell_rules.sql
    ```
 
 3. Kiểm tra:
@@ -225,7 +225,7 @@ Với số đơn của đồ án, số liệu chỉ mang tính minh họa. Ghi r
 
 ### D1. Bộ test (M1 viết)
 
-File CSV với cột `cau_hoi` (bắt buộc), và các cột tùy chọn `y_dinh_dung`, `sku_dung` (cách nhau bằng `|`), `ghi_chu`. Xem mẫu 10 câu ở `danh-gia/bo-test-chatbot-mau.csv`. Bộ thật khoảng **100 câu**, gồm:
+File CSV với cột `cau_hoi` (bắt buộc), và các cột tùy chọn `y_dinh_dung`, `sku_dung` (cách nhau bằng `|`), `ghi_chu`. Xem mẫu 10 câu ở `3-middleware-ai/danh-gia/bo-test-chatbot-mau.csv`. Bộ thật khoảng **100 câu**, gồm:
 - hỏi giá, hỏi còn hàng;
 - so sánh, tư vấn theo ngân sách;
 - khiếu nại;
@@ -248,10 +248,10 @@ File CSV với cột `cau_hoi` (bắt buộc), và các cột tùy chọn `y_din
 2. Chạy:
 
    ```bash
-   python danh-gia/cham_chatbot.py danh-gia/bo-test-chatbot.csv --lan lan-1
+   python 3-middleware-ai/danh-gia/cham_chatbot.py 3-middleware-ai/danh-gia/bo-test-chatbot.csv --lan lan-1
    ```
 
-3. Script in bảng tóm tắt và ghi `danh-gia/ket-qua/lan-1.csv`, gồm câu trả lời, ý định bot đoán, các số tiền trong câu, cột **SAI_GIA**, chuyển người, món được mời, độ trễ.
+3. Script in bảng tóm tắt và ghi `3-middleware-ai/danh-gia/ket-qua/lan-1.csv`, gồm câu trả lời, ý định bot đoán, các số tiền trong câu, cột **SAI_GIA**, chuyển người, món được mời, độ trễ.
 4. **M1 mở file**, điền cột `danh_gia` (Đúng/Sai) và ghi chú. Mục tiêu: **≥ 90/100 câu Đúng và 0 câu SAI_GIA**.
 5. Sửa bot (prompt, mẫu câu, dữ liệu NLU), chạy lại với `--lan lan-2`... Đưa bảng điểm các lần vào báo cáo.
 6. Chấm xong thì **Unpublish** workflow test.

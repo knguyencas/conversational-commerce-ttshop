@@ -30,7 +30,7 @@ Cách tính các chỉ số chính:
 - `ti_le_chat_ra_don`: phần trăm cuộc chat mới mà khách đặt đơn trong 7 ngày sau đó.
 - `tao_don_tb_giay`: từ lúc TikTok báo đơn tới lúc Sales Order có trong Odoo. `dong_goi_tb_gio`: từ lúc tạo Sales Order tới lúc đặt được vận chuyển.
 - `gia_tri_don_tb_co_moi` so với `gia_tri_don_tb_khong_moi` là kết quả A/B của upsell (khoảng 20% cuộc chat không được mời).
-- Độ chính xác bot trên bộ test 100 câu không nằm trong log; lấy từ kết quả `danh-gia/cham_chatbot.py` và nhập tay vào một tab riêng.
+- Độ chính xác bot trên bộ test 100 câu không nằm trong log; lấy từ kết quả `3-middleware-ai/danh-gia/cham_chatbot.py` và nhập tay vào một tab riêng.
 
 ## 3. Cài Apps Script trong Google Sheet
 

@@ -1,6 +1,6 @@
 # Hợp đồng: đồng bộ tồn kho Odoo → TikTok (workflow `M2 · Đồng bộ tồn kho`)
 
-Odoo là nơi duy nhất giữ số tồn đúng. TikTok chỉ nhận số được đẩy lên, không ai sửa tồn kho tay trong Seller Center. Workflow này của **M2**; trưởng nhóm đã dựng sẵn khung giữ chỗ trong `n8n/workflows/m2-dong-bo-ton-kho.json` với đủ hai trigger dưới đây.
+Odoo là nơi duy nhất giữ số tồn đúng. TikTok chỉ nhận số được đẩy lên, không ai sửa tồn kho tay trong Seller Center. Workflow này của **M2**; trưởng nhóm đã dựng sẵn khung giữ chỗ trong `2-kho-don-hang-odoo/workflows/m2-dong-bo-ton-kho.json` với đủ hai trigger dưới đây.
 
 ## 1. Khi nào chạy
 

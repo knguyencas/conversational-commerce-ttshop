@@ -11,7 +11,7 @@ n8n chạy trên máy trưởng nhóm. Lần đầu mở, n8n bắt tạo tài k
 | Chia sẻ credential (Postgres, Odoo, Gemini...) | Không, cùng lỗi trên |
 | Nâng member thành admin | Không, cùng lỗi trên |
 
-Vì vậy **member chỉ thấy và sửa được workflow, credential của chính mình**. Workflow chạy thật (Router, các workflow M2 mà Router gọi) phải nằm trong tài khoản owner, với `id` cố định như trong thư mục `n8n/workflows/`. Quy trình làm việc ở mục 3 xử lý chuyện này.
+Vì vậy **member chỉ thấy và sửa được workflow, credential của chính mình**. Workflow chạy thật (Router, các workflow M2 mà Router gọi) phải nằm trong tài khoản owner, với `id` cố định như trong thư mục `*/workflows/`. Quy trình làm việc ở mục 3 xử lý chuyện này.
 
 ## 1. Trưởng nhóm tạo tài khoản owner (một lần)
 
@@ -31,9 +31,9 @@ Khi đã bật ngrok, giao diện n8n cũng mở được từ internet qua doma
 ## 3. Cách M2 và M4 làm workflow
 
 1. **Làm và thử trong tài khoản của mình.** Tạo credential riêng của mình: Odoo (API key của user tích hợp) cho M2, Creatomate và FPT.AI cho M4. Muốn đọc bảng middleware thì xin trưởng nhóm thông tin kết nối PostgreSQL, gửi riêng.
-2. **Muốn thay một workflow giữ chỗ** (`M2 · Tạo đơn`, `M2 · Hủy đơn`, `M2 · Đồng bộ tồn kho`, `M2 · Cập nhật Odoo (vận chuyển)`): mở file tương ứng trong `n8n/workflows/` (vd `m2-tao-don.json`), **Import from file** vào tài khoản mình, làm tiếp trên bản đó. Giữ nguyên tên workflow và node trigger.
-3. **Khi chạy được**: menu **… → Download**. Mở file vừa tải, sửa dòng `"id"` thành id của file giữ chỗ (vd `"m2TaoDon00000001"`), gửi cho trưởng nhóm hoặc commit vào `n8n/workflows/`.
-4. **Trưởng nhóm nạp vào tài khoản owner**: chép file vào `n8n/workflows/`, chạy `./scripts/import-n8n.sh`. Script nạp đè đúng id, publish và khởi động lại n8n. Lần đầu nạp workflow có credential mới (Odoo, Creatomate...), trưởng nhóm tạo credential cùng tên trong tài khoản owner. Mã và khóa lấy từ thành viên qua tin nhắn riêng.
+2. **Muốn thay một workflow giữ chỗ** (`M2 · Tạo đơn`, `M2 · Hủy đơn`, `M2 · Đồng bộ tồn kho`, `M2 · Cập nhật Odoo (vận chuyển)`): mở file tương ứng trong `*/workflows/` (vd `m2-tao-don.json`), **Import from file** vào tài khoản mình, làm tiếp trên bản đó. Giữ nguyên tên workflow và node trigger.
+3. **Khi chạy được**: menu **… → Download**. Mở file vừa tải, sửa dòng `"id"` thành id của file giữ chỗ (vd `"m2TaoDon00000001"`), gửi cho trưởng nhóm hoặc commit vào `*/workflows/`.
+4. **Trưởng nhóm nạp vào tài khoản owner**: chép file vào `*/workflows/`, chạy `./scripts/import-n8n.sh`. Script nạp đè đúng id, publish và khởi động lại n8n. Lần đầu nạp workflow có credential mới (Odoo, Creatomate...), trưởng nhóm tạo credential cùng tên trong tài khoản owner. Mã và khóa lấy từ thành viên qua tin nhắn riêng.
 5. Trưởng nhóm kiểm tra workflow đi đúng qua Router và các bảng dùng chung, không sửa hộ phần logic.
 
 ## 4. M4 có cần tài khoản n8n không

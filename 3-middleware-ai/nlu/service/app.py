@@ -57,7 +57,7 @@ def load_models() -> None:
     if missing:
         state.update(status="no_model",
                      detail=f"Chưa có mô hình: {', '.join(missing)}. Tải intent_model/ và ner_model/ "
-                            "từ Drive (nlu/outputs) về thư mục nlu/outputs trên máy.")
+                            "từ Drive (3-middleware-ai/nlu/outputs) về thư mục 3-middleware-ai/nlu/outputs trên máy.")
         log.warning(state["detail"])
         return
     try:

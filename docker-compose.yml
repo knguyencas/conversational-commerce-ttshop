@@ -111,7 +111,7 @@ services:
     restart: unless-stopped
 
   nlu:
-    build: ./nlu
+    build: ./3-middleware-ai/nlu
     image: cntttmdt-nlu:latest
     profiles: ["nlu"]
     environment:
@@ -119,7 +119,7 @@ services:
       QUANTIZE: ${NLU_QUANTIZE:-1}
       TORCH_THREADS: ${NLU_THREADS:-2}
     volumes:
-      - ${NLU_MODEL_DIR:-./nlu/outputs}:/models:ro
+      - ${NLU_MODEL_DIR:-./3-middleware-ai/nlu/outputs}:/models:ro
     ports:
       - "127.0.0.1:8000:8000"
     mem_limit: 1500m

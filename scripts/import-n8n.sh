@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nạp credential "Postgres · middleware" và mọi workflow trong n8n/workflows/ vào n8n, publish rồi khởi động lại.
+# Nạp credential "Postgres · middleware" và mọi workflow trong */workflows/ vào n8n, publish rồi khởi động lại.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export MSYS_NO_PATHCONV=1
@@ -24,14 +24,18 @@ n8n import:credentials --input=/tmp/cred.json 2>&1 | grep -E 'Successfully|Error
 rm -f /tmp/cred.json
 EOF
 
-echo "== Workflow trong n8n/workflows/"
+echo "== Workflow trong */workflows/ (2-kho-don-hang-odoo, 3-middleware-ai, 4-noi-dung-do-luong)"
+STAGE=backups/.tmp-import-wf
+rm -rf "$STAGE" && mkdir -p "$STAGE"
+cp */workflows/*.json "$STAGE"/
 docker compose exec -T -u root n8n rm -rf /tmp/wf
-docker compose cp n8n/workflows n8n:/tmp/wf >/dev/null 2>&1
+docker compose cp "$STAGE" n8n:/tmp/wf >/dev/null 2>&1
+rm -rf "$STAGE"
 docker compose exec -T n8n n8n import:workflow --separate --input=/tmp/wf 2>&1 | grep -E 'Successfully|Error' || true
 docker compose exec -T -u root n8n rm -rf /tmp/wf
 
 echo "== Publish workflow"
-for f in n8n/workflows/*.json; do
+for f in */workflows/*.json; do
   id=$(grep -m1 -oE '"id": "[A-Za-z0-9]{16}"' "$f" | cut -d'"' -f4)
   docker compose exec -T n8n n8n publish:workflow --id="$id" 2>&1 | grep -E '^Publishing|Error|not found' || true
 done

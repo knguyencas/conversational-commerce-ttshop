@@ -27,7 +27,7 @@ case "${1:-}" in
     set -a; source .env; set +a
     docker compose exec -T db psql -U "$PG_USER" -d postgres -q < init/05-gia-lap.sql
     mkdir -p backups/.tmp-gia-lap
-    cp n8n/test-workflows/test-tiktok-gia.json n8n/test-workflows/test-gia-lap-form.json n8n/test-workflows/test-gia-lap-ds.json backups/.tmp-gia-lap/
+    cp 3-middleware-ai/workflows-test/test-tiktok-gia.json 3-middleware-ai/workflows-test/test-gia-lap-form.json 3-middleware-ai/workflows-test/test-gia-lap-ds.json backups/.tmp-gia-lap/
     docker compose exec -T -u root n8n rm -rf /tmp/gl
     docker compose cp backups/.tmp-gia-lap n8n:/tmp/gl >/dev/null 2>&1
     rm -rf backups/.tmp-gia-lap

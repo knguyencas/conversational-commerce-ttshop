@@ -1,4 +1,4 @@
-"""Test nhanh cho nlu_lib. Chạy: python nlu/tests/test_nlu_lib.py"""
+"""Test nhanh cho nlu_lib. Chạy: python 3-middleware-ai/nlu/tests/test_nlu_lib.py"""
 import sys
 from pathlib import Path
 

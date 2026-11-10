@@ -27,7 +27,7 @@
 | `internal/ton_kho.md` | Đồng bộ tồn kho Odoo → TikTok: khi nào chạy, dữ liệu vào, cách gọi API | M2 làm, M3 cung cấp API | Nhóm tự quy định; API TikTok cần đối chiếu |
 | `internal/tool_san_pham.md` | Chatbot hỏi gì và nhận về dạng gì khi tra sản phẩm | M3 gọi, **M2 làm bản đọc Odoo** | Nhóm tự quy định |
 | `internal/odoo_picking_done.json` | Odoo gửi gì khi phiếu xuất kho Done | M2 cài, M3 nhận | ☐ (M2 thay bằng bản thật) |
-| `odoo/` | Kết quả API Odoo thật | M2 lưu vào, mọi người đọc | M2 |
+| `2-kho-don-hang-odoo/` | Kết quả API Odoo thật | M2 lưu vào, mọi người đọc | M2 |
 
 ## Số `type` của webhook TikTok (cần đối chiếu)
 
