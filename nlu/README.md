@@ -34,7 +34,7 @@ Tin nhắn → [NLU nhóm train] ý định + thông tin → code gọi tool Odo
 ### 1. Sinh dữ liệu (máy nào cũng chạy được, không cần GPU)
 
 ```bash
-python 3-middleware-ai/nlu/gen_data.py
+python nlu/gen_data.py
 ```
 
 Mặc định ra 2.100 câu train (300 mỗi ý định) và 560 câu dev. Dev dùng **mẫu câu và sản phẩm không có trong train**, để đo mô hình có hiểu được cách nói và sản phẩm mới hay không.
@@ -44,7 +44,7 @@ Khi có sheet sản phẩm thật của M1: xuất CSV với các cột `sku,nam
 Muốn câu đa dạng hơn: thêm mẫu câu vào `templates_vi.py`, hoặc chạy Gemini (cần `GEMINI_API_KEY`):
 
 ```bash
-python 3-middleware-ai/nlu/paraphrase_gemini.py --per-intent 15 --variants 5
+python nlu/paraphrase_gemini.py --per-intent 15 --variants 5
 ```
 
 ### 2. Thu câu thật và làm tập test (việc của M1, M4)
@@ -52,13 +52,13 @@ python 3-middleware-ai/nlu/paraphrase_gemini.py --per-intent 15 --variants 5
 - **Tập test** (~300 câu, người **không** train mô hình viết) → gán nhãn theo `HUONG_DAN_GAN_NHAN.md` trong Google Sheet → xuất CSV → chuyển đổi:
 
   ```bash
-  python 3-middleware-ai/nlu/import_annotated.py test.csv 3-middleware-ai/nlu/data/test/test.jsonl --source test
+  python nlu/import_annotated.py test.csv nlu/data/test/test.jsonl --source test
   ```
 
 - **Câu từ Google Form** (bạn bè trả lời "bạn sẽ nhắn shop thế nào") → gán nhãn → lưu vào `data/human/` để train:
 
   ```bash
-  python 3-middleware-ai/nlu/import_annotated.py form.csv 3-middleware-ai/nlu/data/human/form.jsonl --source form
+  python nlu/import_annotated.py form.csv nlu/data/human/form.jsonl --source form
   ```
 
 Script báo đúng dòng nào sai nhãn hay sai cú pháp.
@@ -67,8 +67,8 @@ Script báo đúng dòng nào sai nhãn hay sai cú pháp.
 
 Hướng dẫn chi tiết nằm ở đầu `train_nlu.ipynb`. Tóm tắt:
 
-- **Colab:** chép thư mục `3-middleware-ai/nlu/` lên Drive vào `MyDrive/cntttmdt/nlu`, mở notebook, chọn GPU T4, *Run all*.
-- **Kaggle:** nén `3-middleware-ai/nlu/` thành zip, tạo Dataset, import notebook, *Add Input* dataset đó, bật GPU và Internet, chạy hết.
+- **Colab:** chép thư mục `nlu/` lên Drive vào `MyDrive/cntttmdt/nlu`, mở notebook, chọn GPU T4, *Run all*.
+- **Kaggle:** nén `nlu/` thành zip, tạo Dataset, import notebook, *Add Input* dataset đó, bật GPU và Internet, chạy hết.
 
 Mất khoảng 10–15 phút trên GPU T4. Không train trên máy cá nhân vì không có GPU.
 
@@ -92,12 +92,12 @@ Service FastAPI (`service/app.py`, `Dockerfile`) nạp 2 mô hình và trả l�
 **Bước 1: tải mô hình từ Drive về máy trưởng nhóm.** Trên Drive mở `cntttmdt/nlu/outputs/`, tải về và đặt sao cho có:
 
 ```
-3-middleware-ai/nlu/outputs/intent_model/   (config.json, model.safetensors, vocab.txt, bpe.codes, ...)
-3-middleware-ai/nlu/outputs/ner_model/
-3-middleware-ai/nlu/outputs/metrics.json
+nlu/outputs/intent_model/   (config.json, model.safetensors, vocab.txt, bpe.codes, ...)
+nlu/outputs/ner_model/
+nlu/outputs/metrics.json
 ```
 
-Drive tải thư mục về dạng zip thì giải nén vào `3-middleware-ai/nlu/outputs/`.
+Drive tải thư mục về dạng zip thì giải nén vào `nlu/outputs/`.
 
 **Bước 2: bật service.** Trong `.env` đặt:
 
@@ -150,7 +150,7 @@ curl -X POST http://127.0.0.1:8000/analyze -H "Content-Type: application/json" -
 ## Kiểm tra code
 
 ```bash
-python 3-middleware-ai/nlu/tests/test_nlu_lib.py
+python nlu/tests/test_nlu_lib.py
 ```
 
 Notebook có chế độ chạy thử nhỏ trên CPU (vài chục câu, 2 bước train) để bắt lỗi code trước khi lên Colab:

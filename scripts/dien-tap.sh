@@ -91,7 +91,7 @@ clean_rows
 sql "DROP TABLE IF EXISTS dien_tap_bandit_arms; CREATE TABLE dien_tap_bandit_arms AS SELECT * FROM bandit_arms;" >/dev/null
 docker compose exec -T -u root n8n rm -rf /tmp/twf
 mkdir -p "$TMP/twf"
-cp 3-middleware-ai/workflows-test/test-tiktok-gia.json 3-middleware-ai/workflows-test/test-gemini-gia.json "$TMP/twf/"
+cp n8n/test-workflows/test-tiktok-gia.json n8n/test-workflows/test-gemini-gia.json "$TMP/twf/"
 docker compose cp "$TMP/twf" n8n:/tmp/twf >/dev/null 2>&1
 docker compose exec -T n8n n8n import:workflow --separate --input=/tmp/twf >/dev/null 2>&1
 for id in testTikTokGia001 testGeminiGia001; do

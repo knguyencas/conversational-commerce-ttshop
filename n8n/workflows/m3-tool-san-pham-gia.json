@@ -13,7 +13,7 @@
         -300
       ],
       "parameters": {
-        "content": "## M3 · Tool sản phẩm (dữ liệu giả)\nChatbot gọi workflow này để tra sản phẩm. Hợp đồng: `contracts/internal/tool_san_pham.md`.\n\n**Đây chỉ là dữ liệu giả** (27 sản phẩm trong `3-middleware-ai/nlu/data/catalog.csv`, tồn kho bịa) để làm chatbot trong lúc chờ Odoo.\n\nBản thật đọc Odoo do **M2** làm (`M2 · Tra sản phẩm Odoo`) và trả về đúng dạng này; khi đó chỉ cần đổi node *Gọi tool sản phẩm* trong Chatbot sang workflow của M2.",
+        "content": "## M3 · Tool sản phẩm (dữ liệu giả)\nChatbot gọi workflow này để tra sản phẩm. Hợp đồng: `contracts/internal/tool_san_pham.md`.\n\n**Đây chỉ là dữ liệu giả** (27 sản phẩm trong `nlu/data/catalog.csv`, tồn kho bịa) để làm chatbot trong lúc chờ Odoo.\n\nBản thật đọc Odoo do **M2** làm (`M2 · Tra sản phẩm Odoo`) và trả về đúng dạng này; khi đó chỉ cần đổi node *Gọi tool sản phẩm* trong Chatbot sang workflow của M2.",
         "height": 260,
         "width": 640,
         "color": 7

@@ -4,7 +4,7 @@ Chatbot (M3) không đọc Odoo trực tiếp. Nó gọi **một workflow con** 
 
 | Bản | Workflow | Người làm | Dữ liệu |
 |---|---|---|---|
-| Giả (đang dùng) | `M3 · Tool sản phẩm (dữ liệu giả)` | M3 | Danh mục mẫu trong `3-middleware-ai/nlu/data/catalog.csv`, tồn kho bịa |
+| Giả (đang dùng) | `M3 · Tool sản phẩm (dữ liệu giả)` | M3 | Danh mục mẫu trong `nlu/data/catalog.csv`, tồn kho bịa |
 | Thật | `M2 · Tra sản phẩm Odoo` | **M2** | Odoo: `product.product`, `stock.quant` |
 
 Khi bản thật chạy đúng hợp đồng, chỉ cần đổi workflow mà Chatbot gọi (node *Gọi tool sản phẩm*); phần còn lại của Chatbot giữ nguyên. Đây là lần ghép số 1 trong tài liệu phân công (M1, M2, M3).

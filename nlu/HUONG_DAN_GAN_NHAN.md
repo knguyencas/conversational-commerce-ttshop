@@ -58,7 +58,7 @@ Mỗi dòng một câu, hai cột `text` và `intent`. Trong `text`, bọc thôn
 Xuất sheet ra CSV (UTF-8) rồi chuyển sang định dạng train bằng:
 
 ```bash
-python 3-middleware-ai/nlu/import_annotated.py duong-dan/test.csv 3-middleware-ai/nlu/data/test/test.jsonl
+python nlu/import_annotated.py duong-dan/test.csv nlu/data/test/test.jsonl
 ```
 
 Script sẽ báo dòng nào sai cú pháp hoặc sai tên nhãn.

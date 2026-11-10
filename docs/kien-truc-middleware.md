@@ -236,7 +236,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 - **Dựng thế nào:**
   1. Container `n8n` dùng database `n8n` trong PostgreSQL.
   2. Mở `http://<IP Tailscale>:5678`, tạo tài khoản owner, mời M2, M4.
-  3. Chạy `scripts/import-n8n.sh` để nạp credential Postgres và toàn bộ workflow từ `*/workflows/`, publish, khởi động lại n8n.
+  3. Chạy `scripts/import-n8n.sh` để nạp credential Postgres và toàn bộ workflow từ `n8n/workflows/`, publish, khởi động lại n8n.
 - **Giới hạn của bản Community miễn phí (đã thử thật trên n8n 2.45.4, ngày 05/11/2026):**
 
   | Việc | Kết quả |
@@ -245,7 +245,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
   | Chia sẻ workflow hoặc credential cho người khác | Không: n8n trả *Plan lacks license for this feature* |
   | Nâng member thành admin | Không, cùng lỗi trên |
 
-  Vì vậy member chỉ thấy và sửa được workflow, credential của chính mình. Workflow chạy thật phải nằm ở tài khoản owner với `id` cố định như trong `*/workflows/`, vì Router gọi workflow con theo `id`. Quy trình nhóm thống nhất: M2, M4 làm và thử trong tài khoản riêng, tải file JSON về, đổi `id` thành `id` của file giữ chỗ, gửi trưởng nhóm; trưởng nhóm chạy `scripts/import-n8n.sh` để nạp đè vào tài khoản owner. Chi tiết ở [huong-dan-tai-khoan-n8n.md](huong-dan-tai-khoan-n8n.md).
+  Vì vậy member chỉ thấy và sửa được workflow, credential của chính mình. Workflow chạy thật phải nằm ở tài khoản owner với `id` cố định như trong `n8n/workflows/`, vì Router gọi workflow con theo `id`. Quy trình nhóm thống nhất: M2, M4 làm và thử trong tài khoản riêng, tải file JSON về, đổi `id` thành `id` của file giữ chỗ, gửi trưởng nhóm; trưởng nhóm chạy `scripts/import-n8n.sh` để nạp đè vào tài khoản owner. Chi tiết ở [huong-dan-tai-khoan-n8n.md](huong-dan-tai-khoan-n8n.md).
 - **Khái niệm cần nắm:**
 
   | Khái niệm | Nghĩa | Dùng ở đâu |
@@ -332,7 +332,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 
 ### 2.12. Service NLU (FastAPI): đưa mô hình vào chạy thật
 
-- **Là gì:** dịch vụ web nhỏ viết bằng FastAPI (`3-middleware-ai/nlu/service/app.py`), chạy trong container `nlu`.
+- **Là gì:** dịch vụ web nhỏ viết bằng FastAPI (`nlu/service/app.py`), chạy trong container `nlu`.
 - **Vai trò:** chatbot gửi tin nhắn, nhận lại ý định, độ tự tin và các thông tin trích được.
 - **API:**
   - `POST /analyze {"text": "..."}` trả về `{intent, confidence, top_intents, entities, segmented, latency_ms}`;
@@ -386,7 +386,7 @@ Mỗi nền tảng được mô tả theo cùng một khung: **là gì · vai tr
 
 ### 2.16. Google Drive và GitHub: lưu trữ và chia sẻ
 
-- **Drive:** ảnh và video sản phẩm, mô hình đã train (`3-middleware-ai/nlu/outputs`, `3-middleware-ai/upsell/outputs`), bản sao của thư mục `backups/`.
+- **Drive:** ảnh và video sản phẩm, mô hình đã train (`nlu/outputs`, `upsell/outputs`), bản sao của thư mục `backups/`.
 - **GitHub:** mã nguồn repo (workflow JSON, SQL, script, hợp đồng dữ liệu, tài liệu). `.gitignore` đã chặn `.env`, `backups/` và mô hình. Repo đã có trên máy trưởng nhóm (nhánh `main`); trước commit đầu tiên đã quét toàn repo để chắc không có giá trị nào trong `.env` lọt vào file. Chưa đẩy lên GitHub vì cần tài khoản của trưởng nhóm; khi đẩy thì để chế độ **Private**.
 
 ---
@@ -578,7 +578,7 @@ Cách tính các chỉ số chính:
 - **Tỉ lệ chat ra đơn:** cuộc chat mới mà người mua có đơn (`upsell_order_stats`) trong 7 ngày sau đó.
 - **Thời gian tạo đơn:** từ lúc Router nhận sự kiện đơn (`processed_events`) tới dòng `odoo_created`. **Thời gian đóng gói:** từ `odoo_created` tới `shipping_arranged`.
 - **Hiệu quả mua kèm (A/B):** giá trị đơn trung bình nhóm `offer` so với nhóm `control`.
-- Độ chính xác trên bộ 100 câu không nằm trong log; lấy từ kết quả `3-middleware-ai/danh-gia/cham_chatbot.py` và nhập tay vào dashboard.
+- Độ chính xác trên bộ 100 câu không nằm trong log; lấy từ kết quả `danh-gia/cham_chatbot.py` và nhập tay vào dashboard.
 
 ### 3.4. Hợp đồng dữ liệu (`contracts/`)
 
@@ -742,7 +742,7 @@ Mục tiêu KPI đặt theo mức trung bình ngành điện tử (CTR 0,64%, RO
 
 | Thành viên | Phần | Nền tảng | Nối vào middleware qua |
 |---|---|---|---|
-| **M1** | Cửa hàng, dữ liệu sản phẩm, trực chat, bộ test | Seller Center, Google Sheets | `sku_map`; bấm link ủy quyền; trực cuộc chat bị chuyển (`conversations.mode = staff`); bộ 100 câu cho `3-middleware-ai/danh-gia/cham_chatbot.py`; tập test NLU |
+| **M1** | Cửa hàng, dữ liệu sản phẩm, trực chat, bộ test | Seller Center, Google Sheets | `sku_map`; bấm link ủy quyền; trực cuộc chat bị chuyển (`conversations.mode = staff`); bộ 100 câu cho `danh-gia/cham_chatbot.py`; tập test NLU |
 | **M2** | Kho và đơn hàng | Odoo, n8n | Workflow `M2 ·` nhận sự kiện từ Router; ghi `order_status_log`; webhook Odoo `odoo-picking-done`; `M2 · Tra sản phẩm Odoo` theo `tool_san_pham.md`; `M2 · Cập nhật Odoo (vận chuyển)` theo `van_chuyen.md`; `M2 · Đồng bộ tồn kho` theo `ton_kho.md`; gọi TikTok qua `M3 · TikTok API` |
 | **M3** | Hạ tầng, middleware, chatbot, lớp AI, ghép nối | Docker, n8n, PostgreSQL, ngrok, Tailscale, Partner Center, Gemini, Colab, FastAPI | Giữ quy ước, hợp đồng dữ liệu; chủ trì 3 lần ghép |
 | **M4** | Nội dung, quảng cáo, đo lường | TikTok Studio, Ads Manager, Creatomate, FPT.AI, Looker Studio | Workflow `M4 · Video`; Google Sheet lấy KPI qua `M3 · KPI cho dashboard` (mã `KPI_SECRET` do trưởng nhóm gửi riêng) |
