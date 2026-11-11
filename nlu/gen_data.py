@@ -238,29 +238,49 @@ def main():
     ap.add_argument("--dev-template-frac", type=float, default=0.2)
     ap.add_argument("--dev-product-frac", type=float, default=0.2)
     ap.add_argument("--seed", type=int, default=13)
+    ap.add_argument("--chi-train", action="store_true",
+                    help="giữ nguyên dev.jsonl và cách chia trong meta.json, chỉ sinh lại train (để so trước/sau trên cùng dev)")
     args = ap.parse_args()
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8")
 
-    rng = random.Random(args.seed)
+    out = Path(args.out)
     products = L.load_catalog(args.catalog)
-    train_products, dev_products = split_list(rng, products, args.dev_product_frac)
-
+    extra = lambda intent: [(f"x{j}", t) for j, t in enumerate(T.EXTRA_TRAIN_TEMPLATES.get(intent, []))]
     train_rows, dev_rows, tpl_split, seen = [], [], {}, set()
-    for intent in L.INTENTS:
-        tpls = list(enumerate(T.TEMPLATES[intent]))
-        tr_tpl, dv_tpl = split_list(rng, tpls, args.dev_template_frac)
-        tpl_split[intent] = {"train": sorted(t for t, _ in tr_tpl), "dev": sorted(t for t, _ in dv_tpl)}
-        train_rows += generate(Generator(train_products, rng), tr_tpl, intent, args.per_intent, "train", seen)
-        dev_rows += generate(Generator(dev_products, rng), dv_tpl, intent, args.dev_per_intent, "dev", seen)
+
+    if args.chi_train:
+        old = json.loads((out / "meta.json").read_text(encoding="utf-8"))
+        dev_rows = L.read_jsonl(out / "dev.jsonl")
+        seen = {r["text"].lower() for r in dev_rows}
+        by_sku = {p.sku: p for p in products}
+        train_products = [by_sku[s] for s in old["train_products"]]
+        dev_products = [by_sku[s] for s in old["dev_products"]]
+        rng = random.Random(args.seed + 1)
+        for intent in L.INTENTS:
+            idx = old["templates"][intent]
+            tr_tpl = [(i, T.TEMPLATES[intent][i]) for i in idx["train"]] + extra(intent)
+            tpl_split[intent] = {"train": idx["train"], "dev": idx["dev"], "train_bo_sung": len(extra(intent))}
+            train_rows += generate(Generator(train_products, rng), tr_tpl, intent, args.per_intent, "train", seen)
+    else:
+        rng = random.Random(args.seed)
+        train_products, dev_products = split_list(rng, products, args.dev_product_frac)
+        for intent in L.INTENTS:
+            tpls = list(enumerate(T.TEMPLATES[intent]))
+            tr_tpl, dv_tpl = split_list(rng, tpls, args.dev_template_frac)
+            tpl_split[intent] = {"train": sorted(t for t, _ in tr_tpl), "dev": sorted(t for t, _ in dv_tpl),
+                                 "train_bo_sung": len(extra(intent))}
+            train_rows += generate(Generator(train_products, rng), tr_tpl + extra(intent), intent, args.per_intent,
+                                   "train", seen)
+            dev_rows += generate(Generator(dev_products, rng), dv_tpl, intent, args.dev_per_intent, "dev", seen)
 
     rng.shuffle(train_rows)
-    out = Path(args.out)
     L.write_jsonl(out / "train.jsonl", train_rows)
     L.write_jsonl(out / "dev.jsonl", dev_rows)
     meta = {
         "seed": args.seed,
+        "chi_train": args.chi_train,
         "catalog": Path(args.catalog).name,
         "train_products": [p.sku for p in train_products],
         "dev_products": [p.sku for p in dev_products],

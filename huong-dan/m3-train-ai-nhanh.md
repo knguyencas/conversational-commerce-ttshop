@@ -42,6 +42,8 @@ Bản ngắn cho M3. Mỗi dòng là một việc. Cần giải thích kỹ hơn
 
 Nên chờ M1 gửi bộ câu test trước (xem bước 2a). Chưa có thì vẫn train được, nhưng điểm chỉ chấm trên câu tự sinh nên chưa đưa vào báo cáo được.
 
+**Train lại sau khi dữ liệu được sửa (11/11):** trên Drive, vào `cntttmdt → nlu → data`, xóa thư mục `generated`, rồi tải thư mục `nlu\data\generated` từ máy lên lại. Tải luôn `nlu\templates_vi.py` và `nlu\gen_data.py` lên `cntttmdt → nlu` (đè bản cũ). Sau đó làm 2b. Trước khi chạy, đổi tên thư mục `nlu/outputs` cũ trên Drive thành `outputs-lan-1` để giữ kết quả lần 1 cho báo cáo so sánh.
+
 **2a. Thêm bộ câu test của M1 (khi có)**
 1. Mở Google Sheet câu test của M1: **Tệp → Tải xuống → Giá trị được phân tách bằng dấu phẩy (.csv)**. Đổi tên file thành `test.csv`, để vào thư mục repo.
 2. Mở Git Bash ở thư mục repo, chạy:

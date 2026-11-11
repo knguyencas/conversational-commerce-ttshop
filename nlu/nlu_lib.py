@@ -325,7 +325,7 @@ def read_jsonl(path: str | Path) -> list[dict]:
 
 def write_jsonl(path: str | Path, rows: list[dict]) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 

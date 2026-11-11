@@ -36,6 +36,14 @@ Shop mới chưa có hội thoại thật, nên dữ liệu đến từ 3 nguồ
 | **Câu thật từ Google Form** | Train thêm (tăng độ đa dạng) | M4 tạo Form "Bạn sẽ nhắn shop đồ công nghệ thế nào?", gửi bạn bè; được 200–300 câu thì gán nhãn |
 | **Tập test do người khác viết** | Chấm điểm (không train) | M1 viết khoảng 300 câu, mỗi ý định ít nhất 30 câu |
 
+**Mẫu bổ sung sau lần train đầu (11/11/2026).** Lần train đầu, dev cho thấy 2 lỗ hổng của dữ liệu sinh: kiểu câu "loại hàng + hãng" (vd "chuột logitech") có 0 câu trong train vì cả 3 mẫu kiểu này đều rơi vào dev, nên F1 nhận hãng chỉ 0,07; và khiếu nại có mã đơn rất ít nên mô hình học "có mã đơn là tra đơn". Đã thêm `EXTRA_TRAIN_TEMPLATES` trong `nlu/templates_vi.py` (mẫu **chỉ dùng cho train**, viết khác mẫu dev) và sinh lại bằng:
+
+```bash
+python nlu/gen_data.py --chi-train
+```
+
+Lệnh này giữ nguyên `dev.jsonl` từng byte và cách chia sản phẩm, mẫu câu trong `meta.json`, chỉ sinh lại train, nên so được trước và sau trên **cùng 560 câu dev**. Baseline TF-IDF tăng macro-F1 từ 0,801 lên 0,885. Khi viết báo cáo, ghi rõ mẫu bổ sung được thêm sau khi xem lỗi trên dev, nên số dev sau khi sửa có phần lạc quan; số đáng tin là trên tập test của M1.
+
 Tùy chọn: nhờ Gemini viết thêm cách nói khác cho câu train:
 
 ```bash

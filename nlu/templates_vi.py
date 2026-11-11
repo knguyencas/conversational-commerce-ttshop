@@ -177,6 +177,67 @@ TEMPLATES: dict[str, list[str]] = {
     ],
 }
 
+EXTRA_TRAIN_TEMPLATES: dict[str, list[str]] = {
+    "hoi_gia": [
+        "{LOAI} {HANG} giá bao nhiêu shop",
+        "shop có {LOAI} {HANG} không, giá sao",
+        "{LOAI} {HANG} {DUNG_LUONG} bao nhiêu tiền",
+        "báo giá {LOAI} {HANG} giúp em",
+    ],
+    "tu_van": [
+        "{LOAI} {HANG} có mấy mẫu vậy shop",
+        "tầm {NGAN_SACH} thì {LOAI} {HANG} có loại nào",
+        "muốn mua {LOAI} {HANG} cho {THIET_BI}, chọn cái nào",
+        "em thích {HANG}, có {LOAI} nào tầm {NGAN_SACH} không",
+        "{LOAI} {HANG} dòng nào pin lâu nhất",
+    ],
+    "so_sanh": [
+        "{LOAI} {HANG} với {HANG} cái nào bền hơn",
+        "{SAN_PHAM} với {LOAI} {HANG} khác nhau thế nào",
+        "giữa {LOAI} {HANG} và {SAN_PHAM} thì chọn cái nào",
+    ],
+    "tra_don": [
+        "đơn {MA_DON} khi nào tới vậy ạ",
+        "đơn {MA_DON} giao chưa shop",
+        "cho em hỏi đơn {MA_DON} đi tới đâu rồi",
+        "đơn {MA_DON} bao lâu nữa thì nhận được",
+        "shipper khi nào giao đơn {MA_DON} vậy",
+        "đơn em đặt bao giờ tới vậy shop",
+        "đơn {MA_DON} có mã vận đơn chưa ạ",
+    ],
+    "bao_hanh": [
+        "{LOAI} {HANG} bảo hành mấy tháng shop",
+        "bảo hành {LOAI} {HANG} ở trung tâm nào",
+        "nếu hàng lỗi thì shop có đổi mới trong 7 ngày không",
+        "đổi hàng có mất phí không shop",
+        "chính sách đổi trả {LOAI} thế nào",
+    ],
+    "khieu_nai": [
+        "đơn {MA_DON} trễ hẹn mấy ngày rồi, shop làm việc kiểu gì vậy",
+        "đơn {MA_DON} giao sai hàng, em muốn đổi",
+        "đơn {MA_DON} nhận về bị vỡ, xử lý giúp em",
+        "đơn {MA_DON} cứ báo đang giao cả tuần nay, bực quá",
+        "đơn {MA_DON} bị hoàn về mà em không hề từ chối nhận",
+        "giao chậm quá shop ơi, chờ mỏi mòn rồi",
+        "quá hạn giao mà vẫn chưa thấy hàng, em muốn hủy đơn {MA_DON}",
+        "{SAN_PHAM} mới mua đã lỗi, shop xử lý sao",
+        "{LOAI} vừa nhận đã hỏng rồi",
+        "{SAN_PHAM} nhận về không lên nguồn",
+        "hàng lỗi mà shop không chịu đổi, em sẽ đánh giá 1 sao",
+        "mở hộp ra thiếu {LOAI} shop ơi",
+        "đơn {MA_DON} giao không đủ số lượng",
+    ],
+    "khac": [
+        "đặt đơn trên tiktok như thế nào vậy",
+        "đơn vị vận chuyển của shop là gì",
+        "shop có gửi hóa đơn điện tử không",
+        "xin lỗi em gửi nhầm tin",
+        "dạ em cảm ơn, để em xem thêm",
+        "tối nay shop có live không",
+        "shop dễ thương quá",
+    ],
+}
+
 DEVICES = ["iphone 15", "iphone 16 pro max", "iphone 13", "ip 14 pro", "samsung s24", "galaxy a56",
            "redmi note 14", "macbook air", "ipad gen 10", "oppo reno 12"]
 PHONE_BRANDS = ["samsung", "xiaomi", "oppo", "vivo", "realme", "apple"]

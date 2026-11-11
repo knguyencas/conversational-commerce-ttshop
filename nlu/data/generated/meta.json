@@ -1,5 +1,6 @@
 {
   "seed": 13,
+  "chi_train": true,
   "catalog": "catalog.csv",
   "train_products": [
     "LOA-MARSHALL-EMBERTON3",
@@ -65,7 +66,8 @@
         16,
         18,
         27
-      ]
+      ],
+      "train_bo_sung": 4
     },
     "tu_van": {
       "train": [
@@ -97,7 +99,8 @@
         15,
         19,
         23
-      ]
+      ],
+      "train_bo_sung": 5
     },
     "so_sanh": {
       "train": [
@@ -123,7 +126,8 @@
         3,
         12,
         19
-      ]
+      ],
+      "train_bo_sung": 3
     },
     "tra_don": {
       "train": [
@@ -149,7 +153,8 @@
         2,
         15,
         18
-      ]
+      ],
+      "train_bo_sung": 7
     },
     "bao_hanh": {
       "train": [
@@ -175,7 +180,8 @@
         13,
         15,
         19
-      ]
+      ],
+      "train_bo_sung": 5
     },
     "khieu_nai": {
       "train": [
@@ -203,7 +209,8 @@
         2,
         12,
         16
-      ]
+      ],
+      "train_bo_sung": 13
     },
     "khac": {
       "train": [
@@ -233,18 +240,19 @@
         18,
         20,
         22
-      ]
+      ],
+      "train_bo_sung": 7
     }
   },
   "counts": {
     "train": {
-      "tu_van": 300,
-      "hoi_gia": 300,
-      "so_sanh": 300,
+      "khieu_nai": 300,
       "bao_hanh": 300,
-      "khac": 300,
+      "tu_van": 300,
       "tra_don": 300,
-      "khieu_nai": 300
+      "khac": 300,
+      "hoi_gia": 300,
+      "so_sanh": 300
     },
     "dev": {
       "hoi_gia": 80,
@@ -258,13 +266,13 @@
   },
   "entity_counts": {
     "train": {
-      "NGAN_SACH": 126,
-      "LOAI": 402,
-      "SAN_PHAM": 1146,
-      "MAU": 83,
-      "MA_DON": 188,
-      "DUNG_LUONG": 42,
-      "HANG": 100
+      "MA_DON": 284,
+      "LOAI": 496,
+      "HANG": 255,
+      "DUNG_LUONG": 49,
+      "SAN_PHAM": 1016,
+      "MAU": 61,
+      "NGAN_SACH": 122
     },
     "dev": {
       "SAN_PHAM": 261,
