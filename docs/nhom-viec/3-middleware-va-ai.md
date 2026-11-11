@@ -26,7 +26,8 @@
 | API demo cho giao diện (7 API) | Chạy, hợp đồng [contracts/internal/demo_api.md](../../contracts/internal/demo_api.md) |
 | Diễn tập trọn luồng `scripts/dien-tap.sh` | 14/14 đạt |
 | Dữ liệu sản phẩm của chatbot | Còn là dữ liệu giả có tên hãng; cần thay bằng `san-pham.csv` |
-| Mô hình mua kèm, PhoBERT | Chưa train |
+| PhoBERT | Train lần 1 xong (dev: macro-F1 ý định 0,894, F1 thực thể 0,728, đều hơn baseline). Đã sửa dữ liệu (mẫu "loại hàng + hãng", khiếu nại có mã đơn), chờ train lần 2; chưa bật service NLU |
+| Mô hình mua kèm | Notebook so 4 cách (phổ biến, P(B\|A), Lift/PMI, ALS), chưa chạy trên Colab |
 | Chấm chatbot | Chờ bộ câu test |
 | Tailscale | Chưa cài |
 
@@ -44,7 +45,7 @@
 
 1. **Tailscale**: cài trên máy chủ, *Share* máy cho thành viên, gửi IP để vào Odoo.
 2. **Nạp dữ liệu sản phẩm mới vào chatbot**: khi có `cua-hang/san-pham.csv`, sinh lại mảng `PRODUCTS` trong workflow `M3 · Tool sản phẩm (dữ liệu giả)` từ file đó (giữ đúng dạng trong [tool_san_pham.md](../../contracts/internal/tool_san_pham.md): `colors`, `stock`, `compatible`, `aliases`), nạp lại bằng `scripts/import-n8n.sh`. Đồng thời dùng file đó làm `--catalog` khi chấm và khi sinh dữ liệu train NLU.
-3. **Mô hình mua kèm**: chạy `upsell/train_upsell.ipynb` trên Google Colab (CPU), nạp `upsell_rules.sql` vào database. Hướng dẫn: [docs/huong-dan-train-ai.md](../huong-dan-train-ai.md) mục B.
+3. **Mô hình mua kèm**: chạy `upsell/train_upsell.ipynb` trên Google Colab (CPU), nạp `upsell_rules.sql` vào database. Hướng dẫn bấm từng nút: [huong-dan/m3-train-ai-nhanh.md](../../huong-dan/m3-train-ai-nhanh.md); giải thích chi tiết: [docs/huong-dan-train-ai.md](../huong-dan-train-ai.md) mục B.
 4. **PhoBERT**: đổi `cua-hang/test-nlu.csv` sang JSONL bằng `nlu/import_annotated.py`, chạy `nlu/train_nlu.ipynb` trên Colab (GPU T4), lấy `so_sanh.csv`; muốn bot dùng mô hình thì bật service NLU (thêm khoảng 0,9 GB RAM trên máy chủ). Hướng dẫn: mục A.
 5. **Chấm chatbot**: bật workflow `TEST · Chatbot qua webhook`, chạy `python danh-gia/cham_chatbot.py cua-hang/bo-test-chatbot.csv --catalog cua-hang/san-pham.csv --lan lan-1`, sửa prompt hoặc dữ liệu, chấm lại đến khi từ 90% đúng và không sai giá.
 6. **Hỗ trợ ghép**: tạo credential Odoo trong n8n từ API key nhóm 2; nạp workflow `m2-*` khi nhóm 2 xong; sau mỗi lần nạp chạy diễn tập.
