@@ -26,6 +26,7 @@ TikTok Shop chỉ cấp Open API cho doanh nghiệp có giấy phép, nên đồ
 | File | Nhóm việc | Gồm |
 |---|---|---|
 | [1-cua-hang-va-giao-dien-demo.md](1-cua-hang-va-giao-dien-demo.md) | Cửa hàng và giao diện demo | Web shop giả lập, dữ liệu sản phẩm, bộ câu test, minh chứng TikTok |
+| [huong-dan-web-gia-lap.md](huong-dan-web-gia-lap.md) | (đi kèm nhóm 1) | Hướng dẫn làm web giả lập bằng React + Vite từng bước, có code gọi API |
 | [2-kho-va-don-hang.md](2-kho-va-don-hang.md) | Kho và đơn hàng | Odoo, 4 workflow đơn hàng, tool đọc Odoo cho chatbot |
 | [3-middleware-va-ai.md](3-middleware-va-ai.md) | Middleware và AI | Máy chủ, n8n, chatbot, API cho giao diện demo, train và chấm mô hình |
 | [4-noi-dung-va-do-luong.md](4-noi-dung-va-do-luong.md) | Nội dung và đo lường | Dashboard KPI, video demo, kế hoạch quảng cáo |
@@ -58,7 +59,7 @@ Không nhóm nào phải chờ nhóm khác mới bắt đầu được: chỗ n�
 2. **Không có API TikTok thật.** Mọi thứ liên quan TikTok chạy qua chế độ giả lập; giao diện demo là "TikTok" của đồ án.
 3. **SKU là khóa** nối giao diện, Odoo, chatbot. Một sản phẩm một SKU, viết giống hệt nhau ở mọi nơi.
 4. **Odoo là nguồn sự thật** cho giá, tồn kho, đơn hàng.
-5. **Mọi sự kiện đi qua n8n.** Giao diện không gọi Odoo trực tiếp; Odoo không gọi giao diện.
+5. **Mọi sự kiện đi qua n8n.** Giao diện chỉ gọi 7 API `/webhook/demo/...` (do n8n cung cấp), không gọi Odoo, database hay AI trực tiếp; Odoo không gọi giao diện.
 6. **Không lộ khóa.** Mật khẩu, API key, mã nhóm chỉ nằm trong `.env` máy chủ hoặc gửi tin nhắn riêng; không đưa lên GitHub.
 7. **Hàng không thương hiệu.** TikTok đòi thư ủy quyền mới cho đăng hàng có tên hãng.
 

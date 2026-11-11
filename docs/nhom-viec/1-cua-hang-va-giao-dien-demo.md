@@ -31,12 +31,13 @@ Nhóm việc này lo **mọi thứ khách hàng nhìn thấy**: giao diện demo
 
 ## Triển khai: giao diện demo
 
-### Công nghệ đề xuất
+### Công nghệ
 
-- **HTML + CSS + JavaScript thuần**, 1–3 file, không cần build. Mở bằng trình duyệt hoặc chạy `npx serve giao-dien-demo`. Muốn đẹp nhanh thì dùng Tailwind qua CDN.
-- Hoặc **Vite + React** nếu quen. Kết quả phải chạy được bằng một lệnh và ghi rõ lệnh đó trong README.
-- Đặt code ở thư mục `giao-dien-demo/` trong repo. Muốn có link công khai thì đăng **GitHub Pages** (miễn phí).
+- **React + Vite**, chỉ có frontend. Không cần backend riêng, không cần database riêng, không gọi AI trực tiếp: các phần đó hệ thống đã có, web chỉ gọi 7 API.
+- Code đặt ở thư mục `giao-dien-demo/` trong repo.
 - Giao diện kiểu **điện thoại dọc** (giống app TikTok Shop), tiếng Việt, giá dạng `199.000đ`.
+
+**Hướng dẫn làm từng bước, kèm code gọi API và câu giao việc cho AI: [huong-dan-web-gia-lap.md](huong-dan-web-gia-lap.md).**
 
 ### Các màn hình
 
@@ -72,7 +73,7 @@ Nhóm việc này lo **mọi thứ khách hàng nhìn thấy**: giao diện demo
 
 ## Ràng buộc
 
-- Giao diện **chỉ gọi API demo**; không gọi Odoo, n8n hay database trực tiếp.
+- Giao diện **chỉ gọi 7 API** `https://<domain ngrok>/webhook/demo/...` (do n8n cung cấp). Không gọi các đường khác của n8n (Router `/webhook/tiktok-events`, giao diện quản trị n8n), không gọi Odoo, không kết nối PostgreSQL, không gọi AI. Lý do: mọi đơn và tin nhắn phải đi qua middleware thì mới có chữ ký, chống trùng, soát giá, tạo đơn Odoo, ghi log cho KPI.
 - Không viết cứng mã nhóm hay địa chỉ ngrok vào code đưa lên GitHub: cho nhập ở màn đầu, hoặc để trong file cấu hình không commit.
 - Không dùng ảnh có logo hãng. Ảnh sản phẩm: tự chụp, hình minh họa theo loại hàng, hoặc biểu tượng.
 - Không thêm thư viện trả phí hay dịch vụ cần thẻ.
@@ -93,4 +94,4 @@ Nhóm việc này lo **mọi thứ khách hàng nhìn thấy**: giao diện demo
 
 ## Câu giao việc mẫu cho AI
 
-> Tôi làm giao diện demo cho đồ án "bán hàng qua chat trên TikTok Shop". Đọc file nhóm việc và hợp đồng API đính kèm. Hãy làm một trang web HTML/CSS/JS thuần (không build), giao diện điện thoại dọc, tiếng Việt, gồm: màn nhập mã nhóm, danh sách sản phẩm, chi tiết sản phẩm, chat với shop, giỏ hàng và đặt hàng, đơn của tôi có thanh tiến trình, thông báo, và tab người bán có nút đẩy đơn và ô số liệu. Gọi đúng các API trong hợp đồng, gửi header `x-ma-nhom` và `ngrok-skip-browser-warning`. Làm từng màn một, bắt đầu từ danh sách sản phẩm; sau mỗi màn cho tôi cách chạy thử.
+Câu giao việc cho từng bước nằm cuối [huong-dan-web-gia-lap.md](huong-dan-web-gia-lap.md).
