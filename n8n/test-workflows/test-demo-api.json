@@ -270,13 +270,87 @@
       }
     },
     {
+      "id": "7800fff7-2176-568a-82dd-a9e98d94d751",
+      "name": "chat: là /reset?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "532ed368-cea7-5394-bbc3-5ecdd18c2895",
+              "leftValue": "={{ $json.text.trim() }}",
+              "rightValue": "/reset",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3aad15f0-bd15-5acd-8e03-2c5265db09ff",
+      "name": "chat: trả cuộc chat về bot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1100,
+        540
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE conversations SET mode = 'bot', handoff_reason = NULL, handoff_at = NULL WHERE conversation_id = $1 RETURNING conversation_id;",
+        "options": {
+          "queryReplacement": "={{ [ $json.conversation_id ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "7eb85b7c-2bee-5a00-9275-ef11c1eece89",
+      "name": "chat: trả reset",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        540
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, reset: true, reply: null, note: 'Cuộc chat đã trả về cho bot' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
       "id": "924fd650-7ed3-523a-a043-eba409c70004",
       "name": "chat: gọi chatbot",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        880,
-        400
+        1100,
+        360
       ],
       "parameters": {
         "workflowId": {
@@ -304,11 +378,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1100,
-        400
+        1320,
+        360
       ],
       "parameters": {
-        "jsCode": "// Chọn các trường giao diện cần từ kết quả chatbot\nconst r = $input.first().json;\nreturn [{ json: { ok: true, reply: r.reply, intent: r.intent, handed_off: !!r.handed_off, handoff_reason: r.handoff_reason || null,\n  price_check_passed: r.price_check_passed, model: r.model, skus: r.skus || [], upsell: r.upsell || [], latency_ms: r.latency_ms } }];\n"
+        "jsCode": "// Chọn các trường giao diện cần từ kết quả chatbot; bot im lặng khi nhân viên đang giữ cuộc chat\nconst r = $input.first().json;\nif (r.silent) return [{ json: { ok: true, silent: true, reply: null, handed_off: true,\n  note: 'Nhân viên đang trả lời cuộc chat này nên bot im lặng. Gửi /reset để trả về bot.' } }];\nreturn [{ json: { ok: true, silent: false, reply: r.reply, intent: r.intent, handed_off: !!r.handed_off, handoff_reason: r.handoff_reason || null,\n  price_check_passed: r.price_check_passed, model: r.model, skus: r.skus || [], upsell: r.upsell || [], latency_ms: r.latency_ms } }];\n"
       }
     },
     {
@@ -317,8 +391,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1320,
-        400
+        1540,
+        360
       ],
       "parameters": {
         "respondWith": "json",
@@ -1296,7 +1370,36 @@
       "main": [
         [
           {
+            "node": "chat: là /reset?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: là /reset?": {
+      "main": [
+        [
+          {
+            "node": "chat: trả cuộc chat về bot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "chat: gọi chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat: trả cuộc chat về bot": {
+      "main": [
+        [
+          {
+            "node": "chat: trả reset",
             "type": "main",
             "index": 0
           }

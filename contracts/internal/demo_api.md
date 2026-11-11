@@ -79,6 +79,8 @@ Ra (chờ khoảng 1–3 giây vì AI viết câu):
 - Dùng cùng `buyer_user_id` cho chat và đặt đơn, để hệ thống tính được "chat ra đơn" và thưởng cho món đã mời mua kèm.
 - `handed_off = true`: bot đã chuyển cho nhân viên (khiếu nại, khách xin gặp người); giao diện nên hiện "Nhân viên sẽ trả lời bạn".
 - `skus`, `upsell` dùng để hiện thẻ sản phẩm kèm nút Mua ngay dưới câu trả lời.
+- Bot **nhớ ngữ cảnh**: hỏi tiếp "còn mấy cái", "giá sao" mà không nêu tên thì hiểu là sản phẩm vừa nói; hỏi "đơn của em tới đâu rồi" mà không có mã thì tra đơn gần nhất của `buyer_user_id`.
+- Sau khi chuyển người, các tin tiếp theo trả `{ "ok": true, "silent": true, "reply": null, "handed_off": true, "note": "..." }`: bot im lặng vì nhân viên đang giữ cuộc chat. Gửi `text: "/reset"` để trả cuộc chat về cho bot (trả `{ "ok": true, "reset": true }`); màn người bán nên có nút này.
 
 ## 3. Đặt đơn: `POST /don`
 
@@ -94,7 +96,7 @@ Ra:
 { "ok": true, "order_id": "579900003397263811", "viec": "dat_don", "status": "AWAITING_SHIPMENT", "total": 207000, "loi": null }
 ```
 
-Tổng tiền do hệ thống tính theo giá trong danh sách sản phẩm. SKU không có hoặc không đủ hàng trả `400` với `loi`, vd `"Củ sạc Anker 20W chỉ còn 9"`. Sau khi đặt, hệ thống chạy `M2 · Tạo đơn` (tạo Sales Order trong Odoo) và ghi nhận đơn cho thống kê mua kèm.
+Tổng tiền do hệ thống tính theo giá trong danh sách sản phẩm. Tồn kho trong `GET /san-pham` và câu trả lời của bot **trừ đi số đã đặt** (trừ đơn đã hủy). SKU không có hoặc không đủ hàng trả `400` với `loi`, vd `"Củ sạc Anker 20W chỉ còn 9"`. Sau khi đặt, hệ thống chạy `M2 · Tạo đơn` (tạo Sales Order trong Odoo) và ghi nhận đơn cho thống kê mua kèm.
 
 ## 4. Đẩy đơn sang bước tiếp: `POST /don/viec`
 

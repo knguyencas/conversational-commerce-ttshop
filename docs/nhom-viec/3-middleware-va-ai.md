@@ -24,6 +24,7 @@
 | Chatbot dùng Groq (`qwen/qwen3.8-27b`, dự phòng `openai/gpt-oss-120b`) | Chạy |
 | Chế độ giả lập: form, danh sách đơn, TikTok giả đọc đơn từ database | Chạy |
 | API demo cho giao diện (7 API) | Chạy, hợp đồng [contracts/internal/demo_api.md](../../contracts/internal/demo_api.md) |
+| Chatbot nhớ ngữ cảnh (sản phẩm vừa nói, đơn gần nhất), tồn kho giả trừ theo đơn đã đặt | Chạy |
 | Diễn tập trọn luồng `scripts/dien-tap.sh` | 14/14 đạt |
 | Dữ liệu sản phẩm của chatbot | Còn là dữ liệu giả có tên hãng; cần thay bằng `san-pham.csv` |
 | PhoBERT | Train lần 1 xong (dev: macro-F1 ý định 0,894, F1 thực thể 0,728, đều hơn baseline). Đã sửa dữ liệu (mẫu "loại hàng + hãng", khiếu nại có mã đơn), chờ train lần 2; chưa bật service NLU |
