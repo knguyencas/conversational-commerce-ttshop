@@ -27,6 +27,8 @@ Bản ngắn cho M3. Mỗi dòng là một việc. Cần giải thích kỹ hơn
 
 ## Bước 1. Train mô hình mua kèm (làm được ngay)
 
+**Đã chạy bản cũ rồi (chỉ có 2 cách gợi ý)?** Tải 2 file `upsell\upsell_lib.py` và `upsell\train_upsell.ipynb` từ máy lên `cntttmdt → upsell` (đè bản cũ), rồi chạy lại từ đầu. Giữ nguyên thư mục `outputs` trên Drive: file đệm `item_category.json` trong đó giúp bỏ qua bước đọc 9 GB, nên lần chạy lại chỉ mất khoảng 10–15 phút.
+
 1. Trên Drive, vào `cntttmdt → upsell`, bấm đúp **`train_upsell.ipynb`**.
    - Không mở được: chuột phải → **Mở bằng → Google Colaboratory**. Không có Colaboratory thì chọn **Kết nối thêm ứng dụng**, tìm "Colaboratory", bấm **Cài đặt**.
 2. Trên thanh menu Colab: **Thời gian chạy → Chạy tất cả**.

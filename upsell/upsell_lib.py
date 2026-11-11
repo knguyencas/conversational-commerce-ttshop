@@ -86,13 +86,15 @@ def user_pairs(days: list[int], cats: list[str], window: int) -> set[tuple[str, 
 def count_pairs(ev: pd.DataFrame, window: int):
     """Đếm theo NGƯỜI (mỗi người góp tối đa 1 cho mỗi cặp), để người mua nhiều không lấn át."""
     co, anchor = Counter(), Counter()
+    n_users = 0
     for _, g in ev.groupby("user_id", sort=False):
         if g.cat.nunique() < 2:
             continue
         ps = user_pairs(g.day.tolist(), g.cat.tolist(), window)
+        n_users += bool(ps)
         co.update(ps)
         anchor.update({a for a, _ in ps})
-    return co, anchor
+    return co, anchor, n_users
 
 
 def test_cases(ev: pd.DataFrame, window: int):
@@ -142,11 +144,38 @@ class CoPurchase:
 
 
 class Lift(CoPurchase):
-    """Lift = P(B|A) / P(B): B được mua kèm A nhiều hơn mức bình thường bao nhiêu lần. Xếp hạng giống PMI = log(lift)."""
+    """Lift = P(B|A) / P(B), với P(B) = tỉ lệ người có mua kèm mà mua B. Xếp hạng giống PMI = log(lift)."""
     name = "Lift / PMI"
 
+    def __init__(self, co: Counter, anchor: Counter, n_users: int, alpha: float = 20.0):
+        super().__init__(co, anchor, alpha)
+        self.n_users = max(n_users, 1)
+
+    def lift(self, a: str, b: str) -> float:
+        return super().score(a, b) / max(self.anchor[b] / self.n_users, 1e-9)
+
     def score(self, a: str, b: str) -> float:
-        return super().score(a, b) / max(self.prior.get(b, 0.0), 1e-9)
+        return self.lift(a, b)
+
+
+class LiftFiltered(Lift):
+    """P(B|A) nhưng ưu tiên loại B thật sự đi kèm A (lift >= min_lift, đủ người làm căn cứ); loại còn lại xếp sau."""
+    name = "P(B|A) + lọc lift"
+
+    def __init__(self, co: Counter, anchor: Counter, n_users: int, alpha: float = 20.0,
+                 min_lift: float = 1.0, min_support: int = 30):
+        super().__init__(co, anchor, n_users, alpha)
+        self.min_lift, self.min_support = min_lift, min_support
+
+    def score(self, a: str, b: str) -> float:
+        return CoPurchase.score(self, a, b)
+
+    def related(self, a: str, b: str) -> bool:
+        return self.lift(a, b) >= self.min_lift and self.co[(a, b)] >= self.min_support
+
+    def rank(self, anchor: str, k: int) -> list[str]:
+        others = sorted((c for c in SHOP_CATEGORIES if c != anchor), key=lambda b: -self.score(anchor, b))
+        return ([b for b in others if self.related(anchor, b)] + [b for b in others if not self.related(anchor, b)])[:k]
 
 
 class ALSMatrix:
@@ -209,23 +238,29 @@ class ALSMatrix:
 
 
 def evaluate(model, cases) -> dict:
-    """Hit@3: có ít nhất 1 loại đúng trong 3 gợi ý đầu. Recall@5: tỉ lệ loại đúng nằm trong 5 gợi ý."""
+    """Hit@1, Hit@3: gợi ý đầu tiên / 3 gợi ý đầu có loại đúng. Recall@5: tỉ lệ loại đúng nằm trong 5 gợi ý."""
     if not cases:
         return {"so_ca": 0}
-    hit3 = rec5 = 0.0
+    hit1 = hit3 = rec5 = 0.0
+    ranked = {}
     for a, truth in cases:
-        top3, top5 = model.rank(a, 3), model.rank(a, 5)
-        hit3 += any(c in truth for c in top3)
+        if a not in ranked:
+            ranked[a] = model.rank(a, 5)
+        top5 = ranked[a]
+        hit1 += top5[:1] != [] and top5[0] in truth
+        hit3 += any(c in truth for c in top5[:3])
         rec5 += len(truth & set(top5)) / len(truth)
-    return {"so_ca": len(cases), "hit_at_3": round(hit3 / len(cases), 4), "recall_at_5": round(rec5 / len(cases), 4)}
+    n = len(cases)
+    return {"so_ca": n, "hit_at_1": round(hit1 / n, 4), "hit_at_3": round(hit3 / n, 4), "recall_at_5": round(rec5 / n, 4)}
 
 
 def rules(model: CoPurchase, k: int = 3) -> list[dict]:
     out = []
     for a in SHOP_CATEGORIES:
         for i, b in enumerate(model.rank(a, k), 1):
-            out.append({"anchor_category": a, "rec_category": b, "rank": i,
-                        "score": round(model.score(a, b), 4), "support": model.co[(a, b)]})
+            lift = model.lift(a, b) if hasattr(model, "lift") else float("nan")
+            out.append({"anchor_category": a, "rec_category": b, "rank": i, "score": round(model.score(a, b), 4),
+                        "lift": round(lift, 2), "support": model.co[(a, b)]})
     return out
 
 

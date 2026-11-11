@@ -154,7 +154,8 @@ Service tự nén mô hình int8 (khoảng 0,9 GB RAM, ~0,1 giây mỗi câu). M
    - **Recall@5:** tỉ lệ loại khách thật sự mua nằm trong 5 gợi ý đầu.
    - So với **baseline**: luôn mời loại hàng phổ biến nhất, không quan tâm khách đang mua gì.
 7. **So với hai cách gợi ý khác** để báo cáo có đối chứng:
-   - **Lift / PMI** = P(B | A) / P(B): đo B được mua kèm A nhiều hơn mức bình thường bao nhiêu lần (luật kết hợp). Hay đẩy loại hiếm lên đầu.
+   - **Lift / PMI** = P(B | A) / P(B), với P(B) = tỉ lệ người (trong số người có mua kèm) đã mua B: đo B được mua kèm A nhiều hơn mức bình thường bao nhiêu lần (luật kết hợp). Hay đẩy loại hiếm lên đầu.
+   - **P(B | A) + lọc lift** (dùng để xuất luật, mặc định `RULE_MODEL = "loc_lift"`): xếp theo P(B | A), nhưng loại B có lift ≥ 1 và ít nhất 30 người làm căn cứ được đưa lên trước. Lần chạy đầu (11/11/2026, chỉ có P(B | A)) cho thấy P(B | A) mời "ốp lưng" đứng đầu cho 9/11 loại hàng, kể cả bàn phím, vì ốp lưng chiếm 85.671/202.193 sản phẩm Amazon đã gán loại: đó là độ phổ biến, không phải quan hệ mua kèm. Lọc lift giữ Hit@3 gần như cũ nhưng mời đúng món đi kèm hơn; đổi lại Hit@1 có thể giảm. Báo cáo cả hai.
    - **Phân rã ma trận ALS** (implicit feedback, Hu–Koren–Volinsky 2008): biểu diễn mỗi người và mỗi loại hàng bằng 8 con số ẩn, học từ ma trận ai đã mua loại nào, rồi gợi ý cho khách vừa mua A. Đây là kỹ thuật kinh điển của các hệ gợi ý (Netflix Prize).
 
    Luật nạp vào hệ thống vẫn lấy từ P(B | A): dễ giải thích với khách và thầy, có số người làm căn cứ cho từng luật.
