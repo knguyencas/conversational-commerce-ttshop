@@ -28,7 +28,7 @@
 | Diễn tập trọn luồng `scripts/dien-tap.sh` | 14/14 đạt |
 | Dữ liệu sản phẩm của chatbot | Còn là dữ liệu giả có tên hãng; cần thay bằng `san-pham.csv` |
 | PhoBERT | Train lần 1 xong (dev: macro-F1 ý định 0,894, F1 thực thể 0,728, đều hơn baseline). Đã sửa dữ liệu (mẫu "loại hàng + hãng", khiếu nại có mã đơn), chờ train lần 2; chưa bật service NLU |
-| Mô hình mua kèm | Notebook so 4 cách (phổ biến, P(B\|A), Lift/PMI, ALS), chưa chạy trên Colab |
+| Mô hình mua kèm | Đã chạy trên Colab: P(B\|A) Hit@3 0,801, luật lọc lift 0,785, baseline 0,767. Luật chưa nạp vào database (`upsell_rules.sql` trên Drive) |
 | Chấm chatbot | Chờ bộ câu test |
 | Tailscale | Chưa cài |
 

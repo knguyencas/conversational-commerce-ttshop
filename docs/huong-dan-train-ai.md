@@ -174,13 +174,31 @@ Các file nằm trong `MyDrive/cntttmdt/upsell/outputs/`:
 
 | File | Dùng làm gì |
 |---|---|
-| `metrics.json` | Hit@3, Recall@5 của 4 cách gợi ý (baseline, P(B\|A), Lift/PMI, ALS), số ca kiểm tra, số người |
-| `so_sanh_mo_hinh.png` | Biểu đồ cột Hit@3, Recall@5 của 4 cách gợi ý |
+| `metrics.json` | Hit@1, Hit@3, Recall@5 của 5 cách gợi ý (baseline, P(B\|A), P(B\|A) + lọc lift, Lift/PMI, ALS), số ca kiểm tra, số người |
+| `so_sanh_mo_hinh.png` | Biểu đồ cột Hit@1, Hit@3, Recall@5 của 5 cách gợi ý |
 | `xac_suat_mua_kem.png` | Bản đồ nhiệt P(B \| A) cho báo cáo |
-| `upsell_rules.csv` | Bảng luật: mỗi loại hàng thì mời 3 loại nào, kèm điểm và số người làm căn cứ |
+| `upsell_rules.csv` | Bảng luật: mỗi loại hàng thì mời 3 loại nào, kèm điểm, lift và số người làm căn cứ |
 | `upsell_rules.sql` | File nạp luật vào hệ thống |
 
-Notebook còn in bảng Hit@3 **theo từng loại hàng**, dùng để viết phần phân tích: loại nào mô hình hơn hẳn baseline, loại nào không.
+Notebook còn in bảng Hit@1 **theo từng loại hàng**, dùng để viết phần phân tích: loại nào mô hình hơn hẳn baseline, loại nào không.
+
+**Kết quả lần chạy đủ (12/11/2026):** 6.726.367 lượt mua của 1.672.071 người; học trên dữ liệu trước 11/06/2021, kiểm tra trên 350.395 ca sau đó.
+
+| Cách gợi ý | Hit@1 | Hit@3 | Recall@5 |
+|---|---|---|---|
+| Baseline (phổ biến) | 0,485 | 0,767 | 0,827 |
+| **P(B\|A)** | **0,498** | **0,801** | **0,833** |
+| P(B\|A) + lọc lift (luật đang dùng) | 0,415 | 0,785 | 0,831 |
+| Lift / PMI | 0,356 | 0,618 | 0,750 |
+| Phân rã ma trận ALS | 0,132 | 0,395 | 0,587 |
+
+Cách đọc cho báo cáo:
+- **P(B|A) đo giỏi nhất** nhưng thiên về hàng bán chạy: mời "ốp lưng" đầu tiên cho 9/11 loại hàng, kể cả bàn phím. Khách Amazon mua ốp lưng nhiều đến mức đằng nào cũng mua, nên mời ốp lưng "trúng" nhiều mà không tạo thêm đơn.
+- **Lọc lift** hy sinh 1,6 điểm Hit@3 (vẫn hơn baseline 1,8 điểm) để mời đúng món thật sự đi kèm: bàn phím → chuột, chuột → bàn phím, củ sạc ↔ sạc dự phòng, điện thoại và đồng hồ → kính cường lực, ốp lưng → kính cường lực. Mục đích của mời mua kèm là thêm đơn mà khách chưa định mua, nên nhóm chọn cách này. Hit@1 giảm mạnh nhất ở củ sạc (0,58 → 0,15): người mua củ sạc mua ốp lưng tiếp theo nhiều hơn sạc dự phòng, nhưng ốp lưng không phải món "đi kèm" củ sạc.
+- **Lift / PMI đơn thuần** kém hơn baseline: đẩy cặp hiếm lên đầu.
+- **ALS kém nhất**: chỉ có 11 loại hàng, quá ít để học 8 yếu tố ẩn; gợi ý cho khách mới chỉ từ 1 loại (fold-in) làm mất thông tin độ phổ biến; ALS không xét cửa sổ 30 ngày. Đây là kết quả âm có giá trị: phân rã ma trận hợp với danh mục hàng nghìn món, không hợp với 11 loại.
+- Cáp, tai nghe, loa không có loại nào đi kèm rõ ràng (lift < 1), nên luật giữ thứ tự theo độ phổ biến.
+- Hiệu quả thật đo bằng A/B trong hệ thống (nhóm được mời so với nhóm không mời) và bandit học từ khách thật.
 
 ### B5. Đưa luật vào hệ thống
 
