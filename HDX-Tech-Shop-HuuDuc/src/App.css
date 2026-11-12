@@ -1,0 +1,2018 @@
+
+/* =========================================
+   HDX TECH - TIKTOK SHOP INSPIRED REDESIGN
+========================================= */
+
+body {
+  background: #f7f7f8;
+  color: #202124;
+}
+
+/* TOP STRIP */
+
+.top-strip {
+  background: #171717;
+  color: #ddd;
+  font-size: 11px;
+}
+
+.top-strip-inner {
+  max-width: 1320px;
+  margin: auto;
+  padding: 9px 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.top-strip-inner span:first-child {
+  color: white;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+/* HEADER */
+
+.header {
+  position: sticky;
+  top: 0;
+  background: white;
+  border-bottom: 1px solid #eee;
+  z-index: 30;
+}
+
+.header-inner {
+  max-width: 1320px;
+  height: 76px;
+  padding: 0 22px;
+  gap: 35px;
+}
+
+.logo {
+  font-size: 25px;
+  letter-spacing: -1px;
+}
+
+.logo-icon {
+  background: #111;
+  border-radius: 7px;
+  padding: 8px 13px;
+}
+
+.logo b {
+  color: #ee293d;
+}
+
+.search-box {
+  background: #f5f5f5;
+  border: 1px solid #e8e8e8;
+  border-radius: 30px;
+  max-width: 620px;
+  height: 46px;
+  overflow: hidden;
+}
+
+.search-box input {
+  font-size: 13px;
+}
+
+.search-box button {
+  border-radius: 25px;
+  margin-right: 4px;
+  padding: 10px 22px;
+}
+
+.icon-button {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cart-button b {
+  background: #ee293d;
+}
+
+/* NAVIGATION */
+
+.main-nav {
+  background: white;
+  border-bottom: 1px solid #eee;
+}
+
+.main-nav-inner {
+  max-width: 1320px;
+  min-height: 47px;
+  padding: 0 22px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  overflow-x: auto;
+}
+
+.nav-item {
+  height: 47px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  color: #ee293d;
+  border-bottom-color: #ee293d;
+}
+
+/* MAIN CONTAINER */
+
+.shop-container {
+  max-width: 1320px;
+  margin: 22px auto 0;
+  padding: 0 22px;
+}
+
+/* HERO */
+
+.shop-hero {
+  min-height: 360px;
+  padding: 42px 55px;
+  border-radius: 15px;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  align-items: center;
+  background:
+    radial-gradient(circle at 80% 45%, #484848 0, transparent 32%),
+    linear-gradient(110deg, #171717, #292929 65%, #171717);
+  color: white;
+}
+
+.shop-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #ff6878;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.shop-hero h1 {
+  margin: 19px 0 13px;
+  font-size: clamp(29px, 3vw, 43px);
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+}
+
+.shop-hero h1 span {
+  color: #ff5266;
+}
+
+.shop-hero p {
+  color: #c9c9c9;
+  font-size: 13px;
+  line-height: 1.8;
+  max-width: 420px;
+}
+
+.shop-hero-content > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 13px 23px;
+  border: 0;
+  border-radius: 7px;
+  background: #ee293d;
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.shop-hero-content > button:hover {
+  background: #d91e32;
+}
+
+.hero-note {
+  margin-top: 25px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 11px;
+  color: #aaa;
+}
+
+.hero-note strong {
+  color: white;
+  font-size: 13px;
+}
+
+.hero-visual {
+  min-height: 280px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.hero-circle {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid #ffffff22;
+}
+
+.circle-one {
+  width: 290px;
+  height: 290px;
+}
+
+.circle-two {
+  width: 220px;
+  height: 220px;
+}
+
+.hero-product-card {
+  width: 245px;
+  height: 180px;
+  border: 1px solid #ffffff35;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #424242, #202020);
+  box-shadow: 0 20px 50px #0008;
+  transform: rotate(-7deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+}
+
+.hero-product-card > span,
+.hero-product-card small {
+  color: #aaa;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+
+.hero-product-symbol {
+  color: white;
+  font-size: 62px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -6px;
+}
+
+.hero-product-card > strong {
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.hero-sale-bubble {
+  position: absolute;
+  right: 2%;
+  top: 10%;
+  width: 85px;
+  height: 85px;
+  background: #ee293d;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transform: rotate(10deg);
+  box-shadow: 0 8px 25px #ee293d55;
+}
+
+.hero-sale-bubble small {
+  font-size: 9px;
+}
+
+.hero-sale-bubble strong {
+  font-size: 26px;
+}
+
+/* BENEFITS */
+
+.quick-benefits {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 17px 0 30px;
+}
+
+.quick-benefits div {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 9px;
+  padding: 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.quick-benefits svg {
+  width: 19px;
+  color: #ee293d;
+  flex-shrink: 0;
+}
+
+/* SECTION HEADINGS */
+
+.category-section,
+.flash-section,
+.shop-products,
+.video-section {
+  margin-top: 32px;
+}
+
+.block-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 17px;
+  gap: 15px;
+}
+
+.eyebrow {
+  color: #ee293d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.block-heading h2,
+.flash-heading h2 {
+  font-size: 23px;
+  margin: 6px 0 0;
+  font-weight: 800;
+  letter-spacing: -.5px;
+}
+
+/* CATEGORY CHIPS */
+
+.category-list {
+  display: flex;
+  gap: 11px;
+  overflow-x: auto;
+  padding: 2px 0 10px;
+}
+
+.category-chip {
+  min-width: 135px;
+  padding: 15px;
+  background: white;
+  border: 1px solid #eaeaea;
+  border-radius: 9px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.category-number {
+  display: block;
+  margin-bottom: 9px;
+  color: #aaa;
+  font-size: 10px;
+}
+
+.category-chip:hover,
+.category-chip.selected {
+  border-color: #ee293d;
+  color: #ee293d;
+  background: #fff5f6;
+}
+
+/* FLASH SALE */
+
+.flash-section {
+  background: white;
+  padding: 23px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+}
+
+.flash-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.flash-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ee293d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.flash-heading p {
+  color: #888;
+  font-size: 12px;
+}
+
+.flash-heading > button {
+  border: 0;
+  background: transparent;
+  color: #ee293d;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.flash-banner {
+  margin-top: 18px;
+  padding: 19px 23px;
+  border-radius: 9px;
+  background: linear-gradient(100deg, #ee293d, #ff6573);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flash-banner div {
+  display: grid;
+  gap: 6px;
+}
+
+.flash-banner strong {
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.flash-banner span {
+  font-size: 11px;
+}
+
+.flash-banner .flash-tag {
+  padding: 8px 12px;
+  background: #ffffff24;
+  border: 1px solid #ffffff60;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* PRODUCT GRID */
+
+.shop-products {
+  scroll-margin-top: 150px;
+  padding: 23px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eee;
+}
+
+.product-count {
+  color: #888;
+  font-size: 12px;
+}
+
+.product-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.product-card {
+  border: 1px solid #eee;
+  border-radius: 9px;
+  box-shadow: none;
+  transition: .2s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  border-color: #ffb5bd;
+  box-shadow: 0 8px 25px #0000000c;
+}
+
+.product-image {
+  height: 190px;
+  background: #f8f8f8;
+}
+
+.product-info {
+  padding: 14px;
+}
+
+.product-info h3 {
+  font-size: 12px;
+  height: 38px;
+}
+
+.price-row strong {
+  font-size: 16px;
+}
+
+.add-cart {
+  border-radius: 5px;
+}
+
+/* VIDEO AND LIVE */
+
+.live-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #888;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.live-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ee293d;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.video-card {
+  position: relative;
+  min-height: 220px;
+  border-radius: 11px;
+  padding: 20px;
+  color: white;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.video-dark {
+  background: linear-gradient(140deg, #171717, #454545);
+}
+
+.video-red {
+  background: linear-gradient(140deg, #a9162c, #f04458);
+}
+
+.video-blue {
+  background: linear-gradient(140deg, #162b46, #476b92);
+}
+
+.video-play {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  opacity: .8;
+}
+
+.video-tag {
+  width: fit-content;
+  padding: 5px 8px;
+  background: #ffffff25;
+  border: 1px solid #ffffff50;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.video-card strong {
+  font-size: 16px;
+}
+
+.video-card small {
+  color: #ffffffbb;
+  font-size: 10px;
+}
+
+/* FOOTER */
+
+.shop-footer {
+  margin-top: 35px;
+  padding: 25px 5px;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  color: #888;
+  font-size: 10px;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-logo {
+  background: #171717;
+  color: white;
+  padding: 10px;
+  border-radius: 7px;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.footer-brand strong {
+  color: #222;
+  font-size: 13px;
+}
+
+.footer-brand p {
+  margin: 4px 0 0;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .quick-benefits {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .shop-hero {
+    padding: 35px;
+  }
+}
+
+@media (max-width: 700px) {
+  .top-strip-inner span:nth-child(2) {
+    display: none;
+  }
+
+  .main-nav-inner {
+    gap: 20px;
+  }
+
+  .shop-container {
+    padding: 0 12px;
+  }
+
+  .shop-hero {
+    grid-template-columns: 1fr;
+    padding: 30px 22px;
+  }
+
+  .shop-hero h1 {
+    font-size: 29px;
+  }
+
+  .hero-visual {
+    min-height: 220px;
+  }
+
+  .quick-benefits {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quick-benefits div {
+    font-size: 10px;
+  }
+
+  .shop-products {
+    padding: 15px;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-image {
+    height: 145px;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .video-card {
+    min-height: 170px;
+  }
+
+  .shop-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* FIX DESKTOP WIDTH - HDX TECH */
+
+.shop-container {
+  width: calc(100% - 48px);
+  max-width: 1320px;
+  margin: 22px auto 0;
+  padding: 0;
+}
+
+.header-inner,
+.main-nav-inner,
+.top-strip-inner {
+  width: 100%;
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.shop-hero {
+  width: 100%;
+  min-height: 360px;
+}
+
+.category-section,
+.flash-section,
+.shop-products,
+.video-section,
+.quick-benefits {
+  width: 100%;
+}
+
+.product-grid {
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.product-card {
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .shop-container {
+    width: calc(100% - 24px);
+  }
+}
+
+/* PRODUCT CARD - HDX TECH */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.product-card {
+  min-width: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #ededed;
+  border-radius: 10px;
+  transition: transform .2s, box-shadow .2s;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,.08);
+}
+
+.product-image {
+  height: 210px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f6f6f6;
+}
+
+.product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  object-fit: contain;
+  transition: transform .3s;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.05);
+}
+
+.product-image-label {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 5px 7px;
+  background: #171717;
+  color: white;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.discount {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 10px;
+  background: #ee293d;
+  color: white;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.product-info {
+  padding: 14px;
+}
+
+.product-category {
+  display: inline-block;
+  color: #999;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+}
+
+.product-info h3 {
+  min-height: 40px;
+  height: auto;
+  margin: 7px 0;
+  color: #222;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.product-info h3:hover {
+  color: #ee293d;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.rating strong {
+  color: #444;
+}
+
+.rating span {
+  margin-left: 4px;
+  color: #999;
+}
+
+.price-row {
+  min-height: 35px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 9px 0;
+}
+
+.price-row strong {
+  color: #ee293d;
+  font-size: 16px;
+}
+
+.price-row del {
+  color: #aaa;
+  font-size: 11px;
+}
+
+.product-card-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.product-card-actions .add-cart {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 5px;
+  font-size: 11px;
+}
+
+.quick-view {
+  width: 39px;
+  flex-shrink: 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  color: #444;
+  display: grid;
+  place-items: center;
+}
+
+.quick-view:hover {
+  border-color: #ee293d;
+  color: #ee293d;
+}
+
+@media (max-width: 900px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-image {
+    height: 150px;
+  }
+
+  .product-info {
+    padding: 10px;
+  }
+
+  .product-info h3 {
+    font-size: 12px;
+  }
+}
+
+/* =====================================
+   FLASH SALE - HDX TECH
+===================================== */
+
+.flash-section {
+  padding: 24px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  scroll-margin-top: 150px;
+}
+
+.flash-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.flash-countdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flash-countdown span {
+  color: #888;
+  font-size: 11px;
+}
+
+.flash-countdown strong {
+  padding: 9px 12px;
+  background: #222;
+  color: white;
+  border-radius: 6px;
+  font-size: 15px;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.flash-product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.flash-view-all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 20px auto 0;
+  padding: 11px 20px;
+  border: 1px solid #ee293d;
+  border-radius: 6px;
+  background: white;
+  color: #ee293d;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.flash-view-all:hover {
+  background: #ee293d;
+  color: white;
+}
+
+@media (max-width: 900px) {
+  .flash-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .flash-section {
+    padding: 14px;
+  }
+
+  .flash-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .flash-countdown {
+    margin-top: 8px;
+  }
+}
+
+/* =========================================
+   FIX HEADER HDX TECH - DESKTOP 100%
+========================================= */
+
+.header {
+  width: 100% !important;
+  height: auto !important;
+  background: #fff !important;
+  border-bottom: 1px solid #eaeaea !important;
+  position: relative;
+  z-index: 100;
+}
+
+.header-inner {
+  width: calc(100% - 48px) !important;
+  max-width: 1320px !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  gap: 28px !important;
+}
+
+.logo {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #171717 !important;
+  text-decoration: none !important;
+  font-size: 23px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.logo-icon {
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  background: #171717 !important;
+  color: white !important;
+  font-size: 22px !important;
+}
+
+.logo-text b {
+  color: #ee293d !important;
+}
+
+.search-box {
+  height: 46px !important;
+  min-width: 180px !important;
+  max-width: 650px !important;
+  flex: 1 1 auto !important;
+
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+
+  margin: 0 !important;
+  padding: 0 5px 0 15px !important;
+  border: 1px solid #e6e6e6 !important;
+  border-radius: 8px !important;
+  background: #f7f7f7 !important;
+}
+
+.search-box svg {
+  flex-shrink: 0;
+  color: #777;
+}
+
+.search-box input {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  color: #222 !important;
+  font-size: 13px !important;
+}
+
+.search-box button {
+  height: 36px !important;
+  flex: 0 0 auto !important;
+  padding: 0 20px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  background: #ee293d !important;
+  color: white !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.search-box button:hover {
+  background: #d91d31 !important;
+}
+
+.header-actions {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 18px !important;
+}
+
+.icon-button {
+  min-height: 40px !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  padding: 7px 10px !important;
+  border: none !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  color: #333 !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+
+.icon-button:hover {
+  background: #fff0f1 !important;
+  color: #ee293d !important;
+}
+
+.cart-button b {
+  min-width: 19px !important;
+  height: 19px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 5px !important;
+  border-radius: 50% !important;
+  background: #ee293d !important;
+  color: white !important;
+  font-size: 10px !important;
+}
+
+/* NAVIGATION */
+
+.main-nav {
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid #eee;
+}
+
+.main-nav-inner {
+  width: calc(100% - 48px);
+  max-width: 1320px;
+  min-height: 46px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.nav-item {
+  height: 46px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 0 15px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #444;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  color: #ee293d;
+  border-bottom-color: #ee293d;
+}
+
+@media (max-width: 900px) {
+  .header-inner {
+    gap: 12px !important;
+  }
+
+  .logo {
+    font-size: 19px !important;
+  }
+
+  .header-actions {
+    gap: 4px !important;
+  }
+
+  .icon-button span {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .header-inner {
+    height: auto !important;
+    padding: 12px 0 !important;
+    flex-wrap: wrap !important;
+  }
+
+  .search-box {
+    order: 3;
+    flex-basis: 100% !important;
+  }
+
+  .header-actions {
+    margin-left: auto !important;
+  }
+}
+
+/* =====================================
+   HDX TECH CHECKOUT
+===================================== */
+
+.checkout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .55);
+  overflow-y: auto;
+}
+
+.checkout-modal {
+  width: 100%;
+  max-width: 1050px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 25px;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 15px 60px rgba(0, 0, 0, .2);
+}
+
+.checkout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eee;
+}
+
+.checkout-header h2 {
+  margin: 5px 0 0;
+  font-size: 23px;
+}
+
+.checkout-eyebrow {
+  color: #ee293d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.checkout-header > button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: #f4f4f4;
+}
+
+.checkout-content {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 28px;
+  padding: 22px 0;
+}
+
+.checkout-form-section h3,
+.checkout-summary h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 18px;
+  font-size: 16px;
+}
+
+.checkout-form-section h3 svg {
+  color: #ee293d;
+}
+
+.checkout-form-section > label:not(.payment-option) {
+  display: block;
+  margin: 14px 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.checkout-input {
+  height: 43px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+}
+
+.checkout-input svg {
+  color: #999;
+  flex-shrink: 0;
+}
+
+.checkout-input input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+}
+
+.checkout-form-section textarea {
+  width: 100%;
+  display: block;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  outline: none;
+  font-size: 13px;
+}
+
+.checkout-input:focus-within,
+.checkout-form-section textarea:focus {
+  border-color: #ee293d;
+}
+
+.field-error {
+  margin: 5px 0;
+  color: #e32636;
+  font-size: 11px;
+}
+
+.payment-title {
+  margin-top: 25px !important;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.payment-option:has(input:checked) {
+  border-color: #ee293d;
+  background: #fff7f8;
+}
+
+.payment-option input {
+  accent-color: #ee293d;
+}
+
+.payment-option > svg {
+  color: #ee293d;
+}
+
+.payment-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-option strong {
+  font-size: 12px;
+}
+
+.payment-option small {
+  color: #888;
+  font-size: 10px;
+}
+
+.checkout-summary {
+  padding: 18px;
+  align-self: start;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.checkout-products {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.checkout-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkout-product img {
+  width: 65px;
+  height: 65px;
+  flex-shrink: 0;
+  object-fit: contain;
+  padding: 5px;
+  border: 1px solid #eee;
+  border-radius: 7px;
+  background: white;
+}
+
+.checkout-product > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.checkout-product strong {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.checkout-product span {
+  color: #888;
+  font-size: 10px;
+}
+
+.checkout-product b {
+  color: #ee293d;
+  font-size: 12px;
+}
+
+.summary-line,
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 12px;
+}
+
+.summary-line span {
+  color: #777;
+}
+
+.summary-total {
+  padding-top: 16px;
+  border-top: 1px solid #ddd;
+  font-weight: 700;
+}
+
+.summary-total strong {
+  color: #ee293d;
+  font-size: 18px;
+}
+
+.checkout-disclaimer {
+  margin-top: 16px;
+  padding: 10px;
+  border-radius: 6px;
+  background: #fff2e7;
+  color: #a15a22;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.checkout-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid #eee;
+}
+
+.checkout-back,
+.checkout-submit {
+  min-height: 43px;
+  padding: 0 20px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.checkout-back {
+  border: 1px solid #ddd;
+  background: white;
+  color: #444;
+}
+
+.checkout-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #ee293d;
+  color: white;
+}
+
+.checkout-submit:hover {
+  background: #d91d31;
+}
+
+/* ORDER SUCCESS */
+
+.order-success {
+  max-width: 470px;
+  padding: 40px 30px;
+  text-align: center;
+}
+
+.checkout-success-icon {
+  color: #20a464;
+}
+
+.order-success h2 {
+  margin: 15px 0 8px;
+  font-size: 23px;
+}
+
+.order-success > p {
+  color: #777;
+  font-size: 13px;
+}
+
+.order-code {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 25px 0;
+  padding: 18px;
+  border: 1px dashed #20a464;
+  border-radius: 9px;
+  background: #f3fff8;
+}
+
+.order-code span {
+  color: #777;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.order-code strong {
+  color: #15945a;
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+
+.success-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 11px;
+}
+
+.order-success .checkout-submit {
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .checkout-overlay {
+    padding: 8px;
+  }
+
+  .checkout-modal {
+    max-height: 96vh;
+    padding: 16px;
+  }
+
+  .checkout-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .checkout-footer {
+    flex-direction: column-reverse;
+  }
+
+  .checkout-footer button {
+    width: 100%;
+  }
+}
+
+/* FIX CART BUTTON - HDX TECH */
+
+.header {
+  position: relative !important;
+  z-index: 999 !important;
+}
+
+.header-inner {
+  position: relative !important;
+  z-index: 999 !important;
+}
+
+.header-actions {
+  position: relative !important;
+  z-index: 1000 !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.cart-button {
+  position: relative !important;
+  z-index: 1001 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-height: 42px !important;
+  padding: 9px 15px !important;
+  border: none !important;
+  border-radius: 7px !important;
+  background: #ee293d !important;
+  color: white !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.cart-button:hover {
+  background: #d91e32 !important;
+}
+
+.cart-button svg,
+.cart-button span,
+.cart-button b {
+  pointer-events: none !important;
+}
+
+.cart-button b {
+  min-width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border-radius: 50% !important;
+  background: white !important;
+  color: #ee293d !important;
+}
+
+/* =========================================
+   HDX TECH - CART DRAWER
+========================================= */
+
+/* Lớp phủ toàn màn hình */
+.cart-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+  z-index: 99999 !important;
+
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: stretch !important;
+
+  animation: cartFadeIn 0.25s ease;
+}
+
+/* Ngăn trang phía sau bị cuộn */
+.cart-drawer {
+  position: relative !important;
+  width: 460px !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  background: #ffffff !important;
+  color: #222222 !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15) !important;
+  animation: cartSlideIn 0.3s ease;
+  overflow: hidden !important;
+}
+
+/* Header giỏ hàng */
+.cart-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 22px 24px !important;
+  border-bottom: 1px solid #eeeeee !important;
+  flex-shrink: 0 !important;
+}
+
+.cart-header h2 {
+  margin: 0 0 5px !important;
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  color: #171717 !important;
+}
+
+.cart-header span {
+  font-size: 13px !important;
+  color: #777777 !important;
+}
+
+.cart-header button {
+  width: 38px !important;
+  height: 38px !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: #f3f3f3 !important;
+  color: #333333 !important;
+  cursor: pointer !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.cart-header button:hover {
+  background: #ffe8eb !important;
+  color: #ee293d !important;
+}
+
+/* Danh sách sản phẩm */
+.cart-items {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 10px 22px !important;
+}
+
+.cart-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  padding: 18px 0 !important;
+  border-bottom: 1px solid #eeeeee !important;
+  position: relative !important;
+}
+
+.cart-item img {
+  width: 100px !important;
+  height: 100px !important;
+  flex-shrink: 0 !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+  background: #f5f5f5 !important;
+}
+
+.cart-item-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.cart-item-info h4 {
+  margin: 0 0 7px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  font-weight: 700 !important;
+  color: #222222 !important;
+}
+
+.cart-sku {
+  margin: 0 0 8px !important;
+  font-size: 12px !important;
+  color: #888888 !important;
+}
+
+.cart-item-info > strong {
+  display: block !important;
+  margin-bottom: 12px !important;
+  color: #ee293d !important;
+  font-size: 16px !important;
+}
+
+/* Nút tăng giảm số lượng */
+.quantity-control {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+}
+
+.quantity-control button {
+  width: 30px !important;
+  height: 30px !important;
+  border: 1px solid #dddddd !important;
+  background: #ffffff !important;
+  color: #333333 !important;
+  cursor: pointer !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.quantity-control button:first-child {
+  border-radius: 6px 0 0 6px !important;
+}
+
+.quantity-control button:last-child {
+  border-radius: 0 6px 6px 0 !important;
+}
+
+.quantity-control span {
+  width: 35px !important;
+  height: 30px !important;
+  border-top: 1px solid #dddddd !important;
+  border-bottom: 1px solid #dddddd !important;
+
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+/* Nút xóa */
+.remove-item {
+  border: none !important;
+  background: transparent !important;
+  color: #999999 !important;
+  cursor: pointer !important;
+  padding: 6px !important;
+}
+
+.remove-item:hover {
+  color: #ee293d !important;
+}
+
+/* Footer giỏ hàng */
+.cart-footer {
+  flex-shrink: 0 !important;
+  padding: 20px 24px !important;
+  background: #ffffff !important;
+  border-top: 1px solid #eeeeee !important;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.03) !important;
+}
+
+.cart-total {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 18px !important;
+  color: #555555 !important;
+  font-size: 15px !important;
+}
+
+.cart-total strong {
+  color: #ee293d !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+}
+
+.checkout-button {
+  width: 100% !important;
+  min-height: 48px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: #ee293d !important;
+  color: #ffffff !important;
+
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 10px !important;
+
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.checkout-button:hover {
+  background: #d91e32 !important;
+}
+
+.cart-note {
+  margin: 12px 0 0 !important;
+  text-align: center !important;
+  font-size: 12px !important;
+  color: #999999 !important;
+}
+
+/* Giỏ hàng trống */
+.cart-empty {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 30px !important;
+  text-align: center !important;
+  color: #888888 !important;
+}
+
+.cart-empty svg {
+  color: #cccccc !important;
+  margin-bottom: 18px !important;
+}
+
+.cart-empty h3 {
+  color: #222222 !important;
+  margin: 0 0 8px !important;
+}
+
+.cart-empty p {
+  font-size: 13px !important;
+  margin-bottom: 20px !important;
+}
+
+.cart-empty button {
+  border: none !important;
+  border-radius: 7px !important;
+  padding: 12px 22px !important;
+  background: #ee293d !important;
+  color: white !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+/* Hiệu ứng */
+@keyframes cartFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cartSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Màn hình điện thoại */
+@media (max-width: 480px) {
+  .cart-drawer {
+    width: 100% !important;
+  }
+
+  .cart-item img {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .cart-header,
+  .cart-footer {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
