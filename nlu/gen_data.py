@@ -49,7 +49,7 @@ class Generator:
     def __init__(self, products: list[L.Product], rng: random.Random):
         self.products = products
         self.rng = rng
-        self.brands = sorted({p.brand for p in products} | set(T.EXTRA_BRANDS))
+        self.brands = sorted({p.brand for p in products if p.brand} | set(T.EXTRA_BRANDS))
         self.categories = sorted({p.category for p in products} | set(T.EXTRA_CATEGORIES))
         self.colors = sorted({c for p in products for c in p.colors} | set(T.EXTRA_COLORS))
         self.capacities = sorted({p.capacity for p in products if p.capacity} | set(T.EXTRA_CAPACITIES))
@@ -101,7 +101,7 @@ class Generator:
             if slot == "HANG":
                 seen = used_values.setdefault("HANG", set())
                 p = context_product()
-                if p and p.brand not in seen and rng.random() < 0.7:
+                if p and p.brand and p.brand not in seen and rng.random() < 0.7:
                     seen.add(p.brand)
                     return (p.brand.lower() if rng.random() < 0.6 else p.brand), "HANG", {}
                 options = [b for b in self.brands if b not in seen] or self.brands
