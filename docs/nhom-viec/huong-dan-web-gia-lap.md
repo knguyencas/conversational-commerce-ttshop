@@ -180,7 +180,7 @@ Thanh tiến trình: Đã đặt → Shop xác nhận → Đã đóng gói → �
 | Bước | Làm | Thử bằng |
 |---|---|---|
 | 1 | Dự án Vite, `api.js`, màn nhập mã, danh sách sản phẩm | Thấy đúng danh sách từ API |
-| 2 | Chat (kể cả thẻ gợi ý sản phẩm) | Hỏi "củ sạc anker 20w trắng giá bao nhiêu", rồi "còn mấy cái" |
+| 2 | Chat (kể cả thẻ gợi ý sản phẩm) | Hỏi "chuột g102 màu trắng giá bao nhiêu", rồi "còn mấy cái" |
 | 3 | Chi tiết sản phẩm, giỏ hàng, đặt hàng | Đặt 1 đơn, thấy mã đơn; tồn kho trên danh sách giảm |
 | 4 | Đơn của tôi, thông báo | Đơn hiện đúng bước |
 | 5 | Màn người bán | Đẩy đơn qua đủ bước, khách thấy cập nhật và thông báo |

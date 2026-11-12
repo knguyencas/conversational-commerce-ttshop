@@ -9,7 +9,7 @@ Nhóm việc này lo **mọi thứ khách hàng nhìn thấy**: giao diện demo
 ## Đồ án cần gì từ nhóm này
 
 1. **Giao diện demo (shop giả lập)**: trang web chạy được trên trình duyệt, dùng để demo cho thầy.
-2. **Dữ liệu sản phẩm** `cua-hang/san-pham.csv`: 10–20 món phụ kiện công nghệ **không thương hiệu**.
+2. **Dữ liệu sản phẩm** `cua-hang/san-pham.csv`: danh mục **HDX Tech**, 25 sản phẩm laptop và phụ kiện máy tính (đã có, khớp web giả lập).
 3. **Bộ câu test**: `cua-hang/bo-test-chatbot.csv` (30–50 câu) và `cua-hang/test-nlu.csv` (khoảng 100 câu đã gán nhãn).
 4. **Minh chứng TikTok**: ảnh mở shop, 2–3 sản phẩm nháp, ảnh chỗ TikTok đòi giấy phép doanh nghiệp.
 

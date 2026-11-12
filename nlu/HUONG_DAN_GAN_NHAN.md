@@ -8,7 +8,7 @@ Người train mô hình (Thành viên 3) **không** viết tập test, để k�
 
 | Mã | Ý định | Khi nào dùng | Ví dụ |
 |---|---|---|---|
-| `hoi_gia` | Hỏi giá, còn hàng | Hỏi giá, tồn kho, màu, phiên bản, thông số của **một sản phẩm cụ thể** | "sạc anker 20w giá bao nhiêu", "airpods 4 còn hàng không shop" |
+| `hoi_gia` | Hỏi giá, còn hàng | Hỏi giá, tồn kho, màu, phiên bản, thông số của **một sản phẩm cụ thể** | "chuột g102 giá bao nhiêu", "airpods 4 còn hàng không shop" |
 | `tu_van` | Nhờ tư vấn | Chưa biết chọn món nào; nêu nhu cầu, ngân sách, máy đang dùng; hỏi món này có hợp máy kia không | "tầm 500k nên mua tai nghe nào", "củ sạc nào sạc nhanh cho iphone 15" |
 | `so_sanh` | So sánh | Đặt **hai món trở lên** cạnh nhau để chọn | "anker 20w với baseus 20w cái nào tốt hơn" |
 | `tra_don` | Tra đơn | Hỏi đơn **đã đặt** đang ở đâu, bao giờ giao, mã vận đơn | "đơn 579123456789012345 tới đâu rồi" |
@@ -30,9 +30,9 @@ Người train mô hình (Thành viên 3) **không** viết tập test, để k�
 
 | Nhãn | Là gì | Đánh dấu | Không đánh dấu |
 |---|---|---|---|
-| `SAN_PHAM` | Tên sản phẩm hoặc mẫu cụ thể | `sạc anker 20w`, `airpods 4`, `ip15` | chữ chung chung: "cái này", "sản phẩm" |
+| `SAN_PHAM` | Tên sản phẩm hoặc mẫu cụ thể | `chuột g102`, `macbook air m2`, `k380s` | chữ chung chung: "cái này", "sản phẩm" |
 | `HANG` | Hãng, khi **đứng riêng** | `anker`, `baseus`, `apple` | hãng nằm trong tên sản phẩm (đã nằm trong `SAN_PHAM`) |
-| `LOAI` | Loại hàng | `tai nghe`, `củ sạc`, `cáp`, `ốp lưng`, `sạc dự phòng` | |
+| `LOAI` | Loại hàng | `laptop`, `chuột`, `tai nghe`, `màn hình`, `ổ cứng`, `hub` | |
 | `NGAN_SACH` | Số tiền | `500k`, `2tr5`, `1.990.000đ`, `2 triệu` | chữ đi kèm: "dưới", "tầm", "khoảng" |
 | `MAU` | Màu | `trắng`, `đen`, `xanh dương` | chữ "màu" |
 | `DUNG_LUONG` | Dung lượng, công suất | `128gb`, `10000mah`, `20w`, `1m` | |
@@ -42,7 +42,7 @@ Quy tắc chung:
 
 - Đánh dấu **đúng phần chữ** của thông tin, không kèm khoảng trắng hay dấu câu ở hai đầu.
 - Giữ nguyên cách khách gõ, kể cả sai chính tả hay không dấu: `sac anker 20w` vẫn là `SAN_PHAM`.
-- Thông số nằm **trong** tên sản phẩm thì để cả cụm là `SAN_PHAM` ("sạc anker 20w"). Thông số đứng riêng thì gán `DUNG_LUONG` ("có bản 20w không").
+- Thông số nằm **trong** tên sản phẩm thì để cả cụm là `SAN_PHAM` ("kingston nv2 1tb"). Thông số đứng riêng thì gán `DUNG_LUONG` ("có bản 20w không").
 
 ## 3. Cách ghi trong Google Sheet
 
@@ -50,7 +50,7 @@ Mỗi dòng một câu, hai cột `text` và `intent`. Trong `text`, bọc thôn
 
 | text | intent |
 |---|---|
-| `[sạc anker 20w](SAN_PHAM) màu [trắng](MAU) còn không shop` | `hoi_gia` |
+| `[chuột g102](SAN_PHAM) màu [trắng](MAU) còn không shop` | `hoi_gia` |
 | `tầm [500k](NGAN_SACH) mua [tai nghe](LOAI) nào ổn ạ` | `tu_van` |
 | `đơn [579123456789012345](MA_DON) tới đâu rồi shop` | `tra_don` |
 | `cảm ơn shop nha` | `khac` |

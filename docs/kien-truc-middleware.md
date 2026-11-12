@@ -6,7 +6,7 @@ Môn Công nghệ thông tin trong thương mại điện tử · Nhóm 4 ngư�
 
 ## 0. Đọc nhanh
 
-**Shop làm gì.** Một gian hàng đồ công nghệ (phụ kiện điện thoại, tai nghe, loa, điện thoại...) bán **chỉ trên TikTok Shop**. Khách xem video, nhắn tin hỏi shop, đặt mua ngay trong app TikTok.
+**Shop làm gì.** **HDX Tech**: gian hàng laptop và phụ kiện máy tính (bàn phím, chuột, tai nghe, màn hình, SSD, hub, micro, webcam, lót chuột) bán **chỉ trên TikTok Shop**; trong đồ án chạy trên web giả lập TikTok Shop (từ 13/11/2026, trước đó là phụ kiện điện thoại). Khách xem video, nhắn tin hỏi shop, đặt mua ngay trong app TikTok.
 
 **Hệ thống làm gì.** Tự động hóa toàn bộ phía sau mà khách không nhìn thấy:
 

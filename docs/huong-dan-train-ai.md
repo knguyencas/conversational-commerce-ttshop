@@ -36,6 +36,8 @@ Shop mới chưa có hội thoại thật, nên dữ liệu đến từ 3 nguồ
 | **Câu thật từ Google Form** | Train thêm (tăng độ đa dạng) | M4 tạo Form "Bạn sẽ nhắn shop đồ công nghệ thế nào?", gửi bạn bè; được 200–300 câu thì gán nhãn |
 | **Tập test do người khác viết** | Chấm điểm (không train) | M1 viết khoảng 300 câu, mỗi ý định ít nhất 30 câu |
 
+**Đổi sang danh mục HDX Tech (13/11/2026).** Dữ liệu train và dev được sinh lại hoàn toàn từ `cua-hang/san-pham.csv` (25 sản phẩm, 10 loại) bằng `python scripts/nap-san-pham.py` rồi `python nlu/gen_data.py`; mẫu câu và danh sách máy, hãng trong `nlu/templates_vi.py` cũng đổi sang laptop và phụ kiện máy tính. Số của các lần train trước (danh mục phụ kiện điện thoại) không so trực tiếp với lần train HDX; vẫn dùng được trong báo cáo làm phần phân tích lỗi dữ liệu.
+
 **Mẫu bổ sung sau lần train đầu (11/11/2026).** Lần train đầu, dev cho thấy 2 lỗ hổng của dữ liệu sinh: kiểu câu "loại hàng + hãng" (vd "chuột logitech") có 0 câu trong train vì cả 3 mẫu kiểu này đều rơi vào dev, nên F1 nhận hãng chỉ 0,07; và khiếu nại có mã đơn rất ít nên mô hình học "có mã đơn là tra đơn". Đã thêm `EXTRA_TRAIN_TEMPLATES` trong `nlu/templates_vi.py` (mẫu **chỉ dùng cho train**, viết khác mẫu dev) và sinh lại bằng:
 
 ```bash
@@ -55,7 +57,7 @@ Lệnh này cần `GEMINI_API_KEY`; đọc lướt file kết quả và xóa câ
 ### A2. Gán nhãn câu thật
 
 1. Người gán nhãn đọc `nlu/HUONG_DAN_GAN_NHAN.md`: 7 ý định, 7 loại thông tin, các ca dễ nhầm.
-2. Gán trong Google Sheet, mỗi dòng gồm `text` và `intent`. Thông tin bọc dạng `[chữ](NHÃN)`, ví dụ `[sạc anker 20w](SAN_PHAM) màu [trắng](MAU) còn không`.
+2. Gán trong Google Sheet, mỗi dòng gồm `text` và `intent`. Thông tin bọc dạng `[chữ](NHÃN)`, ví dụ `[chuột g102](SAN_PHAM) màu [trắng](MAU) còn không`.
 3. *Tệp → Tải xuống → CSV*. Chuyển sang định dạng train:
 
    ```bash
@@ -136,15 +138,15 @@ Service tự nén mô hình int8 (khoảng 0,9 GB RAM, ~0,1 giây mỗi câu). M
 ### B1. Dữ liệu: Amazon Reviews 2023
 
 - **Nguồn:** bộ dữ liệu công khai của McAuley Lab (UC San Diego), đăng trên Hugging Face tại `McAuley-Lab/Amazon-Reviews-2023`. Notebook tự tải, không cần tài khoản.
-- **Dùng 2 nhóm hàng:** *Cell Phones & Accessories* và *Electronics*.
+- **Dùng nhóm hàng *Electronics*** (từ 13/11/2026, khi shop đổi sang danh mục HDX Tech: laptop và phụ kiện máy tính). Trước đó dùng thêm *Cell Phones & Accessories* cho danh mục phụ kiện điện thoại cũ.
 - **Hai loại file:**
-  - `benchmark/5core/rating_only/<nhóm>.csv`: ai đánh giá món gì, lúc nào. Bản 5-core chỉ giữ người và món có từ 5 đánh giá trở lên, ít nhiễu. Hai file nặng 160 MB và 900 MB.
-  - `raw/meta_categories/meta_<nhóm>.jsonl`: thông tin sản phẩm (tên, cây danh mục). Hai file nặng 4 GB và 5,2 GB. Notebook đọc theo dòng nên không tốn RAM.
-- **Vì sao dùng dữ liệu Amazon:** shop mới chưa có đơn để học, nên mượn thói quen mua của người dùng Amazon ở mức **loại hàng** (ốp lưng, củ sạc...). Món cụ thể sẽ do dữ liệu kho của shop lọc.
+  - `benchmark/5core/rating_only/Electronics.csv`: ai đánh giá món gì, lúc nào. Bản 5-core chỉ giữ người và món có từ 5 đánh giá trở lên, ít nhiễu. Nặng khoảng 900 MB.
+  - `raw/meta_categories/meta_Electronics.jsonl`: thông tin sản phẩm (tên, cây danh mục). Nặng khoảng 5,2 GB. Notebook đọc theo dòng nên không tốn RAM.
+- **Vì sao dùng dữ liệu Amazon:** shop mới chưa có đơn để học, nên mượn thói quen mua của người dùng Amazon ở mức **loại hàng** (laptop, chuột, hub...). Món cụ thể sẽ do dữ liệu kho của shop lọc.
 
 ### B2. Cách mô hình học
 
-1. **Gán loại hàng của shop cho từng sản phẩm Amazon** theo cây danh mục (`upsell/category_map.py`). Ví dụ `Cell Phones & Accessories > Cases, Holsters & Sleeves > Basic Cases` thành **ốp lưng**. Phụ kiện của phụ kiện (đệm tai nghe, dây đồng hồ) thì bỏ.
+1. **Gán loại hàng của shop cho từng sản phẩm Amazon** theo nhánh cuối của cây danh mục (`upsell/category_map.py`, 10 loại của HDX Tech). Ví dụ `Laptops > Traditional Laptops` thành **laptop**, `Data Storage > Internal Solid State Drives` thành **ssd**, `Laptop Accessories > Docking Stations` thành **hub**. Phụ kiện của phụ kiện (túi laptop, giá đỡ màn hình, đệm tai nghe) thì bỏ. Tên nhánh lấy từ dữ liệu thật của Amazon, không đoán.
 2. **Coi là "mua cùng nhau"**: một người đánh giá hai món **khác loại** trong vòng **30 ngày**.
 3. **Đếm theo người.** Mỗi người góp tối đa 1 cho mỗi cặp loại, để người mua cực nhiều không lấn át.
 4. **Tính điểm:** P(B | A) = (số người mua cả A và B + α × độ phổ biến của B) / (số người mua A + α), với α = 20. Khi loại A ít dữ liệu, điểm tự kéo về mức phổ biến chung (làm mượt).
@@ -182,7 +184,7 @@ Các file nằm trong `MyDrive/cntttmdt/upsell/outputs/`:
 
 Notebook còn in bảng Hit@1 **theo từng loại hàng**, dùng để viết phần phân tích: loại nào mô hình hơn hẳn baseline, loại nào không.
 
-**Kết quả lần chạy đủ (12/11/2026):** 6.726.367 lượt mua của 1.672.071 người; học trên dữ liệu trước 11/06/2021, kiểm tra trên 350.395 ca sau đó.
+**Kết quả lần chạy đủ (12/11/2026, danh mục cũ: 11 loại phụ kiện điện thoại).** Shop đã đổi sang danh mục HDX Tech ngày 13/11/2026, nên cần chạy lại notebook để có số cho 10 loại mới. Kết quả dưới đây vẫn dùng được trong báo cáo làm phần phân tích phương pháp (vì sao cần lọc lift, vì sao ALS kém). 6.726.367 lượt mua của 1.672.071 người; học trên dữ liệu trước 11/06/2021, kiểm tra trên 350.395 ca sau đó.
 
 | Cách gợi ý | Hit@1 | Hit@3 | Recall@5 |
 |---|---|---|---|
@@ -221,7 +223,7 @@ Chatbot dùng ngay luật `amazon` ở tin nhắn tiếp theo. Chưa nạp luậ
 
 ## C. Bandit (Thompson sampling): không cần train
 
-**Vấn đề:** luật mua kèm chỉ nói nên mời **loại** nào (vd khách xem củ sạc thì mời cáp hoặc sạc dự phòng). Trong mỗi loại có nhiều **món**, và không biết trước món nào khách của shop hay nhận lời.
+**Vấn đề:** luật mua kèm chỉ nói nên mời **loại** nào (vd khách xem chuột thì mời lót chuột hoặc bàn phím). Trong mỗi loại có nhiều **món**, và không biết trước món nào khách của shop hay nhận lời.
 
 **Cách bandit chọn món:**
 

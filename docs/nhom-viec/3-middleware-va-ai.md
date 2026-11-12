@@ -26,9 +26,9 @@
 | API demo cho giao diện (7 API) | Chạy, hợp đồng [contracts/internal/demo_api.md](../../contracts/internal/demo_api.md) |
 | Chatbot nhớ ngữ cảnh (sản phẩm vừa nói, đơn gần nhất), tồn kho giả trừ theo đơn đã đặt | Chạy |
 | Diễn tập trọn luồng `scripts/dien-tap.sh` | 14/14 đạt |
-| Dữ liệu sản phẩm của chatbot | Còn là dữ liệu giả có tên hãng; cần thay bằng `san-pham.csv` |
-| PhoBERT | Train lần 1 xong (dev: macro-F1 ý định 0,894, F1 thực thể 0,728, đều hơn baseline). Đã sửa dữ liệu (mẫu "loại hàng + hãng", khiếu nại có mã đơn), chờ train lần 2; chưa bật service NLU |
-| Mô hình mua kèm | Đã chạy trên Colab: P(B\|A) Hit@3 0,801, luật lọc lift 0,785, baseline 0,767. Luật chưa nạp vào database (`upsell_rules.sql` trên Drive) |
+| Dữ liệu sản phẩm của chatbot | Danh mục HDX Tech (25 sản phẩm, 10 loại) từ `cua-hang/san-pham.csv`, nạp bằng `python scripts/nap-san-pham.py` |
+| PhoBERT | Train lần 1 xong (dev: macro-F1 ý định 0,894, F1 thực thể 0,728, đều hơn baseline). Đã sửa dữ liệu (mẫu "loại hàng + hãng", khiếu nại có mã đơn), chờ train lần 2. Từ 13/11 dữ liệu sinh lại cho danh mục HDX Tech, cần train lại; chưa bật service NLU |
+| Mô hình mua kèm | Đã chạy trên Colab với danh mục cũ (P(B\|A) Hit@3 0,801, lọc lift 0,785, baseline 0,767). Từ 13/11 đổi sang 10 loại HDX Tech: cần chạy lại; database đang dùng 22 luật mặc định HDX |
 | Chấm chatbot | Chờ bộ câu test |
 | Tailscale | Chưa cài |
 

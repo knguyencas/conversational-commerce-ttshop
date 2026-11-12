@@ -61,7 +61,7 @@ Không nhóm nào phải chờ nhóm khác mới bắt đầu được: chỗ n�
 4. **Odoo là nguồn sự thật** cho giá, tồn kho, đơn hàng.
 5. **Mọi sự kiện đi qua n8n.** Giao diện chỉ gọi 7 API `/webhook/demo/...` (do n8n cung cấp), không gọi Odoo, database hay AI trực tiếp; Odoo không gọi giao diện.
 6. **Không lộ khóa.** Mật khẩu, API key, mã nhóm chỉ nằm trong `.env` máy chủ hoặc gửi tin nhắn riêng; không đưa lên GitHub.
-7. **Hàng không thương hiệu.** TikTok đòi thư ủy quyền mới cho đăng hàng có tên hãng.
+7. **Danh mục HDX Tech chỉ nằm trên web giả lập.** 25 sản phẩm laptop và phụ kiện máy tính có hãng trong `cua-hang/san-pham.csv`, 10 loại hàng: laptop, bàn phím, chuột, tai nghe, màn hình, ssd, hub, micro, webcam, lót chuột. TikTok đòi thư ủy quyền mới cho đăng hàng có hãng, nên không đăng danh mục này lên TikTok thật; minh chứng TikTok chỉ dùng sản phẩm nháp không thương hiệu.
 
 ## Môi trường dùng chung
 

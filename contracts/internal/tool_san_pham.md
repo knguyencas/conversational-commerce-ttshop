@@ -4,7 +4,7 @@ Chatbot (M3) không đọc Odoo trực tiếp. Nó gọi **một workflow con** 
 
 | Bản | Workflow | Người làm | Dữ liệu |
 |---|---|---|---|
-| Giả (đang dùng) | `M3 · Tool sản phẩm (dữ liệu giả)` | M3 | Danh mục mẫu trong `nlu/data/catalog.csv`, tồn kho bịa |
+| Giả (đang dùng) | `M3 · Tool sản phẩm (dữ liệu giả)` | M3 | Danh mục HDX Tech trong `cua-hang/san-pham.csv`, nạp bằng `python scripts/nap-san-pham.py`; tồn kho trừ theo đơn giả lập |
 | Thật | `M2 · Tra sản phẩm Odoo` | **M2** | Odoo: `product.product`, `stock.quant` |
 
 Khi bản thật chạy đúng hợp đồng, chỉ cần đổi workflow mà Chatbot gọi (node *Gọi tool sản phẩm*); phần còn lại của Chatbot giữ nguyên. Đây là lần ghép số 1 trong tài liệu phân công (M1, M2, M3).
@@ -14,9 +14,9 @@ Khi bản thật chạy đúng hợp đồng, chỉ cần đổi workflow mà Ch
 ```json
 {
   "calls": [
-    { "tool": "tra_san_pham", "args": { "query": "sạc anker 20w", "color": "trắng" } },
-    { "tool": "tim_theo_ngan_sach", "args": { "category": "tai nghe", "budget_max": 1000000, "brand": null, "limit": 3 } },
-    { "tool": "phu_kien_tuong_thich", "args": { "sku": "DT-IP15-128", "device": null, "category": null, "limit": 3 } }
+    { "tool": "tra_san_pham", "args": { "query": "chuột g102", "color": "trắng" } },
+    { "tool": "tim_theo_ngan_sach", "args": { "category": "tai nghe", "budget_max": 1200000, "brand": null, "limit": 3 } },
+    { "tool": "phu_kien_tuong_thich", "args": { "sku": "HD-LAP-005", "device": null, "category": "hub", "limit": 3 } }
   ]
 }
 ```
@@ -26,7 +26,7 @@ Khi bản thật chạy đúng hợp đồng, chỉ cần đổi workflow mà Ch
 | `tra_san_pham` | `query` (chữ khách gõ hoặc SKU), `color` (có thể null) | Tìm tối đa 3 sản phẩm khớp tên, tên gọi tắt hoặc SKU |
 | `tim_theo_ngan_sach` | `category`, `budget_min`, `budget_max`, `brand` (đều có thể null), `limit` | Sản phẩm còn hàng trong khoảng giá, giá cao nhất trước |
 | `danh_sach` | không có | Mọi sản phẩm (dùng cho giao diện demo, `GET /webhook/demo/san-pham`) |
-| `phu_kien_tuong_thich` | `sku` hoặc `device` (vd "iphone 15"), `category` (có thể null), `limit` | Phụ kiện dùng được cho máy đó |
+| `phu_kien_tuong_thich` | `sku` của laptop hoặc `device` (vd "macbook air m2", "laptop asus", "pc"), `category` (có thể null), `limit` | Phụ kiện dùng được cho máy đó (so với cột `tuong_thich`) |
 
 Chatbot gửi chữ khách gõ gần như nguyên văn vào `query`, có thể không dấu hoặc viết tắt. Bên tra cứu tự so khớp mềm: bỏ dấu, chữ thường, so với tên và tên gọi tắt.
 
@@ -39,7 +39,7 @@ Luôn trả **đúng một item**, kể cả khi `calls` rỗng hoặc không t�
   "results": [
     {
       "tool": "tra_san_pham",
-      "args": { "query": "sạc anker 20w", "color": "trắng" },
+      "args": { "query": "chuột g102", "color": "trắng" },
       "ok": true,
       "products": [
         {

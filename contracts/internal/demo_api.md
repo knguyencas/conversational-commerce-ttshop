@@ -40,10 +40,10 @@ Không viết mã nhóm cứng vào code đưa lên GitHub: cho người dùng n
   "source": "gia",
   "products": [
     {
-      "sku": "PK-SAC-ANKER20W-TRANG", "name": "Củ sạc Anker 20W", "brand": "Anker", "category": "củ sạc",
-      "price": 199000, "stock": 9,
-      "colors": [ { "color": "trắng", "stock": 3 }, { "color": "đen", "stock": 6 } ],
-      "warranty_months": 18, "specs": "Sạc nhanh PD 20W, 1 cổng USB-C", "compatible": ["iphone 15", "samsung"]
+      "sku": "HD-MOU-001", "name": "Chuột gaming Logitech G102 LIGHTSYNC", "brand": "Logitech", "category": "chuột",
+      "price": 399000, "stock": 20,
+      "colors": [ { "color": "đen", "stock": 10 }, { "color": "trắng", "stock": 10 } ],
+      "warranty_months": 24, "specs": "Chuột gaming có dây USB-A, cảm biến 8.000 DPI, 6 nút, đèn RGB LIGHTSYNC", "compatible": ["laptop", "pc"]
     }
   ]
 }
@@ -56,7 +56,7 @@ Không viết mã nhóm cứng vào code đưa lên GitHub: cho người dùng n
 Vào:
 
 ```json
-{ "conversation_id": "demo-khach-1", "buyer_user_id": "gia-lap-khach", "text": "cáp type c còn không shop" }
+{ "conversation_id": "demo-khach-1", "buyer_user_id": "gia-lap-khach", "text": "chuột g102 còn không shop" }
 ```
 
 Ra (chờ khoảng 1–3 giây vì AI viết câu):

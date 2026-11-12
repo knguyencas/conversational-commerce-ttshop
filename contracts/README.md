@@ -52,15 +52,15 @@ Router đọc số `type` rồi đổi sang tên ở trên, ghi cả hai vào `p
 - **Chatbot phải bỏ qua tin do chính shop gửi** (`sender.role` khác `BUYER`), nếu không bot sẽ tự trả lời chính nó.
 - **Mã đơn TikTok rất dài** (18 chữ số). Luôn lưu dạng chuỗi; để dạng số thì JavaScript làm tròn sai.
 
-## Quy tắc SKU (đề xuất, nhóm chốt)
+## Quy tắc SKU (đã chốt theo danh mục HDX Tech)
 
-`<NHÓM>-<LOẠI>-<MẪU>-<BIẾN THỂ>`, chữ in hoa không dấu, nối bằng gạch ngang, không khoảng trắng.
+`HD-<LOẠI>-<SỐ>`, chữ in hoa không dấu, nối bằng gạch ngang, không khoảng trắng. Loại: `LAP` laptop, `KEY` bàn phím, `MOU` chuột, `HDP` tai nghe, `MON` màn hình, `SSD`, `HUB`, `MIC` micro, `WEB` webcam, `PAD` lót chuột.
 
-- `PK-SAC-ANKER20W-TRANG`: phụ kiện, củ sạc, Anker 20W, màu trắng
-- `PK-CAP-UGREEN-C2C-1M`: phụ kiện, cáp, Ugreen USB-C to C, dài 1 m
-- `DT-IP15-128-DEN`: điện thoại, iPhone 15, 128 GB, đen
+- `HD-LAP-001`: Laptop ASUS Vivobook 15 X1504
+- `HD-MOU-001`: Chuột gaming Logitech G102 LIGHTSYNC
+- `HD-SSD-002`: Ổ cứng SSD Kingston NV2 1TB
 
-Cùng một chuỗi này nằm ở: cột SKU trong sheet, Internal Reference trong Odoo, Seller SKU trên TikTok, cột `seller_sku` trong bảng `sku_map`.
+Cùng một chuỗi này nằm ở: `cua-hang/san-pham.csv`, Internal Reference trong Odoo, web giả lập, dữ liệu sản phẩm của chatbot, cột `seller_sku` trong bảng `sku_map`.
 
 ## Gửi thử webhook có chữ ký
 
