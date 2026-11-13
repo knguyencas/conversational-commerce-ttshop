@@ -27,6 +27,7 @@ TikTok Shop chỉ cấp Open API cho doanh nghiệp có giấy phép, nên đồ
 |---|---|---|
 | [1-cua-hang-va-giao-dien-demo.md](1-cua-hang-va-giao-dien-demo.md) | Cửa hàng và giao diện demo | Web shop giả lập, dữ liệu sản phẩm, bộ câu test, minh chứng TikTok |
 | [huong-dan-web-gia-lap.md](huong-dan-web-gia-lap.md) | (đi kèm nhóm 1) | Hướng dẫn làm web giả lập bằng React + Vite từng bước, có code gọi API |
+| [sua-web-hdx.md](sua-web-hdx.md) | (đi kèm nhóm 1) | Sửa web HDX Tech đang có (nhánh `feature/hdx-tech-shop-huuduc`) để nối vào hệ thống: mục tiêu, quy tắc, giữ/bỏ/sửa/thêm |
 | [2-kho-va-don-hang.md](2-kho-va-don-hang.md) | Kho và đơn hàng | Odoo, 4 workflow đơn hàng, tool đọc Odoo cho chatbot |
 | [3-middleware-va-ai.md](3-middleware-va-ai.md) | Middleware và AI | Máy chủ, n8n, chatbot, API cho giao diện demo, train và chấm mô hình |
 | [4-noi-dung-va-do-luong.md](4-noi-dung-va-do-luong.md) | Nội dung và đo lường | Dashboard KPI, video demo, kế hoạch quảng cáo |
