@@ -4,7 +4,7 @@ Thư mục này do **M1** giữ. Mọi file ở đây là dữ liệu cả nhóm
 
 | File | Nội dung | Ai dùng |
 |---|---|---|
-| `san-pham.csv` | Danh mục **HDX Tech**: 25 sản phẩm (laptop và phụ kiện máy tính), mỗi sản phẩm một dòng | M2 nhập vào Odoo; M3 sinh dữ liệu train NLU; M4 viết kịch bản video |
+| `san-pham.csv` | Danh mục **HDX Tech**: 35 sản phẩm (laptop và phụ kiện máy tính), mỗi sản phẩm một dòng | M2 nhập vào Odoo; M3 sinh dữ liệu train NLU; M4 viết kịch bản video |
 | `sku-map.csv` | SKU người bán ↔ product ID, SKU ID trên TikTok, điền sau khi đăng sản phẩm | M3 nạp vào bảng `sku_map` |
 | `bo-test-chatbot.csv`, `bo-test-chatbot.docx` | Bộ 100 câu test chatbot: 01–39 do M1 viết, 40–100 do M3 bổ sung (M1 đọc lại). Bản Word để đọc, bản CSV để chấm | M3 chấm bằng `danh-gia/cham_chatbot.py` |
 | `test-nlu.csv` | Câu test cho mô hình ý định, đã gán nhãn | M3 đánh giá PhoBERT |
@@ -18,10 +18,10 @@ Dòng đầu là tên cột, giữ nguyên. Sửa xong thì M3 chạy `python sc
 
 | Cột | Ví dụ | Ghi chú |
 |---|---|---|
-| `sku` | `HD-MOU-001` | `HD-<loại 3 chữ>-<số>`: LAP laptop, KEY bàn phím, MOU chuột, HDP tai nghe, MON màn hình, SSD, HUB, MIC micro, WEB webcam, PAD lót chuột. Viết giống hệt ở Odoo và web giả lập |
+| `sku` | `HD-MOU-001` | `HD-<loại 3 chữ>-<số>`: LAP laptop, KEY bàn phím, MOU chuột, HDP tai nghe, MON màn hình, SSD, HUB, MIC micro, WEB webcam, PAD lót chuột, BAG balo laptop, SLV túi chống sốc, CLP đế tản nhiệt, CHG sạc laptop, CAB cáp màn hình, ARM giá treo màn hình, WRS kê tay. Viết giống hệt ở Odoo và web giả lập |
 | `name` | Chuột gaming Logitech G102 LIGHTSYNC | Tên hiển thị |
 | `brand` | Logitech | Tên hãng. Hàng có hãng chỉ bán trên web giả lập, không đăng lên TikTok thật (xem [hướng dẫn M1](../huong-dan/m1-cua-hang.md)) |
-| `category` | chuột | Chữ thường, có dấu; chỉ dùng 10 loại: laptop, bàn phím, chuột, tai nghe, màn hình, ssd, hub, micro, webcam, lót chuột. Loại mới phải báo M3 (chatbot, mô hình mua kèm và PhoBERT đều theo danh sách này) |
+| `category` | chuột | Chữ thường, có dấu; chỉ dùng 17 loại: laptop, bàn phím, chuột, tai nghe, màn hình, ssd, hub, micro, webcam, lót chuột, balo laptop, túi chống sốc, đế tản nhiệt, sạc laptop, cáp màn hình, giá treo màn hình, kê tay. Loại mới phải báo M3 (chatbot, mô hình mua kèm và PhoBERT đều theo danh sách này) |
 | `price` | 399000 | VND, chỉ ghi số |
 | `colors` | đen\|trắng | Nhiều giá trị thì ngăn bằng `\|`; để trống nếu không có màu |
 | `capacity` | 512GB | Dung lượng hoặc kích thước; để trống nếu không có |

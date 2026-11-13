@@ -19,6 +19,7 @@ import nlu_lib as L
 
 URL = "http://127.0.0.1:5678/webhook/chatbot-test"
 MONEY_RE = re.compile(r"(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(trieu|tr|cu|k|nghin|ngan|vnd|dong|d)?\s*(\d+|ruoi)?(?![a-z0-9])")
+SPEC_UNIT_RE = re.compile(r"\s*(dpi|hz|mah|gb|tb|mb|w|inch|in|mm|cm|ms|nits?|rpm|fps|mbps|gbps|p|lux|vong)(?![a-z])")
 
 
 def ask(text: str, conv: str, timeout: int = 90) -> dict:
@@ -39,7 +40,11 @@ def money_in(reply: str) -> list[int]:
     for m in MONEY_RE.finditer(f):
         if not m.group(2) and not re.search(r"[.,]\d{3}", m.group(1)):
             continue
+        if SPEC_UNIT_RE.match(f, m.end()):
+            continue
         v = L.parse_money(m.group(0))
+        if m.group(2) == "k" and v and v < 10000:
+            continue
         if v:
             out.append(v)
     return out

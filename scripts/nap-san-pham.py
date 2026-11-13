@@ -22,6 +22,13 @@ CATEGORY_ALIAS = {
     "micro": ["micro", "mic", "micro thu am"],
     "webcam": ["webcam", "cam", "camera"],
     "lot chuot": ["lot chuot", "ban di chuot", "pad chuot", "mouse pad", "lot"],
+    "balo laptop": ["balo laptop", "balo", "ba lo", "ba lo laptop", "balo may tinh"],
+    "tui chong soc": ["tui chong soc", "tui laptop", "bao dung laptop", "tui dung laptop", "sleeve"],
+    "de tan nhiet": ["de tan nhiet", "de tan nhiet laptop", "de quat laptop", "quat tan nhiet", "cooling pad"],
+    "sac laptop": ["sac laptop", "cu sac", "cu sac laptop", "sac nhanh", "sac usb c", "sac may tinh"],
+    "cap man hinh": ["cap man hinh", "cap hdmi", "day hdmi", "cap displayport", "day displayport", "cap dp"],
+    "gia treo man hinh": ["gia treo man hinh", "arm man hinh", "tay treo man hinh", "gia do man hinh"],
+    "ke tay": ["ke tay", "ke tay ban phim", "dem ke tay", "ke co tay", "wrist rest"],
 }
 
 

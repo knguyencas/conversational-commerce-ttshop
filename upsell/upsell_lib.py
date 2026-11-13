@@ -163,7 +163,7 @@ class LiftFiltered(Lift):
     name = "P(B|A) + lọc lift"
 
     def __init__(self, co: Counter, anchor: Counter, n_users: int, alpha: float = 20.0,
-                 min_lift: float = 1.0, min_support: int = 30):
+                 min_lift: float = 1.0, min_support: int = 100):
         super().__init__(co, anchor, n_users, alpha)
         self.min_lift, self.min_support = min_lift, min_support
 
@@ -237,6 +237,113 @@ class ALSMatrix:
         return self.table.get(anchor, [])[:k]
 
 
+class Oracle:
+    """Trần lý thuyết: nhìn đáp án của chính tập kiểm tra rồi chọn loại phủ được nhiều ca nhất cho từng ngữ cảnh."""
+    name = "Trần lý thuyết"
+
+    def __init__(self, cases, key=lambda a: a, k: int = 5):
+        groups = defaultdict(list)
+        for a, truth in cases:
+            groups[key(a)].append(truth)
+        self.key = key
+        self.table = {g: self._greedy(truths, k) for g, truths in groups.items()}
+
+    @staticmethod
+    def _greedy(truths: list, k: int) -> list[str]:
+        """Chọn lần lượt loại phủ thêm nhiều ca chưa trúng nhất (tối ưu Hit@1, gần tối ưu Hit@3)."""
+        freq = Counter(c for t in truths for c in t)
+        left, picked = list(truths), []
+        while len(picked) < k and freq:
+            gain = Counter(c for t in left for c in t if c not in picked)
+            best = max((c for c in freq if c not in picked), key=lambda c: (gain[c], freq[c]), default=None)
+            if best is None:
+                break
+            picked.append(best)
+            left = [t for t in left if best not in t]
+        return picked
+
+    def rank(self, anchor, k: int) -> list[str]:
+        return self.table.get(self.key(anchor), [])[:k]
+
+
+def seq_cases(ev: pd.DataFrame, window: int):
+    """Ca đoán món tiếp theo theo thời gian: ((loại trước nữa hoặc None, loại vừa mua), {loại mua tiếp})."""
+    out = []
+    for _, g in ev.groupby("user_id", sort=False):
+        if g.cat.nunique() < 2:
+            continue
+        seq = []
+        for d, c in sorted(zip(g.day.tolist(), g.cat.tolist())):
+            if not seq or seq[-1][1] != c:
+                seq.append((d, c))
+        for i in range(1, len(seq)):
+            (d1, p1), (d, nxt) = seq[i - 1], seq[i]
+            if d - d1 > window:
+                continue
+            p2 = seq[i - 2][1] if i >= 2 and d1 - seq[i - 2][0] <= window else None
+            out.append(((p2, p1), frozenset([nxt])))
+    return out
+
+
+class SeqPopularity:
+    """Baseline cho bài đoán món tiếp theo: loại hay được mua tiếp nhất, bỏ loại vừa mua."""
+    name = "Baseline (phổ biến)"
+
+    def __init__(self, train_cases):
+        self.pop = Counter(c for _, t in train_cases for c in t)
+
+    def rank(self, key, k: int) -> list[str]:
+        return [c for c, _ in self.pop.most_common() if c != key[1]][:k]
+
+
+class Markov1:
+    """Markov bậc 1: P(món tiếp | món vừa mua), làm mượt về mức phổ biến."""
+    name = "Markov bậc 1 (1 món gần nhất)"
+
+    def __init__(self, train_cases, alpha: float = 20.0):
+        self.alpha = alpha
+        self.n1, self.n12 = Counter(), Counter()
+        pop = Counter()
+        for (_, p1), t in train_cases:
+            for b in t:
+                self.n1[p1] += 1
+                self.n12[(p1, b)] += 1
+                pop[b] += 1
+        s = sum(pop.values()) or 1
+        self.prior = {c: pop[c] / s for c in SHOP_CATEGORIES}
+
+    def prob(self, p1: str, b: str) -> float:
+        return (self.n12[(p1, b)] + self.alpha * self.prior.get(b, 0)) / (self.n1[p1] + self.alpha)
+
+    def rank(self, key, k: int) -> list[str]:
+        p1 = key[1]
+        return sorted((c for c in SHOP_CATEGORIES if c != p1), key=lambda b: -self.prob(p1, b))[:k]
+
+
+class Markov2(Markov1):
+    """Markov bậc 2: P(món tiếp | 2 món gần nhất), ít dữ liệu thì lùi dần về bậc 1."""
+    name = "Markov bậc 2 (2 món gần nhất)"
+
+    def __init__(self, train_cases, alpha: float = 20.0, beta: float = 20.0):
+        super().__init__(train_cases, alpha)
+        self.beta = beta
+        self.n2, self.n23 = Counter(), Counter()
+        for (p2, p1), t in train_cases:
+            if p2 is None:
+                continue
+            for b in t:
+                self.n2[(p2, p1)] += 1
+                self.n23[(p2, p1, b)] += 1
+
+    def rank(self, key, k: int) -> list[str]:
+        p2, p1 = key
+        if p2 is None:
+            return super().rank(key, k)
+        n = self.n2[(p2, p1)]
+        score = lambda b: (self.n23[(p2, p1, b)] + self.beta * self.prob(p1, b)) / (n + self.beta)
+        return sorted((c for c in SHOP_CATEGORIES if c != p1), key=lambda b: -score(b))[:k]
+
+
 def evaluate(model, cases) -> dict:
     """Hit@1, Hit@3: gợi ý đầu tiên / 3 gợi ý đầu có loại đúng. Recall@5: tỉ lệ loại đúng nằm trong 5 gợi ý."""
     if not cases:
@@ -254,10 +361,16 @@ def evaluate(model, cases) -> dict:
     return {"so_ca": n, "hit_at_1": round(hit1 / n, 4), "hit_at_3": round(hit3 / n, 4), "recall_at_5": round(rec5 / n, 4)}
 
 
-def rules(model: CoPurchase, k: int = 3) -> list[dict]:
+def rules(model: CoPurchase, k: int = 3, min_anchor: int = 30, only_related: bool = False) -> list[dict]:
+    """Luật top-k cho từng loại; only_related chỉ giữ cặp thật sự đi kèm, chỗ thiếu chatbot bù bằng luật viết tay."""
     out = []
     for a in SHOP_CATEGORIES:
-        for i, b in enumerate(model.rank(a, k), 1):
+        if model.anchor[a] < min_anchor:
+            continue
+        recs = model.rank(a, k)
+        if only_related and hasattr(model, "related"):
+            recs = [b for b in recs if model.related(a, b)]
+        for i, b in enumerate(recs, 1):
             lift = model.lift(a, b) if hasattr(model, "lift") else float("nan")
             out.append({"anchor_category": a, "rec_category": b, "rank": i, "score": round(model.score(a, b), 4),
                         "lift": round(lift, 2), "support": model.co[(a, b)]})

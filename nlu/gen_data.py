@@ -53,9 +53,14 @@ class Generator:
         self.categories = sorted({p.category for p in products} | set(T.EXTRA_CATEGORIES))
         self.colors = sorted({c for p in products for c in p.colors} | set(T.EXTRA_COLORS))
         self.capacities = sorted({p.capacity for p in products if p.capacity} | set(T.EXTRA_CAPACITIES))
+        words = lambda items: {w for s in items for w in L.fold(s).split()}
+        self.generic = words(self.categories) | words(self.brands) | {"o", "cung", "co", "gaming", "khong", "day"}
+        self.aliases = {p.sku: [a for a in p.aliases if not set(L.fold(a).split()) <= self.generic] for p in products}
 
     def product_name(self, p: L.Product) -> str:
-        name = self.rng.choice([p.name, *p.aliases, *p.aliases])
+        """Tên sản phẩm cụ thể; bỏ tên gọi chỉ gồm loại hàng và hãng (vd "tai nghe sony") để không lẫn với LOAI + HANG."""
+        aliases = self.aliases.get(p.sku, p.aliases)
+        name = self.rng.choice([p.name, *aliases, *aliases])
         return name if self.rng.random() < 0.4 else name.lower()
 
     def fill(self, template: str, intent: str):
@@ -268,12 +273,12 @@ def main():
         train_products, dev_products = split_list(rng, products, args.dev_product_frac)
         for intent in L.INTENTS:
             tpls = list(enumerate(T.TEMPLATES[intent]))
-            tr_tpl, dv_tpl = split_list(rng, tpls, args.dev_template_frac)
+            tr_tpl, dv_tpl = split_list(random.Random(f"{args.seed}-{intent}"), tpls, args.dev_template_frac)
             tpl_split[intent] = {"train": sorted(t for t, _ in tr_tpl), "dev": sorted(t for t, _ in dv_tpl),
                                  "train_bo_sung": len(extra(intent))}
             train_rows += generate(Generator(train_products, rng), tr_tpl + extra(intent), intent, args.per_intent,
                                    "train", seen)
-            dev_rows += generate(Generator(dev_products, rng), dv_tpl, intent, args.dev_per_intent, "dev", seen)
+            dev_rows += generate(Generator(dev_products, random.Random(f"{args.seed}-{intent}-dev")), dv_tpl, intent, args.dev_per_intent, "dev", seen)
 
     rng.shuffle(train_rows)
     L.write_jsonl(out / "train.jsonl", train_rows)

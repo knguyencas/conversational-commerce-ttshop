@@ -173,7 +173,7 @@ Service tự nén mô hình int8 (khoảng 0,9 GB RAM, ~0,1 giây mỗi câu). M
    - So với **baseline**: luôn mời loại hàng phổ biến nhất, không quan tâm khách đang mua gì.
 7. **So với hai cách gợi ý khác** để báo cáo có đối chứng:
    - **Lift / PMI** = P(B | A) / P(B), với P(B) = tỉ lệ người (trong số người có mua kèm) đã mua B: đo B được mua kèm A nhiều hơn mức bình thường bao nhiêu lần (luật kết hợp). Hay đẩy loại hiếm lên đầu.
-   - **P(B | A) + lọc lift** (dùng để xuất luật, mặc định `RULE_MODEL = "loc_lift"`): xếp theo P(B | A), nhưng loại B có lift ≥ 1 và ít nhất 30 người làm căn cứ được đưa lên trước. Lần chạy đầu (11/11/2026, chỉ có P(B | A)) cho thấy P(B | A) mời "ốp lưng" đứng đầu cho 9/11 loại hàng, kể cả bàn phím, vì ốp lưng chiếm 85.671/202.193 sản phẩm Amazon đã gán loại: đó là độ phổ biến, không phải quan hệ mua kèm. Lọc lift giữ Hit@3 gần như cũ nhưng mời đúng món đi kèm hơn; đổi lại Hit@1 có thể giảm. Báo cáo cả hai.
+   - **P(B | A) + lọc lift** (dùng để xuất luật, mặc định `RULE_MODEL = "loc_lift"`): xếp theo P(B | A), nhưng loại B có lift ≥ 1 và ít nhất 100 người làm căn cứ được đưa lên trước. Lần chạy đầu (11/11/2026, chỉ có P(B | A)) cho thấy P(B | A) mời "ốp lưng" đứng đầu cho 9/11 loại hàng, kể cả bàn phím, vì ốp lưng chiếm 85.671/202.193 sản phẩm Amazon đã gán loại: đó là độ phổ biến, không phải quan hệ mua kèm. Lọc lift giữ Hit@3 gần như cũ nhưng mời đúng món đi kèm hơn; đổi lại Hit@1 có thể giảm. Báo cáo cả hai.
    - **Phân rã ma trận ALS** (implicit feedback, Hu–Koren–Volinsky 2008): biểu diễn mỗi người và mỗi loại hàng bằng 8 con số ẩn, học từ ma trận ai đã mua loại nào, rồi gợi ý cho khách vừa mua A. Đây là kỹ thuật kinh điển của các hệ gợi ý (Netflix Prize).
 
    Luật nạp vào hệ thống vẫn lấy từ P(B | A): dễ giải thích với khách và thầy, có số người làm căn cứ cho từng luật.
@@ -192,7 +192,7 @@ Các file nằm trong `MyDrive/cntttmdt/upsell/outputs/`:
 
 | File | Dùng làm gì |
 |---|---|
-| `metrics.json` | Hit@1, Hit@3, Recall@5 của 5 cách gợi ý (baseline, P(B\|A), P(B\|A) + lọc lift, Lift/PMI, ALS), số ca kiểm tra, số người |
+| `metrics.json` | Hit@1, Hit@3, Recall@5 của 5 cách gợi ý (baseline, P(B\|A), P(B\|A) + lọc lift, Lift/PMI, ALS), số ca kiểm tra, số người, trần lý thuyết (`tran_ly_thuyet`), kết quả Markov bậc 1/bậc 2 (`markov`) |
 | `so_sanh_mo_hinh.png` | Biểu đồ cột Hit@1, Hit@3, Recall@5 của 5 cách gợi ý |
 | `xac_suat_mua_kem.png` | Bản đồ nhiệt P(B \| A) cho báo cáo |
 | `upsell_rules.csv` | Bảng luật: mỗi loại hàng thì mời 3 loại nào, kèm điểm, lift và số người làm căn cứ |
@@ -201,20 +201,43 @@ Các file nằm trong `MyDrive/cntttmdt/upsell/outputs/`:
 Notebook còn in bảng Hit@1 **theo từng loại hàng**, dùng để viết phần phân tích: loại nào mô hình hơn hẳn baseline, loại nào không.
 
 
-**Kết quả danh mục HDX Tech (13/11/2026, cửa sổ 30 ngày):** 1.897.051 lượt mua của 966.470 người thuộc 10 loại hàng; kiểm tra trên 50.542 ca.
+**Kết quả danh mục HDX Tech (13/11/2026, 17 loại hàng, cửa sổ 30 ngày, `MIN_SUPPORT` = 100):** 2.404.428 lượt mua của 1.104.443 người; kiểm tra trên 87.651 ca.
 
-| Cách gợi ý | Hit@1 | Hit@3 | Recall@5 |
-|---|---|---|---|
-| **Baseline (phổ biến)** | **0,383** | **0,686** | **0,857** |
-| P(B\|A) | 0,383 | 0,680 | 0,847 |
-| P(B\|A) + lọc lift | 0,356 | 0,679 | 0,841 |
-| Lift / PMI | 0,204 | 0,553 | 0,778 |
-| Phân rã ma trận ALS | 0,152 | 0,418 | 0,522 |
+| Cách gợi ý | Hit@1 | Hit@3 | Recall@5 | Kết luận |
+|---|---|---|---|---|
+| Baseline (phổ biến) | 0,3232 | 0,5557 | 0,5990 | mốc so sánh |
+| **P(B\|A)** | 0,3220 | 0,5670 (+0,0113) | 0,5957 | **Đạt cả 3 chỉ số** |
+| P(B\|A) + lọc lift (xuất luật) | 0,2870 | **0,5708 (+0,0151)** | 0,5956 | Hit@3 cao nhất, Hit@1 thấp hơn |
+| Lift / PMI | | −0,1484 so với baseline | | không đạt |
+| Phân rã ma trận ALS | | −0,2389 so với baseline | | không đạt |
 
-- **Không đạt:** không cách nào thắng baseline. Với 10 loại hàng máy tính, việc người dùng Amazon đánh giá hai loại trong 30 ngày gần như chỉ phản ánh độ phổ biến: "tai nghe" đứng đầu cho 8/10 loại, và lift của mọi cặp đều dưới 1 trừ **micro ↔ webcam (1,34)**. Khác với danh mục điện thoại cũ, nơi bàn phím ↔ chuột có lift 1,24.
-- Lần này **lót chuột không có sản phẩm nào**: trong dữ liệu Amazon 2023 phần lớn lót chuột không có cây danh mục. Đã sửa `category_map.py` (phiên bản `hdx-2`) để nhận lót chuột theo tên sản phẩm.
-- Notebook đã thêm ô **6b** thử cửa sổ 1 và 7 ngày (đánh giá cùng ngày gần với "cùng một đơn hàng") và ô **6c** tự kết luận đạt/không đạt. Chạy lại để biết cửa sổ ngắn có cho tín hiệu mua kèm thật không.
-- **Nếu vẫn không đạt:** không nạp `upsell_rules.sql`; hệ thống giữ 22 luật mặc định viết tay theo hiểu biết về sản phẩm (laptop → chuột, micro → webcam...), bandit chọn món và học từ khách thật, A/B đo hiệu quả. Đây là kết luận có giá trị cho báo cáo: dữ liệu công khai mức loại hàng không đủ cho danh mục này, nên học trực tuyến từ khách thật quan trọng hơn.
+- **Đạt:** P(B|A) hơn baseline ở Hit@3 mà không kém ở Hit@1, Recall@5. Cửa sổ 1 ngày (gần với "cùng một đơn hàng") cho P(B|A) hơn baseline +0,0167 Hit@3.
+- **Chỉ 3 cặp thật sự đi kèm** (lift ≥ 1, ít nhất 100 người): laptop ↔ túi chống sốc (1,66), màn hình ↔ giá treo màn hình (1,57), micro ↔ webcam (1,61). Các cặp khác chỉ phản ánh hàng bán chạy (tai nghe, bàn phím, chuột).
+- **Luật nạp vào hệ thống:** 6 luật Amazon của 3 cặp trên. Chỗ trống chatbot bù bằng 38 luật viết tay, bandit chọn món và học từ khách thật, A/B đo hiệu quả.
+- Ngưỡng 30 người từng sinh cặp nhiễu túi chống sốc ↔ kê tay (lift 3,38 từ chỉ 16 sản phẩm kê tay), nên đã nâng lên 100.
+- **Điểm trông thấp vì bài toán khó:** chỉ biết một loại khách đang mua, phải đoán đúng trong 16 loại, và nhiều lần mua tiếp không liên quan đến món trước. Đoán bừa chỉ trúng Hit@1 ≈ 0,06.
+- **Ô 6d (trần lý thuyết):** mô hình "gian lận" nhìn đáp án tập kiểm tra để chọn loại tốt nhất cho mỗi loại đang mua. Kết quả:
+
+  | | Hit@1 | Hit@3 | Recall@5 |
+  |---|---|---|---|
+  | Trần lý thuyết | 0,3232 | 0,6112 | 0,6429 |
+  | P(B\|A), % trần | 99,6% | 92,8% | 92,7% |
+  | P(B\|A) + lọc lift, % trần | 88,8% | 93,4% | 92,6% |
+
+  - **Trần Hit@1 bằng đúng baseline (0,3232):** với mọi loại khách đang mua, loại hay được mua kèm nhất vẫn là món bán chạy chung. Không mô hình nào chỉ dựa vào loại đang mua có thể hơn baseline ở Hit@1.
+  - **Trần Hit@3 chỉ 0,61:** điểm thấp là do giới hạn của bài toán. Mô hình đã đạt khoảng 93% mức tối đa; lọc lift lấp được 27% khoảng cách baseline → trần, P(B|A) lấp 20%.
+- **Ô 6e (Markov bậc 2):** bài kiểm tra riêng theo thời gian, đoán loại mua tiếp theo; tính trên 22.356 ca có đủ 2 món trước đó.
+
+  | Cách | Hit@1 | Hit@3 | Recall@5 |
+  |---|---|---|---|
+  | Baseline (phổ biến) | 0,2187 | 0,3685 | 0,5228 |
+  | Markov bậc 1 (1 món gần nhất) | 0,2063 | **0,4440** | 0,5740 |
+  | Markov bậc 2 (2 món gần nhất) | **0,2251** | 0,4344 | **0,5927** |
+  | Trần bậc 1 / bậc 2 | 0,2345 / 0,2640 | 0,5016 / 0,5428 | 0,6681 / 0,7129 |
+
+  - **Bậc 1 hơn baseline 7,6 điểm Hit@3** khi đoán món mua tiếp theo: thứ tự mua mang nhiều thông tin hơn "mua cùng trong 30 ngày".
+  - **Bậc 2 không thắng rõ bậc 1:** hơn 1,9 điểm Hit@1 và Recall@5 nhưng kém 1 điểm Hit@3, nên không đạt tiêu chí.
+  - **Không dùng bậc 2 trong chatbot:** khách nhắn tin cho shop mới chưa có lịch sử mua, chatbot chỉ biết món khách đang hỏi, nên luật theo 1 loại hàng là cách dùng được.
 
 **Kết quả lần chạy đủ (12/11/2026, danh mục cũ: 11 loại phụ kiện điện thoại).** Shop đã đổi sang danh mục HDX Tech ngày 13/11/2026, nên cần chạy lại notebook để có số cho 10 loại mới. Kết quả dưới đây vẫn dùng được trong báo cáo làm phần phân tích phương pháp (vì sao cần lọc lift, vì sao ALS kém). 6.726.367 lượt mua của 1.672.071 người; học trên dữ liệu trước 11/06/2021, kiểm tra trên 350.395 ca sau đó.
 
@@ -249,7 +272,10 @@ Cách đọc cho báo cáo:
    docker compose exec db psql -U odoo -d middleware -c "select anchor_category, rec_category, rank, score from upsell_rules where source='amazon' order by 1,3;"
    ```
 
-Chatbot dùng ngay luật `amazon` ở tin nhắn tiếp theo. Chưa nạp luật thì chatbot dùng 21 luật `mac_dinh` viết tay sẵn.
+Chatbot dùng ngay luật `amazon` ở tin nhắn tiếp theo.
+- **Luật Amazon** chỉ gồm cặp loại hàng thật sự đi kèm (lift ≥ 1, ít nhất 100 người mua cùng làm căn cứ, để loại cặp nhiễu từ loại hàng ít dữ liệu).
+- **Mỗi loại khách hỏi**, chatbot lấy luật `amazon` trước rồi bù bằng luật `mac_dinh` viết tay cho đủ 3 loại, bỏ loại trùng.
+- **Chưa nạp luật** thì chatbot dùng toàn bộ 38 luật `mac_dinh`.
 
 ---
 
