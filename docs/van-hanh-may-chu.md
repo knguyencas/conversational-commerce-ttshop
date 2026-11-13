@@ -91,9 +91,23 @@ Kết quả đúng là `{"status":"ok"}`.
 
 ### 4. Thiết lập Odoo
 
-1. Mở `http://localhost:8069`.
-2. Ở màn hình *Create Database*: đặt **Master Password** (lưu vào chỗ an toàn, cần khi sao lưu hoặc xóa DB), tên database `cntttmdt`, ngôn ngữ Tiếng Việt, quốc gia Việt Nam, **không** tick *Demo data*.
-3. Từ đây Thành viên 2 tiếp quản: cài Sales, Inventory, tạo user tích hợp và API key.
+Dựng bằng lệnh, không bấm tay. Odoo chỉ cho thấy database `ODOO_DB` (mặc định `hdx`) và đã tắt trang quản lý database (`--db-filter`, `--no-database-list` trong `docker-compose.yml`).
+
+1. Trong `.env` điền `ODOO_DB=hdx`, `ODOO_N8N_LOGIN=n8n`, và hai mật khẩu ngẫu nhiên `ODOO_ADMIN_PASSWORD`, `ODOO_N8N_PASSWORD` (vd `openssl rand -base64 18`). Cần cả `ODOO_WEBHOOK_SECRET`.
+2. Tạo database, cài Bán hàng và Kho, tiếng Việt, không dữ liệu mẫu (khoảng 3 phút):
+
+   ```bash
+   MSYS_NO_PATHCONV=1 docker compose exec -T odoo sh -c 'odoo -d hdx --db_host "$HOST" --db_user "$USER" --db_password "$PASSWORD" -i sale_management,stock --load-language=vi_VN --stop-after-init --no-http'
+   ```
+
+3. Chạy `python scripts/dung-odoo.py`. Script làm (chạy lại nhiều lần không tạo trùng):
+   - đổi mật khẩu `admin` sang `ODOO_ADMIN_PASSWORD`; công ty **HDX Tech**, tiền **VND**, giờ Việt Nam;
+   - tạo user `n8n` (quyền quản lý Bán hàng và Kho) cho các workflow M2;
+   - nhập sản phẩm từ `cua-hang/san-pham.csv`: *Mã nội bộ* = SKU, giá bán, nhóm theo loại hàng, không thuế (giá web đã gồm thuế); nhập tồn đầu kỳ từ `ton_dau_ky` cho sản phẩm chưa có tồn;
+   - cài *Automation Rule* "Báo n8n: phiếu xuất kho đã xong": phiếu xuất kho sang **Done** thì gửi webhook tới `http://n8n:5678/webhook/odoo-picking-done?secret=…`.
+4. Sửa `san-pham.csv` (thêm món, đổi giá) thì chạy lại `python scripts/dung-odoo.py`.
+
+Đăng nhập xem Odoo: `http://localhost:8069`, tài khoản `admin`, mật khẩu `ODOO_ADMIN_PASSWORD`.
 
 ### 5. Thiết lập n8n
 
@@ -101,7 +115,7 @@ Kết quả đúng là `{"status":"ok"}`.
 2. *Settings → Users → Invite*: mời Thành viên 2 và 4. Chưa cài email nên n8n hiện link mời; copy link gửi cho từng người. Nếu link bắt đầu bằng `localhost` hoặc domain ngrok, đổi phần đầu thành `http://100.x.x.x:5678` (IP Tailscale của máy này, xem mục 6). Bản miễn phí **không chia sẻ được workflow và credential** giữa các tài khoản; cách làm việc chung xem [docs/huong-dan-tai-khoan-n8n.md](huong-dan-tai-khoan-n8n.md).
 3. Credentials dùng chung:
    - **Postgres · middleware**: đã được `scripts/import-n8n.sh` tạo sẵn (Host `db`, Database `middleware`).
-   - **Odoo**: URL `http://odoo:8069`, database `cntttmdt`, user tích hợp và API key do Thành viên 2 tạo.
+   - **Odoo**: không cần credential trong n8n. Workflow M2 gọi JSON-RPC của Odoo bằng `ODOO_URL`, `ODOO_DB`, `ODOO_N8N_LOGIN`, `ODOO_N8N_PASSWORD` (docker-compose truyền từ `.env`).
    - **AI viết câu**: không cần credential trong n8n; key nằm trong `.env` (xem mục Chatbot).
 4. Quy ước tên workflow: `M2 · Tạo đơn`, `M3 · Router`...
 
@@ -173,17 +187,18 @@ Xem từng request TikTok gửi vào: `http://localhost:4040`. Trang này hữu 
 | `M3 · Xử lý lỗi` | M3 | Chạy được: ghi `failed_jobs`; node báo nhóm chat đang tắt |
 | `M3 · Chatbot` | M3 | Chạy được với **dữ liệu giả**: hiểu tin nhắn, chọn tool, mời mua kèm (bandit), Gemini viết câu, soát giá, gửi lên TikTok, ghi `chat_logs`. Gửi thật cần Customer Service API |
 | `M3 · Ghi nhận mua kèm` | M3 | Chạy được: đơn mới có món đã mời thì thưởng bandit; quá 48 giờ không mua thì phạt; thống kê nhóm offer/control |
-| `M3 · Tool sản phẩm (dữ liệu giả)` | M3 | Dữ liệu giả cho chatbot. Bản đọc Odoo thật là `M2 · Tra sản phẩm Odoo` (**M2** làm theo `contracts/internal/tool_san_pham.md`) |
+| `M3 · Tool sản phẩm (dữ liệu giả)` | M3 | Thông tin sản phẩm (tên, giá, thông số) nạp từ `san-pham.csv`; **tồn kho lấy từ Odoo** qua bảng `ton_kho_odoo`, SKU nào chưa có số Odoo thì dùng tồn giả trừ số đã đặt |
 | `M3 · Chat thử` | M3 | Khung chat để thử bot trong n8n |
-| `M2 · Tạo đơn`, `M2 · Hủy đơn` | M2 | Giữ chỗ: nhận được dữ liệu từ Router, chưa xử lý |
-| `M2 · Đồng bộ tồn kho` | M2 | Giữ chỗ: có sẵn trigger lịch 15 phút (đang tắt) và trigger cho workflow khác gọi; hợp đồng `contracts/internal/ton_kho.md` |
+| `M2 · Tạo đơn` | M2 | Chạy được: lấy chi tiết đơn, tạo và xác nhận Sales Order (giữ hàng, `client_order_ref` = mã đơn, gửi trùng không tạo thêm), ghi `odoo_created`, gọi đồng bộ tồn kho |
+| `M2 · Hủy đơn` | M2 | Chạy được: hủy Sales Order (trả hàng giữ chỗ về kho), ghi `odoo_cancelled`; phiếu đã xuất kho thì báo lỗi vào `failed_jobs` để xử lý hàng hoàn bằng tay |
+| `M2 · Đồng bộ tồn kho` | M2 | Chạy được: 15 phút một lần và sau mỗi lần tạo/hủy đơn, đọc `free_qty` trong Odoo, ghi bảng `ton_kho_odoo`; tool sản phẩm (chatbot, web demo) lấy tồn từ bảng này. Không đẩy lên TikTok vì nhóm đã bỏ shop thật |
 | `M3 · KPI cho dashboard` | M3 | Chạy được: `GET /webhook/kpi-dashboard?bang=…` trả CSV từ các view `kpi_*`, cần header `x-kpi-key`; xem `docs/huong-dan-kpi-dashboard.md` |
 | `M3 · TikTok API` | M3 | Chạy được (test bằng TikTok giả): ký request, gắn token và `shop_cipher`. Mọi lệnh gọi TikTok đi qua đây; hợp đồng ở `contracts/internal/tiktok_api.md` |
 | `M3 · Token` | M3 | Chạy được (test bằng TikTok giả): ủy quyền lần đầu, làm mới mỗi ngày 3:00, xử lý shop hủy ủy quyền |
 | `M3 · Đặt vận chuyển` | M3 | Chạy được (test bằng TikTok giả): Odoo báo phiếu xuất kho Done → Ship Package → phiếu gửi hàng + mã vận đơn → `order_status_log` |
 | `M3 · Trạng thái đơn` | M3 | Chạy được (test bằng TikTok giả): ghi trạng thái giao hàng, nhắn mã vận đơn cho khách, báo nhóm khi hàng hoàn |
 | `M3 · Gửi tin TikTok` | M3 | Gửi tin cho khách qua Customer Service API (chờ TikTok cấp quyền) |
-| `M2 · Cập nhật Odoo (vận chuyển)` | M2 | Giữ chỗ: ghi mã vận đơn và trạng thái vào Odoo; hợp đồng `contracts/internal/van_chuyen.md` |
+| `M2 · Cập nhật Odoo (vận chuyển)` | M2 | Chạy được: ghi mã vận đơn, phiếu gửi hàng và trạng thái giao vào lịch sử (chatter) của Sales Order; hợp đồng `contracts/internal/van_chuyen.md` |
 | `TEST · …` (4 workflow) | M3 | Chỉ để test (`n8n/test-workflows/`), **không publish** khi không test |
 
 Router rẽ sự kiện như sau. Sự kiện khác chỉ được ghi vào `processed_events`, không gọi đi đâu.
@@ -293,7 +308,7 @@ docker compose exec db psql -U odoo -d middleware
 scripts/dien-tap.sh
 ```
 
-Script tạm trỏ n8n vào TikTok giả và AI giả (`docker-compose.dien-tap.yml`), rồi chạy lần lượt: khách hỏi giá → chatbot trả lời bằng AI (không phải câu mẫu); khách đặt đơn → ghi đơn, gửi lại webhook không tạo bản trùng; giả lập M2 tạo Sales Order; Odoo báo đóng gói → đặt vận chuyển; TikTok báo đang giao → nhắn khách; webhook sai chữ ký và sai mã bí mật bị chặn; KPI có số. Mỗi bước in `[ĐẠT]` hoặc `[HỎNG]`. Cuối cùng script xóa mọi dữ liệu thử, trả bandit về như cũ và đưa n8n về cấu hình thật, kể cả khi bị ngắt giữa chừng. Mất khoảng 3 phút.
+Script tạm trỏ n8n vào TikTok giả và AI giả (`docker-compose.dien-tap.yml`), rồi chạy lần lượt: khách hỏi giá → chatbot trả lời bằng AI (không phải câu mẫu); khách đặt đơn → ghi đơn, gửi lại webhook không tạo bản trùng; M2 tạo Sales Order thật trong Odoo (Odoo không trả lời thì script ghi giả); Odoo báo đóng gói → đặt vận chuyển; TikTok báo đang giao → nhắn khách; webhook sai chữ ký và sai mã bí mật bị chặn; KPI có số. Mỗi bước in `[ĐẠT]` hoặc `[HỎNG]`. Cuối cùng script xóa mọi dữ liệu thử, trả bandit về như cũ và đưa n8n về cấu hình thật, kể cả khi bị ngắt giữa chừng. Mất khoảng 3 phút.
 
 Không chạy khi shop đang có khách thật, vì trong lúc diễn tập n8n gọi TikTok giả.
 
@@ -348,7 +363,7 @@ File trong `init/` **chỉ chạy một lần**, khi volume database còn trốn
 docker compose exec -T db psql -U odoo -d postgres < init/05-them-cot.sql
 ```
 
-Máy đã dựng trước ngày 2026-11-05 thì chạy tay một lần `init/04-kpi.sql` theo cách trên để có các view KPI.
+Máy đã dựng trước ngày 2026-11-05 thì chạy tay một lần `init/04-kpi.sql` theo cách trên để có các view KPI. Máy dựng trước ngày 2026-11-14 thì chạy tay `init/06-ton-kho-odoo.sql` (bảng tồn kho đọc từ Odoo).
 
 Giữ file đó trong `init/` để lần dựng lại từ đầu cũng có thay đổi này.
 

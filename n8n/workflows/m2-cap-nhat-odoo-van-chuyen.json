@@ -4,19 +4,18 @@
   "active": false,
   "nodes": [
     {
-      "id": "9169bb6a-a8d7-5f6e-8921-134a36f46544",
+      "id": "6582c388-0d0b-501e-959f-525ea365300a",
       "name": "Ghi chú",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         -80,
-        -300
+        -280
       ],
       "parameters": {
-        "content": "## M2 · Cập nhật Odoo (vận chuyển) — GIỮ CHỖ\n**Người làm: Thành viên 2.** Hợp đồng: `contracts/internal/van_chuyen.md` (mục 3).\n\n- `action = ghi_van_don`: ghi `tracking_number`, link phiếu gửi hàng vào phiếu xuất kho / Sales Order.\n- `action = cap_nhat_trang_thai`: ghi trạng thái TikTok vào Sales Order (vd trường `x_tiktok_status`); `nhom = giao_that_bai` thì theo dõi hàng hoàn.\n\nM3 gọi và không chờ kết quả. Sửa xong nhớ **Publish**.",
-        "height": 260,
-        "width": 700,
-        "color": 7
+        "content": "## M2 · Cập nhật Odoo (vận chuyển)\nHợp đồng `contracts/internal/van_chuyen.md` mục 3. M3 gọi, không chờ.\n\n- `ghi_van_don`: ghi mã vận đơn, phiếu gửi hàng vào lịch sử (chatter) của Sales Order.\n- `cap_nhat_trang_thai`: ghi trạng thái giao hàng; `giao_that_bai` thì ghi nhắc theo dõi hàng hoàn.\n\nTìm Sales Order theo tên (`odoo_sale_order`), không có thì theo `client_order_ref` = mã đơn.",
+        "height": 220,
+        "width": 600
       }
     },
     {
@@ -33,8 +32,8 @@
       }
     },
     {
-      "id": "d7f4e4ee-6556-5c3b-9943-d06edb3cedcf",
-      "name": "Chưa làm (giữ chỗ)",
+      "id": "0ef4e599-ce65-56e7-9837-64093ff1cbcb",
+      "name": "Ghi vào Sales Order",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -42,8 +41,10 @@
         0
       ],
       "parameters": {
-        "jsCode": "return $input.all().map((i) => ({ json: { ...i.json, placeholder: true } }));\n"
-      }
+        "jsCode": "const ODOO = { url: ($env.ODOO_URL || 'http://odoo:8069') + '/jsonrpc', db: $env.ODOO_DB || 'hdx',\n  login: $env.ODOO_N8N_LOGIN || 'n8n', pw: $env.ODOO_N8N_PASSWORD || '' };\nif (!ODOO.pw) throw new Error('Thiếu ODOO_N8N_PASSWORD trong .env');\n// Gọi JSON-RPC của Odoo, ném lỗi kèm thông báo của Odoo\nconst rpc = async (service, method, args) => {\n  const r = await this.helpers.httpRequest({ method: 'POST', url: ODOO.url, json: true, timeout: 30000,\n    body: { jsonrpc: '2.0', method: 'call', params: { service, method, args } } });\n  if (r.error) throw new Error(`Odoo: ${(r.error.data && r.error.data.message) || r.error.message}`);\n  return r.result;\n};\nconst uid = await rpc('common', 'login', [ODOO.db, ODOO.login, ODOO.pw]);\nif (!uid) throw new Error('Odoo: sai ODOO_N8N_LOGIN hoặc ODOO_N8N_PASSWORD');\n// Gọi một method của model Odoo\nconst call = (model, method, args, kw = {}) => rpc('object', 'execute_kw', [ODOO.db, uid, ODOO.pw, model, method, args, kw]);\n\nconst j = $input.first().json;\nconst byName = j.odoo_sale_order && /^S\\d+/.test(String(j.odoo_sale_order));\nconst dom = byName ? [['name', '=', String(j.odoo_sale_order)]] : [['client_order_ref', '=', String(j.tiktok_order_id || '')]];\nconst so = (await call('sale.order', 'search_read', [dom], { fields: ['name'], limit: 1 }))[0];\nif (!so) return [{ json: { tiktok_order_id: j.tiktok_order_id, skipped: 'Odoo không có Sales Order cho đơn này' } }];\nconst NHOM = { dang_giao: 'Đang giao', da_giao: 'Đã giao', giao_that_bai: 'Giao thất bại: theo dõi hàng hoàn về kho', khac: 'Cập nhật giao hàng' };\nlet body;\nif (j.action === 'ghi_van_don') {\n  body = `Đã đặt vận chuyển${j.picking ? ' cho phiếu ' + j.picking : ''}. Mã vận đơn: ${j.tracking_number || 'chưa có'}.`\n    + (j.label_url ? ` Phiếu gửi hàng: ${j.label_url}` : '');\n} else if (j.action === 'cap_nhat_trang_thai') {\n  body = `${NHOM[j.nhom] || NHOM.khac} (${j.status || '?'}). Mã vận đơn: ${j.tracking_number || 'chưa có'}.`;\n} else {\n  throw new Error(`action không hợp lệ: ${j.action}`);\n}\nawait call('sale.order', 'message_post', [[so.id]], { body, message_type: 'comment', subtype_xmlid: 'mail.mt_note' });\nreturn [{ json: { tiktok_order_id: j.tiktok_order_id, odoo_sale_order: so.name, ghi: body } }];\n"
+      },
+      "retryOnFail": true,
+      "maxTries": 3
     }
   ],
   "connections": {
@@ -51,7 +52,7 @@
       "main": [
         [
           {
-            "node": "Chưa làm (giữ chỗ)",
+            "node": "Ghi vào Sales Order",
             "type": "main",
             "index": 0
           }

@@ -4,19 +4,18 @@
   "active": false,
   "nodes": [
     {
-      "id": "d2a32524-91b2-5b47-83a5-c182e1722c6d",
+      "id": "e11ebd6f-bfde-5d6a-833b-800a247f85c7",
       "name": "Ghi chú",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         -80,
-        -260
+        -280
       ],
       "parameters": {
-        "content": "## M2 · Hủy đơn (giữ chỗ)\n**Người làm:** Thành viên 2. **Dữ liệu vào:** dạng `contracts/internal/router_event.json`.\n\n**Cần làm:** Tìm Sales Order theo `client_order_ref` và hủy; đơn đã đóng gói thì không hủy tự động (Hình 6).\n\nRouter gọi workflow này và không chờ kết quả. Lỗi sẽ được ghi vào `failed_jobs`.\n\nSửa xong phải bấm **Publish**, nếu không Router gọi bản cũ hoặc báo lỗi.",
+        "content": "## M2 · Hủy đơn\nRouter gọi khi khách hủy (`router_event.json`).\n\n- Tìm Sales Order theo `client_order_ref` = mã đơn rồi **Cancel** (hàng giữ chỗ được trả lại kho).\n- Phiếu xuất kho đã **Done** thì không hủy tự động: báo lỗi, `M3 · Xử lý lỗi` ghi `failed_jobs` để người xử lý hàng hoàn.\n- Ghi `order_status_log` dòng `odoo_cancelled`, rồi gọi **M2 · Đồng bộ tồn kho**.",
         "height": 220,
-        "width": 620,
-        "color": 7
+        "width": 600
       }
     },
     {
@@ -33,8 +32,8 @@
       }
     },
     {
-      "id": "a280924d-5744-5ed8-b20a-e5231799f6ce",
-      "name": "Chưa làm (giữ chỗ)",
+      "id": "d26ba74e-babc-57c9-8c7b-234029e90b78",
+      "name": "Hủy Sales Order",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -42,7 +41,77 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Giữ chỗ: M2 thay bằng xử lý thật, giữ nguyên trigger và dữ liệu vào\nreturn $input.all().map((item) => ({\n  json: { ...item.json, placeholder: true, received_by: $workflow.name },\n}));\n"
+        "jsCode": "const ODOO = { url: ($env.ODOO_URL || 'http://odoo:8069') + '/jsonrpc', db: $env.ODOO_DB || 'hdx',\n  login: $env.ODOO_N8N_LOGIN || 'n8n', pw: $env.ODOO_N8N_PASSWORD || '' };\nif (!ODOO.pw) throw new Error('Thiếu ODOO_N8N_PASSWORD trong .env');\n// Gọi JSON-RPC của Odoo, ném lỗi kèm thông báo của Odoo\nconst rpc = async (service, method, args) => {\n  const r = await this.helpers.httpRequest({ method: 'POST', url: ODOO.url, json: true, timeout: 30000,\n    body: { jsonrpc: '2.0', method: 'call', params: { service, method, args } } });\n  if (r.error) throw new Error(`Odoo: ${(r.error.data && r.error.data.message) || r.error.message}`);\n  return r.result;\n};\nconst uid = await rpc('common', 'login', [ODOO.db, ODOO.login, ODOO.pw]);\nif (!uid) throw new Error('Odoo: sai ODOO_N8N_LOGIN hoặc ODOO_N8N_PASSWORD');\n// Gọi một method của model Odoo\nconst call = (model, method, args, kw = {}) => rpc('object', 'execute_kw', [ODOO.db, uid, ODOO.pw, model, method, args, kw]);\n\nconst e = $input.first().json;\nconst orderId = String((e.data || {}).order_id || e.order_id || '');\nif (!orderId) throw new Error('Sự kiện không có data.order_id');\nconst so = (await call('sale.order', 'search_read', [[['client_order_ref', '=', orderId]]],\n  { fields: ['name', 'state', 'picking_ids', 'order_line'], limit: 1 }))[0];\nif (!so) return [{ json: { tiktok_order_id: orderId, cancelled: false, note: 'Odoo không có Sales Order cho đơn này', seller_skus: [] } }];\nconst lines = await call('sale.order.line', 'read', [so.order_line], { fields: ['product_id'] });\nconst prods = await call('product.product', 'read', [[...new Set(lines.map((l) => l.product_id[0]))]], { fields: ['default_code'] });\nconst skus = prods.map((p) => p.default_code).filter(Boolean);\nif (so.state === 'cancel') return [{ json: { tiktok_order_id: orderId, odoo_sale_order: so.name, cancelled: false, note: 'đã hủy từ trước', seller_skus: skus } }];\nconst picks = so.picking_ids.length ? await call('stock.picking', 'read', [so.picking_ids], { fields: ['name', 'state'] }) : [];\nconst done = picks.filter((p) => p.state === 'done');\nif (done.length) throw new Error(`Đơn ${orderId} (${so.name}) đã xuất kho ${done.map((p) => p.name).join(', ')}: không hủy tự động, nhận hàng hoàn về kho bằng tay`);\nawait call('sale.order', 'action_cancel', [[so.id]], { context: { disable_cancel_warning: true } });\nconst after = (await call('sale.order', 'read', [[so.id]], { fields: ['state'] }))[0];\nif (after.state !== 'cancel') throw new Error(`Hủy ${so.name} không thành công, trạng thái vẫn là ${after.state}`);\nreturn [{ json: { tiktok_order_id: orderId, odoo_sale_order: so.name, cancelled: true, seller_skus: skus } }];\n"
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "09e369fd-4c0f-5818-9be1-f67c37a01cf7",
+      "name": "Ghi order_status_log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO order_status_log (tiktok_order_id, odoo_sale_order, status, source)\nSELECT $1, $2, 'odoo_cancelled', 'n8n'\nWHERE $3::boolean AND NOT EXISTS (SELECT 1 FROM order_status_log WHERE tiktok_order_id = $1 AND status = 'odoo_cancelled');",
+        "options": {
+          "queryReplacement": "={{ [ $json.tiktok_order_id, $json.odoo_sale_order || '', $json.cancelled ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "929bb437-5e7b-5572-9c9f-d531bac1b069",
+      "name": "Yêu cầu đồng bộ tồn kho",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Dựng yêu cầu đồng bộ tồn kho cho các SKU của đơn\nconst j = $('Hủy Sales Order').first().json;\nreturn [{ json: { ly_do: 'huy_don', seller_skus: j.seller_skus || [], tiktok_order_id: j.tiktok_order_id } }];\n"
+      }
+    },
+    {
+      "id": "1b40f397-cb8a-5330-a316-2e102e4d3583",
+      "name": "Gọi M2 · Đồng bộ tồn kho",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m2DongBoTonKho01",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
       }
     }
   ],
@@ -51,7 +120,40 @@
       "main": [
         [
           {
-            "node": "Chưa làm (giữ chỗ)",
+            "node": "Hủy Sales Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hủy Sales Order": {
+      "main": [
+        [
+          {
+            "node": "Ghi order_status_log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi order_status_log": {
+      "main": [
+        [
+          {
+            "node": "Yêu cầu đồng bộ tồn kho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu đồng bộ tồn kho": {
+      "main": [
+        [
+          {
+            "node": "Gọi M2 · Đồng bộ tồn kho",
             "type": "main",
             "index": 0
           }

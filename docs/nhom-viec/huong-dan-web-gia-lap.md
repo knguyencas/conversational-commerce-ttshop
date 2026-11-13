@@ -167,6 +167,7 @@ Dạng dữ liệu vào và ra của từng API: [contracts/internal/demo_api.md
 |---|---|
 | (vừa đặt) | Đã đặt hàng |
 | `odoo_created` | Shop đã xác nhận đơn |
+| `odoo_cancelled` | Shop đã hủy đơn trong kho |
 | `shipping_arranged` | Đã đóng gói, chờ đơn vị vận chuyển lấy |
 | `AWAITING_SHIPMENT` | Chờ đóng gói |
 | `AWAITING_COLLECTION` | Chờ lấy hàng |
@@ -175,7 +176,7 @@ Dạng dữ liệu vào và ra của từng API: [contracts/internal/demo_api.md
 | `COMPLETED` | Hoàn tất |
 | `CANCELLED` | Đã hủy |
 
-Thanh tiến trình: Đã đặt → Shop xác nhận → Đã đóng gói → Đang giao → Đã giao. "Shop xác nhận" chỉ sáng khi Odoo đã tạo đơn (`odoo_created` có trong `lich_su`), phần này chạy khi workflow Tạo đơn của Odoo làm xong.
+Thanh tiến trình: Đã đặt → Shop xác nhận → Đã đóng gói → Đang giao → Đã giao. "Shop xác nhận" sáng khi Odoo đã tạo đơn (`odoo_created` có trong `lich_su`), thường vài giây sau khi đặt.
 
 ## 7. Thứ tự làm
 
@@ -200,7 +201,7 @@ Mỗi bước xong thì commit lên một nhánh và mở pull request (xem [CON
 6. Khách chat "đơn của em tới đâu rồi" → bot trả đúng trạng thái.
 7. Khách chat "hàng bị lỗi, em muốn trả" → bot chuyển nhân viên; tab người bán bấm Trả cuộc chat về bot.
 
-Song song mở Odoo (thấy Sales Order khi workflow Tạo đơn đã làm xong) và dashboard (số liệu tăng).
+Song song mở Odoo (Bán hàng → Đơn hàng có Sales Order mới, tồn kho giảm; bước 4 có thể bấm *Xác nhận* phiếu xuất kho ngay trong Odoo thay cho nút Đã đóng gói) và dashboard (số liệu tăng).
 
 ## 9. Chạy khi demo
 

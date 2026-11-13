@@ -1,5 +1,7 @@
 # Hợp đồng: đồng bộ tồn kho Odoo → TikTok (workflow `M2 · Đồng bộ tồn kho`)
 
+> **Bản đang chạy (14/11/2026):** nhóm đã bỏ shop TikTok thật, nên workflow chỉ làm bước 1 ở mục 3: đọc `free_qty` trong Odoo và ghi vào bảng `ton_kho_odoo` (`init/06-ton-kho-odoo.sql`). Tool sản phẩm (chatbot, API demo) lấy tồn từ bảng này. Các bước đổi SKU qua `sku_map` và đẩy lên TikTok bên dưới giữ lại làm thiết kế, chưa làm.
+
 Odoo là nơi duy nhất giữ số tồn đúng. TikTok chỉ nhận số được đẩy lên, không ai sửa tồn kho tay trong Seller Center. Workflow này của **M2**; trưởng nhóm đã dựng sẵn khung giữ chỗ trong `n8n/workflows/m2-dong-bo-ton-kho.json` với đủ hai trigger dưới đây.
 
 ## 1. Khi nào chạy

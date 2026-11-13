@@ -29,7 +29,7 @@ Body Odoo gửi (xem `odoo_picking_done.json`):
 
 Middleware chỉ xử lý phiếu **xuất kho** (`picking_type_code` = `outgoing`, hoặc tên có `/OUT/`) ở trạng thái `done`; các phiếu khác bị bỏ qua. Mã bí mật sai thì nhận `401`.
 
-Không cài được webhook trong Odoo Community thì dùng phương án dự phòng trong tài liệu: n8n quét phiếu xuất kho mới theo lịch. Phương án này cần đọc Odoo, nên do M2 làm.
+Automation Rule này do `scripts/dung-odoo.py` cài sẵn (tên "Báo n8n: phiếu xuất kho đã xong"). Không cài được webhook trong Odoo Community thì dùng phương án dự phòng trong tài liệu: n8n quét phiếu xuất kho mới theo lịch. Phương án này cần đọc Odoo, nên do M2 làm.
 
 ## 3. Middleware báo ngược cho Odoo: workflow `M2 · Cập nhật Odoo (vận chuyển)`
 
@@ -57,6 +57,7 @@ Trạng thái giao hàng thay đổi:
 | status | Ai ghi | Nghĩa |
 |---|---|---|
 | `odoo_created` | M2 | Đã tạo Sales Order, giữ hàng |
+| `odoo_cancelled` | M2 · Hủy đơn | Đã hủy Sales Order, hàng giữ chỗ trả về kho |
 | `shipping_arranged` | M3 · Đặt vận chuyển | Đã đặt TikTok tới lấy hàng, có phiếu gửi hàng |
 | `AWAITING_COLLECTION`, `IN_TRANSIT`, `DELIVERED`, `COMPLETED`, `CANCELLED`... | M3 · Trạng thái đơn | Trạng thái lấy từ TikTok |
 

@@ -15,7 +15,7 @@ TikTok Shop chỉ cấp Open API cho doanh nghiệp có giấy phép, nên đồ
 | 1 | **Giao diện demo** (shop giả lập trên web) | Khách xem sản phẩm, chat với bot, đặt mua, theo dõi đơn; người bán đẩy đơn qua các bước | Cần làm | 1 |
 | 2 | **Hệ thống middleware** nối TikTok, Odoo, AI | Đơn đi qua từng bước tự động; chữ ký, chống trùng, xử lý lỗi | Đã chạy (14/14 bước diễn tập) | 3 |
 | 3 | **Chatbot AI** trả lời đúng giá, không bịa | Trả lời tiếng Việt, soát giá bằng code, khiếu nại thì chuyển người | Đã chạy (Groq) | 3 |
-| 4 | **Odoo** quản lý kho và đơn | Sales Order tự tạo khi khách đặt, hủy khi khách hủy, có mã vận đơn | Cần làm | 2 |
+| 4 | **Odoo** quản lý kho và đơn | Sales Order tự tạo khi khách đặt, hủy khi khách hủy, có mã vận đơn | Đã chạy: 35 sản phẩm, 4 workflow M2, tồn kho lấy từ Odoo; còn hướng dẫn đóng gói và ảnh cho báo cáo | 2 |
 | 5 | **Lớp AI nhóm tự train** | Bảng số: F1 hiểu ý định (PhoBERT), Hit@3 gợi ý mua kèm, A/B có mời và không mời | PhoBERT đạt trên dev (chờ test của M1); mua kèm chưa thắng baseline, đang thử cửa sổ ngắn | 3 |
 | 6 | **Dashboard KPI** | Số tin nhắn, thời gian trả lời, tỉ lệ đúng giá, số đơn, thời gian xử lý đơn | Cần làm | 4 |
 | 7 | **Minh chứng nền tảng TikTok** | Ảnh mở shop, sản phẩm nháp, chỗ TikTok yêu cầu giấy phép doanh nghiệp | Cần làm | 1 |

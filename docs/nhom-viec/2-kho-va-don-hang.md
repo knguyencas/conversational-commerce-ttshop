@@ -20,9 +20,13 @@ Nhóm việc này lo phần **"đơn tự chảy vào kho, không ai nhập tay"
 
 ## Hiện trạng
 
-- Odoo 19 đã chạy trong Docker, **chưa tạo database**, chưa có sản phẩm.
-- 4 workflow `m2-*` có **khung chờ sẵn**: Router đã gọi tới, dữ liệu vào đúng dạng, chỉ còn node "Chưa làm (giữ chỗ)".
-- Bước "đóng gói xong" hiện được giả lập bằng nút trên giao diện demo / form giả lập.
+**Đã chạy (14/11/2026).** Phần dưới mục "Triển khai" giữ lại làm mô tả thiết kế; cách làm thực tế khác ở chỗ: dựng Odoo bằng `scripts/dung-odoo.py` thay vì bấm tay, workflow gọi JSON-RPC của Odoo bằng biến môi trường thay vì credential, tồn kho ghi vào bảng `ton_kho_odoo` thay vì đẩy lên TikTok.
+
+- Odoo 19, database `hdx`, công ty HDX Tech, tiền VND, 35 sản phẩm (*Mã nội bộ* = SKU) có tồn đầu kỳ, user `n8n` cho workflow. Cách dựng: [docs/van-hanh-may-chu.md](../van-hanh-may-chu.md) mục 4.
+- `M2 · Tạo đơn`, `M2 · Hủy đơn`, `M2 · Cập nhật Odoo (vận chuyển)`, `M2 · Đồng bộ tồn kho` chạy thật.
+- Automation Rule: phiếu xuất kho sang Done thì Odoo tự báo n8n đặt vận chuyển. Nút "Đã đóng gói" trên giao diện demo xác nhận phiếu xuất kho thật trong Odoo.
+- Diễn tập 14/14, bước đặt đơn tạo Sales Order thật và tự hủy khi dọn.
+- **Còn lại:** tool tra sản phẩm đọc thẳng Odoo (hiện chỉ tồn kho lấy từ Odoo, giá và thông số vẫn nạp từ `san-pham.csv`, cùng nguồn với Odoo); hướng dẫn đóng gói 1 trang; ảnh chụp cấu hình cho báo cáo.
 
 ## Kết nối với nhóm khác
 
@@ -77,12 +81,13 @@ Bật chế độ giả lập, rồi dùng giao diện demo hoặc form giả l�
 
 ## Xong khi
 
-- [ ] Odoo có đủ sản phẩm, SKU khớp `san-pham.csv`, có tồn kho.
-- [ ] Đặt đơn trên giao diện demo → có Sales Order đã xác nhận; gửi trùng không tạo thêm.
-- [ ] Hủy đơn → Sales Order bị hủy, tồn tăng lại.
-- [ ] Validate phiếu xuất kho trong Odoo → đơn chuyển sang đã đặt vận chuyển trên giao diện.
-- [ ] Sau bước "đang giao", Sales Order có mã vận đơn.
-- [ ] Diễn tập 14/14.
+- [x] Odoo có đủ sản phẩm, SKU khớp `san-pham.csv`, có tồn kho.
+- [x] Đặt đơn trên giao diện demo → có Sales Order đã xác nhận; gửi trùng không tạo thêm.
+- [x] Hủy đơn → Sales Order bị hủy, tồn tăng lại.
+- [x] Validate phiếu xuất kho trong Odoo → đơn chuyển sang đã đặt vận chuyển trên giao diện.
+- [x] Sau bước "đang giao", Sales Order có mã vận đơn.
+- [x] Diễn tập 14/14.
+- [ ] Hướng dẫn đóng gói 1 trang, ảnh chụp cấu hình cho báo cáo.
 
 ## File liên quan
 

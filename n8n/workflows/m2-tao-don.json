@@ -4,19 +4,18 @@
   "active": false,
   "nodes": [
     {
-      "id": "d2a32524-91b2-5b47-83a5-c182e1722c6d",
+      "id": "a3df0242-d984-54f8-9b44-314d9e1f8f61",
       "name": "Ghi chú",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         -80,
-        -260
+        -300
       ],
       "parameters": {
-        "content": "## M2 · Tạo đơn (giữ chỗ)\n**Người làm:** Thành viên 2. **Dữ liệu vào:** dạng `contracts/internal/router_event.json`.\n\n**Cần làm:** Đổi SKU qua `sku_map`, tạo và xác nhận Sales Order trong Odoo, ghi mã đơn TikTok vào `client_order_ref` (Hình 6). Nhớ gộp `line_items` theo `sku_id` để ra số lượng.\n\nRouter gọi workflow này và không chờ kết quả. Lỗi sẽ được ghi vào `failed_jobs`.\n\nSửa xong phải bấm **Publish**, nếu không Router gọi bản cũ hoặc báo lỗi.",
-        "height": 220,
-        "width": 620,
-        "color": 7
+        "content": "## M2 · Tạo đơn\nRouter gọi khi có đơn mới (`router_event.json`).\n\n1. Lấy chi tiết đơn qua **M3 · TikTok API** (giả lập thì đọc `gia_lap_don`).\n2. Gộp dòng hàng theo `seller_sku`, tìm sản phẩm Odoo theo *Internal Reference* = SKU.\n3. Tạo **Sales Order** (`client_order_ref` = mã đơn), **Confirm** để giữ hàng. Đơn đã có thì không tạo lại.\n4. Ghi `order_status_log` dòng `odoo_created` (hợp đồng `van_chuyen.md` mục 1).\n5. Gọi **M2 · Đồng bộ tồn kho**, không chờ.\n\nĐăng nhập Odoo bằng user `ODOO_N8N_LOGIN` / `ODOO_N8N_PASSWORD` trong `.env`.",
+        "height": 260,
+        "width": 640
       }
     },
     {
@@ -33,8 +32,8 @@
       }
     },
     {
-      "id": "a280924d-5744-5ed8-b20a-e5231799f6ce",
-      "name": "Chưa làm (giữ chỗ)",
+      "id": "7fcec78f-a2fe-5695-af21-7bab0cf7bbde",
+      "name": "Yêu cầu chi tiết đơn",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -42,7 +41,119 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Giữ chỗ: M2 thay bằng xử lý thật, giữ nguyên trigger và dữ liệu vào\nreturn $input.all().map((item) => ({\n  json: { ...item.json, placeholder: true, received_by: $workflow.name },\n}));\n"
+        "jsCode": "// Lấy mã đơn từ sự kiện Router và dựng lời gọi chi tiết đơn\nconst e = $input.first().json;\nconst orderId = String((e.data || {}).order_id || e.order_id || '');\nif (!orderId) throw new Error('Sự kiện không có data.order_id');\nreturn [{ json: { method: 'GET', path: '/order/202309/orders', query: { ids: orderId }, tiktok_order_id: orderId } }];\n"
+      }
+    },
+    {
+      "id": "76cb45be-5889-5c5d-afaf-395b551e5497",
+      "name": "Lấy chi tiết đơn",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m3TikTokApi00001",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "8a2d4428-fe8c-5e65-87da-107484fee04c",
+      "name": "Tạo Sales Order",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const ODOO = { url: ($env.ODOO_URL || 'http://odoo:8069') + '/jsonrpc', db: $env.ODOO_DB || 'hdx',\n  login: $env.ODOO_N8N_LOGIN || 'n8n', pw: $env.ODOO_N8N_PASSWORD || '' };\nif (!ODOO.pw) throw new Error('Thiếu ODOO_N8N_PASSWORD trong .env');\n// Gọi JSON-RPC của Odoo, ném lỗi kèm thông báo của Odoo\nconst rpc = async (service, method, args) => {\n  const r = await this.helpers.httpRequest({ method: 'POST', url: ODOO.url, json: true, timeout: 30000,\n    body: { jsonrpc: '2.0', method: 'call', params: { service, method, args } } });\n  if (r.error) throw new Error(`Odoo: ${(r.error.data && r.error.data.message) || r.error.message}`);\n  return r.result;\n};\nconst uid = await rpc('common', 'login', [ODOO.db, ODOO.login, ODOO.pw]);\nif (!uid) throw new Error('Odoo: sai ODOO_N8N_LOGIN hoặc ODOO_N8N_PASSWORD');\n// Gọi một method của model Odoo\nconst call = (model, method, args, kw = {}) => rpc('object', 'execute_kw', [ODOO.db, uid, ODOO.pw, model, method, args, kw]);\n\nconst orderId = $('Yêu cầu chi tiết đơn').first().json.tiktok_order_id;\nconst r = $input.first().json;\nif (!r.ok) throw new Error(`Lấy chi tiết đơn ${orderId} lỗi: ${r.code} ${r.message}`);\nconst order = ((r.data || {}).orders || [])[0];\nif (!order) throw new Error(`TikTok không trả về đơn ${orderId}`);\nconst qty = {};\nfor (const li of order.line_items || []) {\n  if (!li.seller_sku) throw new Error(`Đơn ${orderId} có dòng hàng thiếu seller_sku`);\n  qty[li.seller_sku] = (qty[li.seller_sku] || 0) + (Number(li.quantity) || 1);\n}\nconst skus = Object.keys(qty);\nif (!skus.length) throw new Error(`Đơn ${orderId} không có dòng hàng`);\nconst found = await call('sale.order', 'search_read', [[['client_order_ref', '=', orderId]]], { fields: ['name', 'state'], limit: 1 });\nif (found.length) {\n  if (found[0].state === 'draft') await call('sale.order', 'action_confirm', [[found[0].id]]);\n  return [{ json: { tiktok_order_id: orderId, odoo_sale_order: found[0].name, created: found[0].state === 'draft', seller_skus: skus } }];\n}\nconst prods = await call('product.product', 'search_read', [[['default_code', 'in', skus]]], { fields: ['default_code'] });\nconst byCode = Object.fromEntries(prods.map((p) => [p.default_code, p.id]));\nconst missing = skus.filter((s) => !byCode[s]);\nif (missing.length) throw new Error(`Odoo chưa có sản phẩm ${missing.join(', ')}: chạy scripts/dung-odoo.py`);\nconst buyer = String(order.user_id || 'khach');\nconst ref = `tiktok:${buyer}`;\nlet partner = (await call('res.partner', 'search', [[['ref', '=', ref]]], { limit: 1 }))[0];\nif (!partner) {\n  const name = (order.recipient_address || {}).name || `Khách ${buyer}`;\n  partner = await call('res.partner', 'create', [{ name, ref, comment: 'Tạo tự động từ đơn TikTok hoặc web giả lập' }]);\n}\nconst soId = await call('sale.order', 'create', [{ partner_id: partner, client_order_ref: orderId, origin: `TikTok ${orderId}`,\n  order_line: skus.map((s) => [0, 0, { product_id: byCode[s], product_uom_qty: qty[s] }]) }]);\nawait call('sale.order', 'action_confirm', [[soId]]);\nconst so = (await call('sale.order', 'read', [[soId]], { fields: ['name', 'amount_total'] }))[0];\nreturn [{ json: { tiktok_order_id: orderId, odoo_sale_order: so.name, created: true, amount_total: so.amount_total, seller_skus: skus } }];\n"
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "79ff426f-f765-5b2e-91d4-1047f088bee0",
+      "name": "Ghi order_status_log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO order_status_log (tiktok_order_id, odoo_sale_order, status, source)\nSELECT $1, $2, 'odoo_created', 'n8n'\nWHERE NOT EXISTS (SELECT 1 FROM order_status_log WHERE tiktok_order_id = $1 AND status = 'odoo_created');",
+        "options": {
+          "queryReplacement": "={{ [ $json.tiktok_order_id, $json.odoo_sale_order ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "912c24f8-b3ae-5aab-bb73-0ddf74e997a3",
+      "name": "Yêu cầu đồng bộ tồn kho",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Dựng yêu cầu đồng bộ tồn kho cho các SKU của đơn\nconst j = $('Tạo Sales Order').first().json;\nreturn [{ json: { ly_do: 'tao_don', seller_skus: j.seller_skus || [], tiktok_order_id: j.tiktok_order_id } }];\n"
+      }
+    },
+    {
+      "id": "61591082-2cc1-5ee9-b3e4-113b1d1651db",
+      "name": "Gọi M2 · Đồng bộ tồn kho",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "m2DongBoTonKho01",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
       }
     }
   ],
@@ -51,7 +162,62 @@
       "main": [
         [
           {
-            "node": "Chưa làm (giữ chỗ)",
+            "node": "Yêu cầu chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Lấy chi tiết đơn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy chi tiết đơn": {
+      "main": [
+        [
+          {
+            "node": "Tạo Sales Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo Sales Order": {
+      "main": [
+        [
+          {
+            "node": "Ghi order_status_log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi order_status_log": {
+      "main": [
+        [
+          {
+            "node": "Yêu cầu đồng bộ tồn kho",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yêu cầu đồng bộ tồn kho": {
+      "main": [
+        [
+          {
+            "node": "Gọi M2 · Đồng bộ tồn kho",
             "type": "main",
             "index": 0
           }

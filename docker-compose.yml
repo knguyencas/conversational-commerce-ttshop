@@ -29,6 +29,7 @@ services:
       HOST: db
       USER: ${PG_USER}
       PASSWORD: ${PG_PASSWORD}
+    command: ["--db-filter=^${ODOO_DB:-hdx}$$", "--no-database-list"]
     ports:
       - "8069:8069"
     volumes:
@@ -58,6 +59,10 @@ services:
       TIKTOK_AUTH_BASE: ${TIKTOK_AUTH_BASE:-https://auth.tiktok-shops.com}
       TIKTOK_OAUTH_STATE: ${TIKTOK_OAUTH_STATE:-}
       ODOO_WEBHOOK_SECRET: ${ODOO_WEBHOOK_SECRET:-}
+      ODOO_URL: http://odoo:8069
+      ODOO_DB: ${ODOO_DB:-hdx}
+      ODOO_N8N_LOGIN: ${ODOO_N8N_LOGIN:-n8n}
+      ODOO_N8N_PASSWORD: ${ODOO_N8N_PASSWORD:-}
       KPI_SECRET: ${KPI_SECRET:-}
       GIA_LAP_MA: ${GIA_LAP_MA:-}
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"

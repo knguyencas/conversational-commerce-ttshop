@@ -64,6 +64,8 @@ clean_rows() {
 
 cleanup() {
   echo "== Dọn dữ liệu thử và trả n8n về cấu hình thật"
+  local odoo_sql
+  odoo_sql=$(python -I scripts/dung-odoo.py huy-don-thu "$ORDER" 2>/dev/null) && [ -n "$odoo_sql" ] && sql "$odoo_sql" >/dev/null || true
   clean_rows || true
   sql "DELETE FROM failed_jobs WHERE created_at >= '$START';
        DELETE FROM gia_lap_tin_nhan WHERE gui_luc >= '$START';
@@ -120,13 +122,26 @@ check "Router nhận đơn mới, trả 200" "$([ "$(webhook contracts/tiktok/we
 check "Ghi nhận đơn cho thống kê mua kèm" "$(wait_for "SELECT EXISTS (SELECT 1 FROM upsell_order_stats WHERE order_id = '$ORDER')")"
 check "Gửi lại cùng webhook không tạo bản trùng" "$([ "$(webhook contracts/tiktok/webhooks/order_status_change.json "${RUN}2")" = 200 ] \
   && [ "$(sql "SELECT count(*) FROM processed_events WHERE event_id = '${RUN}2'")" = 1 ] && echo 1 || echo 0)"
-echo "    (giả lập M2 · Tạo đơn: ghi Sales Order S00012 vào order_status_log)"
-sql "INSERT INTO order_status_log (tiktok_order_id, odoo_sale_order, status, source)
-     VALUES ('$ORDER', 'S00012', 'odoo_created', 'n8n');" >/dev/null
+SO=""
+for _ in $(seq 1 15); do
+  SO=$(sql "SELECT odoo_sale_order FROM order_status_log WHERE tiktok_order_id = '$ORDER' AND status = 'odoo_created'
+            AND odoo_sale_order IS NOT NULL ORDER BY changed_at DESC LIMIT 1")
+  [ -n "$SO" ] && break
+  sleep 2
+done
+if [ -n "$SO" ]; then
+  echo "    (M2 · Tạo đơn đã tạo Sales Order $SO trong Odoo)"
+else
+  SO=S00012
+  echo "    (Odoo chưa trả lời: giả lập M2 · Tạo đơn, ghi Sales Order $SO vào order_status_log)"
+  sql "INSERT INTO order_status_log (tiktok_order_id, odoo_sale_order, status, source)
+       VALUES ('$ORDER', '$SO', 'odoo_created', 'n8n');" >/dev/null
+fi
 
 echo "== 3. Kho đóng gói xong, Odoo báo n8n"
+sed "s/\"S00012\"/\"$SO\"/" contracts/internal/odoo_picking_done.json > "$TMP/picking.json"
 code=$(curl -s -o "$TMP/out" -w '%{http_code}' -X POST "$N8N/webhook/odoo-picking-done?secret=$ODOO_WEBHOOK_SECRET" \
-  -H 'Content-Type: application/json' --data-binary @contracts/internal/odoo_picking_done.json)
+  -H 'Content-Type: application/json' --data-binary @"$TMP/picking.json")
 check "Đặt vận chuyển nhận phiếu xuất kho, trả 200" "$([ "$code" = 200 ] && echo 1 || echo 0)"
 check "Đã đặt TikTok tới lấy hàng" "$(wait_for "SELECT EXISTS (SELECT 1 FROM order_status_log WHERE tiktok_order_id = '$ORDER' AND status = 'shipping_arranged')")"
 code=$(curl -s -o "$TMP/out" -w '%{http_code}' -X POST "$N8N/webhook/odoo-picking-done?secret=sai" \

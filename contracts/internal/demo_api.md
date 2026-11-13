@@ -96,7 +96,7 @@ Ra:
 { "ok": true, "order_id": "579900003397263811", "viec": "dat_don", "status": "AWAITING_SHIPMENT", "total": 1097000, "loi": null }
 ```
 
-Tổng tiền do hệ thống tính theo giá trong danh sách sản phẩm. Tồn kho trong `GET /san-pham` và câu trả lời của bot **trừ đi số đã đặt** (trừ đơn đã hủy). SKU không có hoặc không đủ hàng trả `400` với `loi`, vd `"Chuột gaming Logitech G102 LIGHTSYNC chỉ còn 9"`. Sau khi đặt, hệ thống chạy `M2 · Tạo đơn` (tạo Sales Order trong Odoo) và ghi nhận đơn cho thống kê mua kèm.
+Tổng tiền do hệ thống tính theo giá trong danh sách sản phẩm. Tồn kho trong `GET /san-pham` và câu trả lời của bot là **số có thể bán trong Odoo** (tồn thực trừ hàng đang giữ cho đơn chưa giao), cập nhật vài giây sau mỗi lần đặt hoặc hủy đơn; SKU chưa có trong Odoo thì lấy tồn giả trừ số đã đặt. SKU không có hoặc không đủ hàng trả `400` với `loi`, vd `"Chuột gaming Logitech G102 LIGHTSYNC chỉ còn 9"`. Sau khi đặt, hệ thống chạy `M2 · Tạo đơn` (tạo Sales Order trong Odoo) và ghi nhận đơn cho thống kê mua kèm.
 
 ## 4. Đẩy đơn sang bước tiếp: `POST /don/viec`
 
@@ -108,14 +108,14 @@ Vào:
 
 | `viec` | Đóng vai | Hệ thống chạy |
 |---|---|---|
-| `dong_goi` | Odoo báo phiếu xuất kho đã xong | `M3 · Đặt vận chuyển`: đặt đơn vị vận chuyển tới lấy hàng |
+| `dong_goi` | Kho bấm *Xác nhận* phiếu xuất kho | Xác nhận phiếu xuất kho thật của đơn trong Odoo; Automation Rule của Odoo báo `M3 · Đặt vận chuyển` đặt đơn vị vận chuyển tới lấy hàng. Odoo không có đơn thì gửi phiếu giả như cũ |
 | `dang_giao` | TikTok báo đơn đang giao | `M3 · Trạng thái đơn`: ghi trạng thái, nhắn mã vận đơn cho khách |
 | `da_giao` | TikTok báo đã giao | `M3 · Trạng thái đơn` |
 | `huy_don` | Khách hủy | `M2 · Hủy đơn` |
 
 Ra: `{ "ok": true, "order_id": "...", "viec": "dong_goi", "status": "AWAITING_SHIPMENT", "loi": null }`.
 
-Thứ tự đúng: `dong_goi` → `dang_giao` → `da_giao`. Nếu đã đóng gói thật trong Odoo (khi Odoo đã cài webhook) thì không cần gọi `dong_goi`.
+Thứ tự đúng: `dong_goi` → `dang_giao` → `da_giao`. Bấm *Xác nhận* phiếu xuất kho ngay trong Odoo (Tồn kho → Giao hàng) cũng có tác dụng như `dong_goi`, khi đó không cần gọi `dong_goi`. `huy_don` hủy luôn Sales Order trong Odoo; đơn đã đóng gói thì Odoo không hủy tự động.
 
 ## 5. Danh sách đơn: `GET /don`
 
@@ -139,7 +139,7 @@ Thứ tự đúng: `dong_goi` → `dang_giao` → `da_giao`. Nếu đã đóng g
 }
 ```
 
-`status` là trạng thái phía TikTok (`AWAITING_SHIPMENT`, `IN_TRANSIT`, `DELIVERED`, `CANCELLED`). `lich_su` là các bước hệ thống đã ghi, dùng để vẽ thanh tiến trình đơn. `odoo_created` chỉ xuất hiện khi `M2 · Tạo đơn` đã làm xong phần thật.
+`status` là trạng thái phía TikTok (`AWAITING_SHIPMENT`, `IN_TRANSIT`, `DELIVERED`, `CANCELLED`). `lich_su` là các bước hệ thống đã ghi, dùng để vẽ thanh tiến trình đơn. `odoo_created` (kèm tên Sales Order, vd `S00005`) xuất hiện vài giây sau khi đặt, khi Odoo đã tạo và xác nhận đơn; `odoo_cancelled` khi Odoo đã hủy đơn.
 
 ## 6. Tin shop gửi khách: `GET /tin-nhan`
 

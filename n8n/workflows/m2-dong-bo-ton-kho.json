@@ -4,18 +4,18 @@
   "active": false,
   "nodes": [
     {
-      "id": "16695969-10ad-5d54-8007-36c8df41029c",
+      "id": "cbd32cb0-3b57-5ba9-95f3-6f229c58e40d",
       "name": "Ghi chú",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         -40,
-        -420
+        -440
       ],
       "parameters": {
-        "content": "## M2 · Đồng bộ tồn kho (giữ chỗ)\nHợp đồng: `contracts/internal/ton_kho.md`.\n\n1. Bật lại node *Mỗi 15 phút* khi làm xong.\n2. Thay node *Chưa làm*: đọc tồn có thể bán trong Odoo theo SKU, đổi SKU qua `sku_map`, gọi **M3 · TikTok API** với `/product/202309/products/{product_id}/inventory/update`.\n3. Gọi workflow này (không chờ) ở cuối M2 · Tạo đơn và M2 · Hủy đơn.",
-        "height": 300,
-        "width": 560
+        "content": "## M2 · Đồng bộ tồn kho\nHợp đồng `contracts/internal/ton_kho.md`. Chạy 15 phút một lần, và sau mỗi lần Tạo đơn / Hủy đơn.\n\n- Đọc **số có thể bán** (`free_qty` = tồn thực trừ hàng đã giữ cho đơn chưa giao) trong Odoo.\n- Ghi vào bảng `ton_kho_odoo`. Tool sản phẩm (chatbot, web demo) lấy tồn từ bảng này, nên Odoo là nguồn sự thật.\n- Nhóm đã bỏ TikTok Shop thật, nên không đẩy số tồn lên TikTok.",
+        "height": 240,
+        "width": 620
       }
     },
     {
@@ -36,8 +36,7 @@
             }
           ]
         }
-      },
-      "disabled": true
+      }
     },
     {
       "id": "bd8129d1-7c71-5904-b37c-fbb2ef496b21",
@@ -66,8 +65,8 @@
       }
     },
     {
-      "id": "48801ebc-3d22-54a6-824a-327691ee0dd5",
-      "name": "Chưa làm (giữ chỗ)",
+      "id": "059328e6-5e5a-5d22-9d67-b85a307985e1",
+      "name": "Đọc tồn Odoo",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -75,8 +74,36 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Giữ chỗ: M2 thay bằng xử lý thật, giữ nguyên trigger và dữ liệu vào\nreturn $input.all();\n"
-      }
+        "jsCode": "const ODOO = { url: ($env.ODOO_URL || 'http://odoo:8069') + '/jsonrpc', db: $env.ODOO_DB || 'hdx',\n  login: $env.ODOO_N8N_LOGIN || 'n8n', pw: $env.ODOO_N8N_PASSWORD || '' };\nif (!ODOO.pw) throw new Error('Thiếu ODOO_N8N_PASSWORD trong .env');\n// Gọi JSON-RPC của Odoo, ném lỗi kèm thông báo của Odoo\nconst rpc = async (service, method, args) => {\n  const r = await this.helpers.httpRequest({ method: 'POST', url: ODOO.url, json: true, timeout: 30000,\n    body: { jsonrpc: '2.0', method: 'call', params: { service, method, args } } });\n  if (r.error) throw new Error(`Odoo: ${(r.error.data && r.error.data.message) || r.error.message}`);\n  return r.result;\n};\nconst uid = await rpc('common', 'login', [ODOO.db, ODOO.login, ODOO.pw]);\nif (!uid) throw new Error('Odoo: sai ODOO_N8N_LOGIN hoặc ODOO_N8N_PASSWORD');\n// Gọi một method của model Odoo\nconst call = (model, method, args, kw = {}) => rpc('object', 'execute_kw', [ODOO.db, uid, ODOO.pw, model, method, args, kw]);\n\nconst q = $input.first().json;\nconst dom = q.tat_ca ? [['default_code', '!=', false]] : [['default_code', 'in', q.seller_skus]];\nconst ps = await call('product.product', 'search_read', [dom], { fields: ['default_code', 'free_qty', 'qty_available'] });\nreturn ps.map((p) => ({ json: { seller_sku: p.default_code, free_qty: Math.max(0, Math.floor(p.free_qty)), qty_available: p.qty_available } }));\n"
+      },
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "id": "1b6e3a9a-5bad-56b3-afae-b8e70be7a739",
+      "name": "Ghi ton_kho_odoo",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO ton_kho_odoo (seller_sku, free_qty, qty_available, cap_nhat_luc)\nVALUES ($1, $2, $3, now())\nON CONFLICT (seller_sku) DO UPDATE SET free_qty = EXCLUDED.free_qty, qty_available = EXCLUDED.qty_available, cap_nhat_luc = now();",
+        "options": {
+          "queryReplacement": "={{ [ $json.seller_sku, $json.free_qty, $json.qty_available ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "pgMiddleware0001",
+          "name": "Postgres · middleware"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -91,22 +118,33 @@
         ]
       ]
     },
-    "Chuẩn hóa yêu cầu": {
+    "Workflow khác gọi tới": {
       "main": [
         [
           {
-            "node": "Chưa làm (giữ chỗ)",
+            "node": "Chuẩn hóa yêu cầu",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Workflow khác gọi tới": {
+    "Chuẩn hóa yêu cầu": {
       "main": [
         [
           {
-            "node": "Chuẩn hóa yêu cầu",
+            "node": "Đọc tồn Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Đọc tồn Odoo": {
+      "main": [
+        [
+          {
+            "node": "Ghi ton_kho_odoo",
             "type": "main",
             "index": 0
           }
