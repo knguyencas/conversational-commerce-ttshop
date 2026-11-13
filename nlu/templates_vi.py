@@ -21,7 +21,7 @@ TEMPLATES: dict[str, list[str]] = {
         "giá {SAN_PHAM} màu {MAU} là bao nhiêu",
         "{SAN_PHAM} thông số thế nào shop",
         "{SAN_PHAM} có mấy màu vậy ạ",
-        "{SAN_PHAM} sạc được bao nhiêu w vậy",
+        "{SAN_PHAM} cấu hình thế nào vậy",
         "mình hỏi {SAN_PHAM} còn không, lấy 2 cái",
         "{SAN_PHAM} bảo hành bao lâu, giá bao nhiêu ạ",
         "hiện {SAN_PHAM} giá tốt nhất bao nhiêu shop",
@@ -37,7 +37,7 @@ TEMPLATES: dict[str, list[str]] = {
         "tư vấn giúp mình {LOAI} dưới {NGAN_SACH}",
         "{LOAI} nào dùng cho {THIET_BI} được ạ",
         "shop có {LOAI} nào của {HANG} không, tầm {NGAN_SACH}",
-        "mình cần {LOAI} sạc nhanh cho máy, nên lấy loại nào",
+        "mình cần {LOAI} cho máy văn phòng, nên lấy loại nào",
         "{SAN_PHAM} có dùng được cho máy {HANG_DT} không shop",
         "{LOAI} nào pin trâu dùng cả ngày vậy shop",
         "ngân sách khoảng {NGAN_SACH} mua {LOAI} gì ổn",
@@ -52,7 +52,7 @@ TEMPLATES: dict[str, list[str]] = {
         "shop tư vấn {LOAI} {DUNG_LUONG} giúp em",
         "mua {SAN_PHAM} thì nên mua thêm gì đi kèm",
         "{LOAI} nào nhỏ gọn bỏ túi được vậy shop",
-        "{THIET_BI} sạc type c thì dùng {LOAI} nào được",
+        "{THIET_BI} chỉ có cổng type c thì dùng {LOAI} nào được",
         "em chưa biết chọn {LOAI} nào, shop tư vấn với",
         "khoảng {NGAN_SACH} có {LOAI} nào xịn không",
         "{LOAI} cho người lớn tuổi dễ dùng có loại nào",
@@ -129,7 +129,7 @@ TEMPLATES: dict[str, list[str]] = {
         "{SAN_PHAM} em mới nhận bị lỗi rồi shop",
         "giao sai màu rồi, em đặt {MAU} mà nhận màu khác",
         "đơn {MA_DON} thiếu hàng shop ơi",
-        "{LOAI} em mua sạc không vào điện",
+        "{LOAI} em mua cắm vào máy không nhận",
         "{LOAI_AM} bị rè một bên, xử lý sao đây",
         "hàng giao bị móp hộp, em muốn trả",
         "đợi cả tuần chưa thấy hàng, làm ăn kiểu gì vậy",
@@ -137,7 +137,7 @@ TEMPLATES: dict[str, list[str]] = {
         "em muốn hoàn tiền đơn {MA_DON}",
         "nhận được hàng giả chứ không phải chính hãng",
         "shop giao nhầm sản phẩm cho em rồi",
-        "{LOAI} nóng ran khi sạc, sợ cháy quá",
+        "{LOAI} nóng ran khi dùng, sợ cháy quá",
         "{SAN_PHAM} không kết nối được bluetooth, em đã thử nhiều lần",
         "sao đơn của em bị hủy mà không báo gì vậy",
         "hàng không giống hình, thất vọng quá",
@@ -238,18 +238,19 @@ EXTRA_TRAIN_TEMPLATES: dict[str, list[str]] = {
     ],
 }
 
-DEVICES = ["iphone 15", "iphone 16 pro max", "iphone 13", "ip 14 pro", "samsung s24", "galaxy a56",
-           "redmi note 14", "macbook air", "ipad gen 10", "oppo reno 12"]
-PHONE_BRANDS = ["samsung", "xiaomi", "oppo", "vivo", "realme", "apple"]
-AUDIO_CATEGORIES = ["tai nghe", "tai nghe bluetooth", "loa bluetooth", "loa", "tai nghe chụp tai"]
+DEVICES = ["macbook air m2", "macbook pro", "laptop asus", "laptop acer", "laptop lenovo", "laptop hp",
+           "laptop dell", "pc", "máy tính bàn", "ipad", "ps5"]
+PHONE_BRANDS = ["asus", "acer", "lenovo", "hp", "dell", "msi", "apple"]
+AUDIO_CATEGORIES = ["tai nghe", "tai nghe bluetooth", "tai nghe gaming", "tai nghe chụp tai", "micro"]
 
 PLACES = ["Hà Nội", "Đà Nẵng", "Cần Thơ", "Huế", "Nha Trang", "Bình Dương", "Hải Phòng", "Vũng Tàu"]
 
-EXTRA_CATEGORIES = ["tai nghe bluetooth", "tai nghe chụp tai", "sạc nhanh", "dây sạc", "pin dự phòng",
-                    "loa", "đồng hồ", "giá đỡ điện thoại", "đế sạc không dây", "hub type c"]
+EXTRA_CATEGORIES = ["tai nghe gaming", "tai nghe chụp tai", "bàn phím cơ", "chuột gaming", "chuột không dây",
+                    "màn hình gaming", "ổ cứng", "ổ ssd", "hub chuyển đổi", "bàn di chuột", "micro thu âm",
+                    "máy tính xách tay"]
 EXTRA_COLORS = ["xanh lá", "vàng", "cam", "xanh navy", "bạc", "titan"]
-EXTRA_BRANDS = ["Samsung", "Xiaomi", "Sony", "Anker", "Baseus", "Ugreen", "JBL", "Apple", "Remax", "Hoco"]
-EXTRA_CAPACITIES = ["20W", "30W", "65W", "100W", "10000mAh", "20000mAh", "128GB", "256GB", "1m", "2m"]
+EXTRA_BRANDS = ["Dell", "MSI", "Corsair", "Dareu", "Xiaomi", "Samsung", "Anker", "Ugreen", "Apple", "Asus"]
+EXTRA_CAPACITIES = ["8GB", "16GB", "32GB", "256GB", "512GB", "1TB", "24 inch", "27 inch", "144Hz", "165Hz"]
 
 PREFIXES = ["", "", "", "shop ơi ", "ad ơi ", "chào shop, ", "cho em hỏi ", "shop cho mình hỏi ", "dạ ", "alo shop "]
 SUFFIXES = ["", "", "", " ạ", " shop", " nha", " với", "?", " ạ?", "??", " vậy"]

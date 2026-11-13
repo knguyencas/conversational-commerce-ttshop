@@ -26,9 +26,9 @@
 | API demo cho giao diện (7 API) | Chạy, hợp đồng [contracts/internal/demo_api.md](../../contracts/internal/demo_api.md) |
 | Chatbot nhớ ngữ cảnh (sản phẩm vừa nói, đơn gần nhất), tồn kho giả trừ theo đơn đã đặt | Chạy |
 | Diễn tập trọn luồng `scripts/dien-tap.sh` | 14/14 đạt |
-| Dữ liệu sản phẩm của chatbot | Còn là dữ liệu giả có tên hãng; cần thay bằng `san-pham.csv` |
-| PhoBERT | Train lần 1 xong (dev: macro-F1 ý định 0,894, F1 thực thể 0,728, đều hơn baseline). Đã sửa dữ liệu (mẫu "loại hàng + hãng", khiếu nại có mã đơn), chờ train lần 2; chưa bật service NLU |
-| Mô hình mua kèm | Notebook so 4 cách (phổ biến, P(B\|A), Lift/PMI, ALS), chưa chạy trên Colab |
+| Dữ liệu sản phẩm của chatbot | Danh mục HDX Tech (25 sản phẩm, 10 loại) từ `cua-hang/san-pham.csv`, nạp bằng `python scripts/nap-san-pham.py` |
+| PhoBERT | Đã train danh mục HDX Tech (13/11, dev): macro-F1 ý định 0,964 (baseline 0,830), F1 thực thể 0,884 (baseline 0,577). Chờ tập test của M1 để có số chính thức; chưa bật service NLU |
+| Mô hình mua kèm | Đã chạy danh mục HDX Tech (13/11): không thắng baseline (Hit@3 0,680 so với 0,686); đang thử cửa sổ 1 và 7 ngày. Database dùng 22 luật mặc định viết tay |
 | Chấm chatbot | Chờ bộ câu test |
 | Tailscale | Chưa cài |
 

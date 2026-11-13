@@ -13,16 +13,16 @@ CREATE TABLE IF NOT EXISTS upsell_rules (
 );
 
 INSERT INTO upsell_rules (anchor_category, rec_category, rank, source) VALUES
-  ('điện thoại', 'ốp lưng', 1, 'mac_dinh'), ('điện thoại', 'kính cường lực', 2, 'mac_dinh'), ('điện thoại', 'củ sạc', 3, 'mac_dinh'),
-  ('củ sạc', 'cáp', 1, 'mac_dinh'), ('củ sạc', 'sạc dự phòng', 2, 'mac_dinh'),
-  ('cáp', 'củ sạc', 1, 'mac_dinh'), ('cáp', 'sạc dự phòng', 2, 'mac_dinh'),
-  ('sạc dự phòng', 'cáp', 1, 'mac_dinh'), ('sạc dự phòng', 'củ sạc', 2, 'mac_dinh'),
-  ('tai nghe', 'củ sạc', 1, 'mac_dinh'), ('tai nghe', 'sạc dự phòng', 2, 'mac_dinh'),
-  ('ốp lưng', 'kính cường lực', 1, 'mac_dinh'), ('ốp lưng', 'củ sạc', 2, 'mac_dinh'),
-  ('kính cường lực', 'ốp lưng', 1, 'mac_dinh'), ('kính cường lực', 'cáp', 2, 'mac_dinh'),
-  ('loa bluetooth', 'cáp', 1, 'mac_dinh'), ('loa bluetooth', 'sạc dự phòng', 2, 'mac_dinh'),
-  ('đồng hồ thông minh', 'củ sạc', 1, 'mac_dinh'), ('đồng hồ thông minh', 'sạc dự phòng', 2, 'mac_dinh'),
-  ('chuột', 'bàn phím', 1, 'mac_dinh'), ('bàn phím', 'chuột', 1, 'mac_dinh')
+  ('laptop', 'chuột', 1, 'mac_dinh'), ('laptop', 'tai nghe', 2, 'mac_dinh'), ('laptop', 'hub', 3, 'mac_dinh'),
+  ('bàn phím', 'chuột', 1, 'mac_dinh'), ('bàn phím', 'lót chuột', 2, 'mac_dinh'),
+  ('chuột', 'lót chuột', 1, 'mac_dinh'), ('chuột', 'bàn phím', 2, 'mac_dinh'),
+  ('tai nghe', 'micro', 1, 'mac_dinh'), ('tai nghe', 'webcam', 2, 'mac_dinh'),
+  ('màn hình', 'hub', 1, 'mac_dinh'), ('màn hình', 'bàn phím', 2, 'mac_dinh'), ('màn hình', 'chuột', 3, 'mac_dinh'),
+  ('ssd', 'hub', 1, 'mac_dinh'), ('ssd', 'chuột', 2, 'mac_dinh'),
+  ('hub', 'màn hình', 1, 'mac_dinh'), ('hub', 'ssd', 2, 'mac_dinh'),
+  ('micro', 'webcam', 1, 'mac_dinh'), ('micro', 'tai nghe', 2, 'mac_dinh'),
+  ('webcam', 'micro', 1, 'mac_dinh'), ('webcam', 'tai nghe', 2, 'mac_dinh'),
+  ('lót chuột', 'chuột', 1, 'mac_dinh'), ('lót chuột', 'bàn phím', 2, 'mac_dinh')
 ON CONFLICT DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS bandit_arms (

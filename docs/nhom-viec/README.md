@@ -16,7 +16,7 @@ TikTok Shop chỉ cấp Open API cho doanh nghiệp có giấy phép, nên đồ
 | 2 | **Hệ thống middleware** nối TikTok, Odoo, AI | Đơn đi qua từng bước tự động; chữ ký, chống trùng, xử lý lỗi | Đã chạy (14/14 bước diễn tập) | 3 |
 | 3 | **Chatbot AI** trả lời đúng giá, không bịa | Trả lời tiếng Việt, soát giá bằng code, khiếu nại thì chuyển người | Đã chạy (Groq) | 3 |
 | 4 | **Odoo** quản lý kho và đơn | Sales Order tự tạo khi khách đặt, hủy khi khách hủy, có mã vận đơn | Cần làm | 2 |
-| 5 | **Lớp AI nhóm tự train** | Bảng số: F1 hiểu ý định (PhoBERT), Hit@3 gợi ý mua kèm, A/B có mời và không mời | PhoBERT đã train lần 1, chờ lần 2; mua kèm chưa chạy | 3 |
+| 5 | **Lớp AI nhóm tự train** | Bảng số: F1 hiểu ý định (PhoBERT), Hit@3 gợi ý mua kèm, A/B có mời và không mời | PhoBERT đạt trên dev (chờ test của M1); mua kèm chưa thắng baseline, đang thử cửa sổ ngắn | 3 |
 | 6 | **Dashboard KPI** | Số tin nhắn, thời gian trả lời, tỉ lệ đúng giá, số đơn, thời gian xử lý đơn | Cần làm | 4 |
 | 7 | **Minh chứng nền tảng TikTok** | Ảnh mở shop, sản phẩm nháp, chỗ TikTok yêu cầu giấy phép doanh nghiệp | Cần làm | 1 |
 | 8 | **Video demo và báo cáo** | Video quay trọn luồng; báo cáo kiến trúc, số liệu, lý do dùng giả lập | Cần làm | 4 (video), cả nhóm (báo cáo) |
@@ -27,6 +27,7 @@ TikTok Shop chỉ cấp Open API cho doanh nghiệp có giấy phép, nên đồ
 |---|---|---|
 | [1-cua-hang-va-giao-dien-demo.md](1-cua-hang-va-giao-dien-demo.md) | Cửa hàng và giao diện demo | Web shop giả lập, dữ liệu sản phẩm, bộ câu test, minh chứng TikTok |
 | [huong-dan-web-gia-lap.md](huong-dan-web-gia-lap.md) | (đi kèm nhóm 1) | Hướng dẫn làm web giả lập bằng React + Vite từng bước, có code gọi API |
+| [sua-web-hdx.md](sua-web-hdx.md) | (đi kèm nhóm 1) | Sửa web HDX Tech đang có (nhánh `feature/hdx-tech-shop-huuduc`) để nối vào hệ thống: mục tiêu, quy tắc, giữ/bỏ/sửa/thêm |
 | [2-kho-va-don-hang.md](2-kho-va-don-hang.md) | Kho và đơn hàng | Odoo, 4 workflow đơn hàng, tool đọc Odoo cho chatbot |
 | [3-middleware-va-ai.md](3-middleware-va-ai.md) | Middleware và AI | Máy chủ, n8n, chatbot, API cho giao diện demo, train và chấm mô hình |
 | [4-noi-dung-va-do-luong.md](4-noi-dung-va-do-luong.md) | Nội dung và đo lường | Dashboard KPI, video demo, kế hoạch quảng cáo |
@@ -61,7 +62,7 @@ Không nhóm nào phải chờ nhóm khác mới bắt đầu được: chỗ n�
 4. **Odoo là nguồn sự thật** cho giá, tồn kho, đơn hàng.
 5. **Mọi sự kiện đi qua n8n.** Giao diện chỉ gọi 7 API `/webhook/demo/...` (do n8n cung cấp), không gọi Odoo, database hay AI trực tiếp; Odoo không gọi giao diện.
 6. **Không lộ khóa.** Mật khẩu, API key, mã nhóm chỉ nằm trong `.env` máy chủ hoặc gửi tin nhắn riêng; không đưa lên GitHub.
-7. **Hàng không thương hiệu.** TikTok đòi thư ủy quyền mới cho đăng hàng có tên hãng.
+7. **Danh mục HDX Tech chỉ nằm trên web giả lập.** 25 sản phẩm laptop và phụ kiện máy tính có hãng trong `cua-hang/san-pham.csv`, 10 loại hàng: laptop, bàn phím, chuột, tai nghe, màn hình, ssd, hub, micro, webcam, lót chuột. TikTok đòi thư ủy quyền mới cho đăng hàng có hãng, nên không đăng danh mục này lên TikTok thật; minh chứng TikTok chỉ dùng sản phẩm nháp không thương hiệu.
 
 ## Môi trường dùng chung
 

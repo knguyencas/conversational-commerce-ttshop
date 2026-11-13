@@ -6,7 +6,7 @@ Làm [cài đặt chung](00-cai-dat-chung.md) trước. Thư mục của M4: [`n
 
 | Mã | Việc | Xong khi |
 |---|---|---|
-| M4-01 | Chụp ảnh 2–3 sản phẩm không thương hiệu cho M1 (không để lộ logo hãng) | Ảnh trong Drive chung |
+| M4-01 | Chụp ảnh 2–3 món không thương hiệu cho phần minh chứng TikTok của M1 (không để lộ logo hãng) | Ảnh trong Drive chung |
 | M4-05 | **Dashboard KPI**: tạo Google Sheet, dán Apps Script `noi-dung/apps-script/cap-nhat-kpi.gs`, nối Looker Studio. Cách làm: [docs/huong-dan-kpi-dashboard.md](../docs/huong-dan-kpi-dashboard.md) | Dashboard có số tin nhắn, số đơn, thời gian trả lời |
 | M4-04 | 1–2 video ngắn giới thiệu sản phẩm hoặc giới thiệu hệ thống (để demo và báo cáo) | Video trong Drive chung, kịch bản trong `noi-dung/kich-ban/` |
 | M4-03 | (Nếu kịp) Workflow `M4 · Tạo video`: Gemini/Groq viết kịch bản, FPT.AI đọc, Creatomate dựng | File `n8n/workflows/m4-tao-video.json` |

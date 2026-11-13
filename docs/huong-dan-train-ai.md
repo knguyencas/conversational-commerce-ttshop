@@ -36,6 +36,8 @@ Shop mới chưa có hội thoại thật, nên dữ liệu đến từ 3 nguồ
 | **Câu thật từ Google Form** | Train thêm (tăng độ đa dạng) | M4 tạo Form "Bạn sẽ nhắn shop đồ công nghệ thế nào?", gửi bạn bè; được 200–300 câu thì gán nhãn |
 | **Tập test do người khác viết** | Chấm điểm (không train) | M1 viết khoảng 300 câu, mỗi ý định ít nhất 30 câu |
 
+**Đổi sang danh mục HDX Tech (13/11/2026).** Dữ liệu train và dev được sinh lại hoàn toàn từ `cua-hang/san-pham.csv` (25 sản phẩm, 10 loại) bằng `python scripts/nap-san-pham.py` rồi `python nlu/gen_data.py`; mẫu câu và danh sách máy, hãng trong `nlu/templates_vi.py` cũng đổi sang laptop và phụ kiện máy tính. Số của các lần train trước (danh mục phụ kiện điện thoại) không so trực tiếp với lần train HDX; vẫn dùng được trong báo cáo làm phần phân tích lỗi dữ liệu.
+
 **Mẫu bổ sung sau lần train đầu (11/11/2026).** Lần train đầu, dev cho thấy 2 lỗ hổng của dữ liệu sinh: kiểu câu "loại hàng + hãng" (vd "chuột logitech") có 0 câu trong train vì cả 3 mẫu kiểu này đều rơi vào dev, nên F1 nhận hãng chỉ 0,07; và khiếu nại có mã đơn rất ít nên mô hình học "có mã đơn là tra đơn". Đã thêm `EXTRA_TRAIN_TEMPLATES` trong `nlu/templates_vi.py` (mẫu **chỉ dùng cho train**, viết khác mẫu dev) và sinh lại bằng:
 
 ```bash
@@ -55,7 +57,7 @@ Lệnh này cần `GEMINI_API_KEY`; đọc lướt file kết quả và xóa câ
 ### A2. Gán nhãn câu thật
 
 1. Người gán nhãn đọc `nlu/HUONG_DAN_GAN_NHAN.md`: 7 ý định, 7 loại thông tin, các ca dễ nhầm.
-2. Gán trong Google Sheet, mỗi dòng gồm `text` và `intent`. Thông tin bọc dạng `[chữ](NHÃN)`, ví dụ `[sạc anker 20w](SAN_PHAM) màu [trắng](MAU) còn không`.
+2. Gán trong Google Sheet, mỗi dòng gồm `text` và `intent`. Thông tin bọc dạng `[chữ](NHÃN)`, ví dụ `[chuột g102](SAN_PHAM) màu [trắng](MAU) còn không`.
 3. *Tệp → Tải xuống → CSV*. Chuyển sang định dạng train:
 
    ```bash
@@ -98,6 +100,22 @@ Các file nằm trong `MyDrive/cntttmdt/nlu/outputs/`:
 
 **Lấy số trên tập test**, không lấy số trên dev. Dev cũng là câu sinh tự động, và dev còn được dùng để chọn epoch tốt nhất, nên số trên dev cao hơn thực tế.
 
+**Kết quả train danh mục HDX Tech (13/11/2026, trên dev 560 câu; chưa có tập test của M1):**
+
+| | Baseline | PhoBERT |
+|---|---|---|
+| Ý định: accuracy | 0,832 | **0,964** |
+| Ý định: macro-F1 | 0,830 | **0,964** |
+| Thực thể: F1 | 0,577 | **0,884** |
+| Ý định, riêng 156 câu không dấu | 0,817 | 0,918 |
+| Thực thể, riêng câu không dấu | 0,569 | 0,753 |
+
+- F1 từng ý định của PhoBERT: so_sanh 0,994, tra_don 0,994, khac 0,981, bao_hanh 0,958, khieu_nai 0,956, tu_van 0,952, hoi_gia 0,915 (yếu nhất: một số câu hỏi giá bị đoán thành tư vấn).
+- F1 từng thực thể: MA_DON 1,0, MAU 0,964, NGAN_SACH 0,881, SAN_PHAM 0,877 (dev dùng 5 sản phẩm không có trong train, nên đây là điểm khi gặp tên sản phẩm mới), LOAI 0,865, HANG 0,848. Dev không có câu nào chứa DUNG_LUONG.
+- Train ý định 106 giây, thực thể 439 giây trên GPU T4.
+- So với lần train đầu (danh mục cũ, macro-F1 0,894, F1 thực thể 0,728): mẫu câu bổ sung sau phân tích lỗi đã lấp được lỗ hổng "loại hàng + hãng" và "khiếu nại có mã đơn". Hai lần dùng dev khác nhau nên chỉ so xu hướng, không so tuyệt đối.
+- **Đạt** theo nghĩa vượt baseline rõ ở mọi chỉ số. Điểm chính thức cho báo cáo phải lấy trên tập test do M1 viết, vì dev cũng là câu tự sinh nên điểm dev lạc quan.
+
 ### A5. Tối ưu (nếu kết quả chưa tốt)
 
 Làm lần lượt, mỗi lần train lại rồi so số trên test:
@@ -136,15 +154,15 @@ Service tự nén mô hình int8 (khoảng 0,9 GB RAM, ~0,1 giây mỗi câu). M
 ### B1. Dữ liệu: Amazon Reviews 2023
 
 - **Nguồn:** bộ dữ liệu công khai của McAuley Lab (UC San Diego), đăng trên Hugging Face tại `McAuley-Lab/Amazon-Reviews-2023`. Notebook tự tải, không cần tài khoản.
-- **Dùng 2 nhóm hàng:** *Cell Phones & Accessories* và *Electronics*.
+- **Dùng nhóm hàng *Electronics*** (từ 13/11/2026, khi shop đổi sang danh mục HDX Tech: laptop và phụ kiện máy tính). Trước đó dùng thêm *Cell Phones & Accessories* cho danh mục phụ kiện điện thoại cũ.
 - **Hai loại file:**
-  - `benchmark/5core/rating_only/<nhóm>.csv`: ai đánh giá món gì, lúc nào. Bản 5-core chỉ giữ người và món có từ 5 đánh giá trở lên, ít nhiễu. Hai file nặng 160 MB và 900 MB.
-  - `raw/meta_categories/meta_<nhóm>.jsonl`: thông tin sản phẩm (tên, cây danh mục). Hai file nặng 4 GB và 5,2 GB. Notebook đọc theo dòng nên không tốn RAM.
-- **Vì sao dùng dữ liệu Amazon:** shop mới chưa có đơn để học, nên mượn thói quen mua của người dùng Amazon ở mức **loại hàng** (ốp lưng, củ sạc...). Món cụ thể sẽ do dữ liệu kho của shop lọc.
+  - `benchmark/5core/rating_only/Electronics.csv`: ai đánh giá món gì, lúc nào. Bản 5-core chỉ giữ người và món có từ 5 đánh giá trở lên, ít nhiễu. Nặng khoảng 900 MB.
+  - `raw/meta_categories/meta_Electronics.jsonl`: thông tin sản phẩm (tên, cây danh mục). Nặng khoảng 5,2 GB. Notebook đọc theo dòng nên không tốn RAM.
+- **Vì sao dùng dữ liệu Amazon:** shop mới chưa có đơn để học, nên mượn thói quen mua của người dùng Amazon ở mức **loại hàng** (laptop, chuột, hub...). Món cụ thể sẽ do dữ liệu kho của shop lọc.
 
 ### B2. Cách mô hình học
 
-1. **Gán loại hàng của shop cho từng sản phẩm Amazon** theo cây danh mục (`upsell/category_map.py`). Ví dụ `Cell Phones & Accessories > Cases, Holsters & Sleeves > Basic Cases` thành **ốp lưng**. Phụ kiện của phụ kiện (đệm tai nghe, dây đồng hồ) thì bỏ.
+1. **Gán loại hàng của shop cho từng sản phẩm Amazon** theo nhánh cuối của cây danh mục (`upsell/category_map.py`, 10 loại của HDX Tech). Ví dụ `Laptops > Traditional Laptops` thành **laptop**, `Data Storage > Internal Solid State Drives` thành **ssd**, `Laptop Accessories > Docking Stations` thành **hub**. Phụ kiện của phụ kiện (túi laptop, giá đỡ màn hình, đệm tai nghe) thì bỏ. Tên nhánh lấy từ dữ liệu thật của Amazon, không đoán.
 2. **Coi là "mua cùng nhau"**: một người đánh giá hai món **khác loại** trong vòng **30 ngày**.
 3. **Đếm theo người.** Mỗi người góp tối đa 1 cho mỗi cặp loại, để người mua cực nhiều không lấn át.
 4. **Tính điểm:** P(B | A) = (số người mua cả A và B + α × độ phổ biến của B) / (số người mua A + α), với α = 20. Khi loại A ít dữ liệu, điểm tự kéo về mức phổ biến chung (làm mượt).
@@ -174,13 +192,47 @@ Các file nằm trong `MyDrive/cntttmdt/upsell/outputs/`:
 
 | File | Dùng làm gì |
 |---|---|
-| `metrics.json` | Hit@3, Recall@5 của 4 cách gợi ý (baseline, P(B\|A), Lift/PMI, ALS), số ca kiểm tra, số người |
-| `so_sanh_mo_hinh.png` | Biểu đồ cột Hit@3, Recall@5 của 4 cách gợi ý |
+| `metrics.json` | Hit@1, Hit@3, Recall@5 của 5 cách gợi ý (baseline, P(B\|A), P(B\|A) + lọc lift, Lift/PMI, ALS), số ca kiểm tra, số người |
+| `so_sanh_mo_hinh.png` | Biểu đồ cột Hit@1, Hit@3, Recall@5 của 5 cách gợi ý |
 | `xac_suat_mua_kem.png` | Bản đồ nhiệt P(B \| A) cho báo cáo |
-| `upsell_rules.csv` | Bảng luật: mỗi loại hàng thì mời 3 loại nào, kèm điểm và số người làm căn cứ |
+| `upsell_rules.csv` | Bảng luật: mỗi loại hàng thì mời 3 loại nào, kèm điểm, lift và số người làm căn cứ |
 | `upsell_rules.sql` | File nạp luật vào hệ thống |
 
-Notebook còn in bảng Hit@3 **theo từng loại hàng**, dùng để viết phần phân tích: loại nào mô hình hơn hẳn baseline, loại nào không.
+Notebook còn in bảng Hit@1 **theo từng loại hàng**, dùng để viết phần phân tích: loại nào mô hình hơn hẳn baseline, loại nào không.
+
+
+**Kết quả danh mục HDX Tech (13/11/2026, cửa sổ 30 ngày):** 1.897.051 lượt mua của 966.470 người thuộc 10 loại hàng; kiểm tra trên 50.542 ca.
+
+| Cách gợi ý | Hit@1 | Hit@3 | Recall@5 |
+|---|---|---|---|
+| **Baseline (phổ biến)** | **0,383** | **0,686** | **0,857** |
+| P(B\|A) | 0,383 | 0,680 | 0,847 |
+| P(B\|A) + lọc lift | 0,356 | 0,679 | 0,841 |
+| Lift / PMI | 0,204 | 0,553 | 0,778 |
+| Phân rã ma trận ALS | 0,152 | 0,418 | 0,522 |
+
+- **Không đạt:** không cách nào thắng baseline. Với 10 loại hàng máy tính, việc người dùng Amazon đánh giá hai loại trong 30 ngày gần như chỉ phản ánh độ phổ biến: "tai nghe" đứng đầu cho 8/10 loại, và lift của mọi cặp đều dưới 1 trừ **micro ↔ webcam (1,34)**. Khác với danh mục điện thoại cũ, nơi bàn phím ↔ chuột có lift 1,24.
+- Lần này **lót chuột không có sản phẩm nào**: trong dữ liệu Amazon 2023 phần lớn lót chuột không có cây danh mục. Đã sửa `category_map.py` (phiên bản `hdx-2`) để nhận lót chuột theo tên sản phẩm.
+- Notebook đã thêm ô **6b** thử cửa sổ 1 và 7 ngày (đánh giá cùng ngày gần với "cùng một đơn hàng") và ô **6c** tự kết luận đạt/không đạt. Chạy lại để biết cửa sổ ngắn có cho tín hiệu mua kèm thật không.
+- **Nếu vẫn không đạt:** không nạp `upsell_rules.sql`; hệ thống giữ 22 luật mặc định viết tay theo hiểu biết về sản phẩm (laptop → chuột, micro → webcam...), bandit chọn món và học từ khách thật, A/B đo hiệu quả. Đây là kết luận có giá trị cho báo cáo: dữ liệu công khai mức loại hàng không đủ cho danh mục này, nên học trực tuyến từ khách thật quan trọng hơn.
+
+**Kết quả lần chạy đủ (12/11/2026, danh mục cũ: 11 loại phụ kiện điện thoại).** Shop đã đổi sang danh mục HDX Tech ngày 13/11/2026, nên cần chạy lại notebook để có số cho 10 loại mới. Kết quả dưới đây vẫn dùng được trong báo cáo làm phần phân tích phương pháp (vì sao cần lọc lift, vì sao ALS kém). 6.726.367 lượt mua của 1.672.071 người; học trên dữ liệu trước 11/06/2021, kiểm tra trên 350.395 ca sau đó.
+
+| Cách gợi ý | Hit@1 | Hit@3 | Recall@5 |
+|---|---|---|---|
+| Baseline (phổ biến) | 0,485 | 0,767 | 0,827 |
+| **P(B\|A)** | **0,498** | **0,801** | **0,833** |
+| P(B\|A) + lọc lift (luật đang dùng) | 0,415 | 0,785 | 0,831 |
+| Lift / PMI | 0,356 | 0,618 | 0,750 |
+| Phân rã ma trận ALS | 0,132 | 0,395 | 0,587 |
+
+Cách đọc cho báo cáo:
+- **P(B|A) đo giỏi nhất** nhưng thiên về hàng bán chạy: mời "ốp lưng" đầu tiên cho 9/11 loại hàng, kể cả bàn phím. Khách Amazon mua ốp lưng nhiều đến mức đằng nào cũng mua, nên mời ốp lưng "trúng" nhiều mà không tạo thêm đơn.
+- **Lọc lift** hy sinh 1,6 điểm Hit@3 (vẫn hơn baseline 1,8 điểm) để mời đúng món thật sự đi kèm: bàn phím → chuột, chuột → bàn phím, củ sạc ↔ sạc dự phòng, điện thoại và đồng hồ → kính cường lực, ốp lưng → kính cường lực. Mục đích của mời mua kèm là thêm đơn mà khách chưa định mua, nên nhóm chọn cách này. Hit@1 giảm mạnh nhất ở củ sạc (0,58 → 0,15): người mua củ sạc mua ốp lưng tiếp theo nhiều hơn sạc dự phòng, nhưng ốp lưng không phải món "đi kèm" củ sạc.
+- **Lift / PMI đơn thuần** kém hơn baseline: đẩy cặp hiếm lên đầu.
+- **ALS kém nhất**: chỉ có 11 loại hàng, quá ít để học 8 yếu tố ẩn; gợi ý cho khách mới chỉ từ 1 loại (fold-in) làm mất thông tin độ phổ biến; ALS không xét cửa sổ 30 ngày. Đây là kết quả âm có giá trị: phân rã ma trận hợp với danh mục hàng nghìn món, không hợp với 11 loại.
+- Cáp, tai nghe, loa không có loại nào đi kèm rõ ràng (lift < 1), nên luật giữ thứ tự theo độ phổ biến.
+- Hiệu quả thật đo bằng A/B trong hệ thống (nhóm được mời so với nhóm không mời) và bandit học từ khách thật.
 
 ### B5. Đưa luật vào hệ thống
 
@@ -203,7 +255,7 @@ Chatbot dùng ngay luật `amazon` ở tin nhắn tiếp theo. Chưa nạp luậ
 
 ## C. Bandit (Thompson sampling): không cần train
 
-**Vấn đề:** luật mua kèm chỉ nói nên mời **loại** nào (vd khách xem củ sạc thì mời cáp hoặc sạc dự phòng). Trong mỗi loại có nhiều **món**, và không biết trước món nào khách của shop hay nhận lời.
+**Vấn đề:** luật mua kèm chỉ nói nên mời **loại** nào (vd khách xem chuột thì mời lót chuột hoặc bàn phím). Trong mỗi loại có nhiều **món**, và không biết trước món nào khách của shop hay nhận lời.
 
 **Cách bandit chọn món:**
 

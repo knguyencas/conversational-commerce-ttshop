@@ -2,6 +2,8 @@
 
 Tài liệu cho người làm giao diện demo. Đọc hết một lần, rồi làm theo từng bước; mỗi bước có câu giao việc mẫu cho AI ở cuối file.
 
+Đã có web HDX Tech (nhánh `feature/hdx-tech-shop-huuduc`) thì đọc [sua-web-hdx.md](sua-web-hdx.md) trước: file đó nói phải sửa gì trên code đang có.
+
 ## 0. Web này là gì, nằm ở đâu
 
 TikTok Shop chỉ cấp API cho doanh nghiệp, nên khi demo, **web này đóng vai app TikTok Shop**: khách xem hàng, chat với shop, đặt mua, theo dõi đơn; người bán đẩy đơn qua các bước. Mọi xử lý phía sau đã có và đã chạy, web chỉ cần gọi 7 API.
@@ -180,7 +182,7 @@ Thanh tiến trình: Đã đặt → Shop xác nhận → Đã đóng gói → �
 | Bước | Làm | Thử bằng |
 |---|---|---|
 | 1 | Dự án Vite, `api.js`, màn nhập mã, danh sách sản phẩm | Thấy đúng danh sách từ API |
-| 2 | Chat (kể cả thẻ gợi ý sản phẩm) | Hỏi "củ sạc anker 20w trắng giá bao nhiêu", rồi "còn mấy cái" |
+| 2 | Chat (kể cả thẻ gợi ý sản phẩm) | Hỏi "chuột g102 màu trắng giá bao nhiêu", rồi "còn mấy cái" |
 | 3 | Chi tiết sản phẩm, giỏ hàng, đặt hàng | Đặt 1 đơn, thấy mã đơn; tồn kho trên danh sách giảm |
 | 4 | Đơn của tôi, thông báo | Đơn hiện đúng bước |
 | 5 | Màn người bán | Đẩy đơn qua đủ bước, khách thấy cập nhật và thông báo |
@@ -190,7 +192,7 @@ Mỗi bước xong thì commit lên một nhánh và mở pull request (xem [CON
 
 ## 8. Kịch bản demo phải chạy được
 
-1. Khách mở shop, chat "cáp type c còn không shop" → bot trả đúng giá, tồn kho; có thẻ gợi ý mua kèm.
+1. Khách mở trang chuột G102, bấm Chat, hỏi "chuột này còn màu trắng không shop" → bot trả đúng giá, tồn kho; có thẻ gợi ý mua kèm (lót chuột).
 2. Khách hỏi tiếp "còn mấy cái" → bot trả lời đúng sản phẩm vừa nói.
 3. Khách bấm Thêm vào giỏ ở thẻ gợi ý → Đặt hàng → thấy mã đơn; tồn kho giảm.
 4. Tab người bán: Đã đóng gói → Giao cho vận chuyển.

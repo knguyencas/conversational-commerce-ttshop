@@ -8,11 +8,11 @@ Bản ngắn cho M3. Mỗi dòng là một việc. Cần giải thích kỹ hơn
 |---|---|---|---|
 | PhoBERT ý định | Biết khách đang hỏi giá, tư vấn, so sánh, tra đơn, bảo hành, khiếu nại hay khác | Colab, GPU T4 | 15 phút (chung một lần chạy với dòng dưới) |
 | PhoBERT thông tin | Bắt tên sản phẩm, hãng, loại, ngân sách, màu, dung lượng, mã đơn trong câu | Colab, GPU T4 | (như trên) |
-| Mua kèm | Khách đang mua loại A thì mời loại B nào. Notebook so 4 cách: phổ biến, P(B\|A), Lift/PMI, phân rã ma trận ALS | Colab, CPU | 20–40 phút |
+| Mua kèm | Khách đang mua loại A thì mời loại B nào (10 loại của HDX Tech). Notebook so 5 cách: phổ biến, P(B\|A), P(B\|A) lọc lift, Lift/PMI, phân rã ma trận ALS | Colab, CPU | 15–25 phút |
 
 **Không train:** AI viết câu trả lời (dùng Groq hoặc Gemini qua API, miễn phí) và bandit chọn món (tự học khi có khách thật).
 
-**Dữ liệu:** câu train PhoBERT đã có sẵn trong `nlu/data/generated/`. Dữ liệu Amazon cho mô hình mua kèm thì notebook tự tải. Không phải tìm dataset nào khác.
+**Dữ liệu:** câu train PhoBERT đã có sẵn trong `nlu/data/generated/`, sinh từ danh mục HDX Tech (`cua-hang/san-pham.csv`). Dữ liệu Amazon cho mô hình mua kèm thì notebook tự tải. Không phải tìm dataset nào khác.
 
 ---
 
@@ -27,7 +27,7 @@ Bản ngắn cho M3. Mỗi dòng là một việc. Cần giải thích kỹ hơn
 
 ## Bước 1. Train mô hình mua kèm (làm được ngay)
 
-**Đã chạy bản cũ rồi (chỉ có 2 cách gợi ý)?** Tải 2 file `upsell\upsell_lib.py` và `upsell\train_upsell.ipynb` từ máy lên `cntttmdt → upsell` (đè bản cũ), rồi chạy lại từ đầu. Giữ nguyên thư mục `outputs` trên Drive: file đệm `item_category.json` trong đó giúp bỏ qua bước đọc 9 GB, nên lần chạy lại chỉ mất khoảng 10–15 phút.
+**Chạy lại cho danh mục HDX Tech (từ 13/11):** trên Drive, vào `cntttmdt → upsell`, **xóa** `category_map.py`, `upsell_lib.py`, `train_upsell.ipynb` (và các bản trùng tên như `category_map (1).py`), rồi tải 3 file đó từ máy lên. Đổi tên thư mục `outputs` cũ thành `outputs-dien-thoai` để giữ kết quả danh mục cũ cho báo cáo. Notebook giờ chỉ đọc nhóm *Electronics*, mất khoảng 15–25 phút. Ô cấu hình báo lỗi rõ nếu Drive còn file cũ.
 
 1. Trên Drive, vào `cntttmdt → upsell`, bấm đúp **`train_upsell.ipynb`**.
    - Không mở được: chuột phải → **Mở bằng → Google Colaboratory**. Không có Colaboratory thì chọn **Kết nối thêm ứng dụng**, tìm "Colaboratory", bấm **Cài đặt**.
@@ -44,7 +44,11 @@ Bản ngắn cho M3. Mỗi dòng là một việc. Cần giải thích kỹ hơn
 
 Nên chờ M1 gửi bộ câu test trước (xem bước 2a). Chưa có thì vẫn train được, nhưng điểm chỉ chấm trên câu tự sinh nên chưa đưa vào báo cáo được.
 
-**Train lại sau khi dữ liệu được sửa (11/11):** trên Drive, vào `cntttmdt → nlu → data`, xóa thư mục `generated`, rồi tải thư mục `nlu\data\generated` từ máy lên lại. Tải luôn `nlu\templates_vi.py` và `nlu\gen_data.py` lên `cntttmdt → nlu` (đè bản cũ). Sau đó làm 2b. Trước khi chạy, đổi tên thư mục `nlu/outputs` cũ trên Drive thành `outputs-lan-1` để giữ kết quả lần 1 cho báo cáo so sánh.
+**Train cho danh mục HDX Tech (từ 13/11):** trên Drive, vào `cntttmdt → nlu`:
+1. Đổi tên thư mục `outputs` cũ thành `outputs-dien-thoai` (giữ kết quả danh mục cũ cho báo cáo).
+2. Xóa thư mục `data`, rồi tải cả thư mục `nlu\data` từ máy lên (có `catalog.csv` và `generated` mới của HDX).
+3. Xóa rồi tải lại 4 file: `templates_vi.py`, `gen_data.py`, `nlu_lib.py`, `train_nlu.ipynb`.
+4. Làm 2b.
 
 **2a. Thêm bộ câu test của M1 (khi có)**
 1. Mở Google Sheet câu test của M1: **Tệp → Tải xuống → Giá trị được phân tách bằng dấu phẩy (.csv)**. Đổi tên file thành `test.csv`, để vào thư mục repo.

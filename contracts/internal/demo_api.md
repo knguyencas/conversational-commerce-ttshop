@@ -40,10 +40,10 @@ Không viết mã nhóm cứng vào code đưa lên GitHub: cho người dùng n
   "source": "gia",
   "products": [
     {
-      "sku": "PK-SAC-ANKER20W-TRANG", "name": "Củ sạc Anker 20W", "brand": "Anker", "category": "củ sạc",
-      "price": 199000, "stock": 9,
-      "colors": [ { "color": "trắng", "stock": 3 }, { "color": "đen", "stock": 6 } ],
-      "warranty_months": 18, "specs": "Sạc nhanh PD 20W, 1 cổng USB-C", "compatible": ["iphone 15", "samsung"]
+      "sku": "HD-MOU-001", "name": "Chuột gaming Logitech G102 LIGHTSYNC", "brand": "Logitech", "category": "chuột",
+      "price": 399000, "stock": 20,
+      "colors": [ { "color": "đen", "stock": 10 }, { "color": "trắng", "stock": 10 } ],
+      "warranty_months": 24, "specs": "Chuột gaming có dây USB-A, cảm biến 8.000 DPI, 6 nút, đèn RGB LIGHTSYNC", "compatible": ["laptop", "pc"]
     }
   ]
 }
@@ -56,7 +56,7 @@ Không viết mã nhóm cứng vào code đưa lên GitHub: cho người dùng n
 Vào:
 
 ```json
-{ "conversation_id": "demo-khach-1", "buyer_user_id": "gia-lap-khach", "text": "cáp type c còn không shop" }
+{ "conversation_id": "demo-khach-1", "buyer_user_id": "gia-lap-khach", "text": "chuột g102 còn không shop" }
 ```
 
 Ra (chờ khoảng 1–3 giây vì AI viết câu):
@@ -64,13 +64,13 @@ Ra (chờ khoảng 1–3 giây vì AI viết câu):
 ```json
 {
   "ok": true,
-  "reply": "Dạ cáp USB-C 1m giá 59.000đ, hiện còn 5 cái ạ.",
+  "reply": "Dạ chuột gaming Logitech G102 LIGHTSYNC giá 399.000đ, hiện còn 20 cái ạ.",
   "intent": "hoi_gia",
   "handed_off": false, "handoff_reason": null,
   "price_check_passed": true,
   "model": "qwen/qwen3.8-27b",
-  "skus": ["PK-CAP-C2C-1M"],
-  "upsell": [ { "sku": "PK-CU-SAC-20W", "name": "Củ sạc 20W", "price": 99000 } ],
+  "skus": ["HD-MOU-001"],
+  "upsell": [ { "sku": "HD-PAD-001", "name": "Lót chuột SteelSeries QcK Medium", "price": 299000 } ],
   "latency_ms": 1820
 }
 ```
@@ -87,16 +87,16 @@ Ra (chờ khoảng 1–3 giây vì AI viết câu):
 Vào:
 
 ```json
-{ "buyer_user_id": "gia-lap-khach", "items": [ { "sku": "PK-CAP-C2C-1M", "quantity": 2 }, { "sku": "PK-GIA-DO-DT", "quantity": 1 } ] }
+{ "buyer_user_id": "gia-lap-khach", "items": [ { "sku": "HD-MOU-001", "quantity": 2 }, { "sku": "HD-PAD-001", "quantity": 1 } ] }
 ```
 
 Ra:
 
 ```json
-{ "ok": true, "order_id": "579900003397263811", "viec": "dat_don", "status": "AWAITING_SHIPMENT", "total": 207000, "loi": null }
+{ "ok": true, "order_id": "579900003397263811", "viec": "dat_don", "status": "AWAITING_SHIPMENT", "total": 1097000, "loi": null }
 ```
 
-Tổng tiền do hệ thống tính theo giá trong danh sách sản phẩm. Tồn kho trong `GET /san-pham` và câu trả lời của bot **trừ đi số đã đặt** (trừ đơn đã hủy). SKU không có hoặc không đủ hàng trả `400` với `loi`, vd `"Củ sạc Anker 20W chỉ còn 9"`. Sau khi đặt, hệ thống chạy `M2 · Tạo đơn` (tạo Sales Order trong Odoo) và ghi nhận đơn cho thống kê mua kèm.
+Tổng tiền do hệ thống tính theo giá trong danh sách sản phẩm. Tồn kho trong `GET /san-pham` và câu trả lời của bot **trừ đi số đã đặt** (trừ đơn đã hủy). SKU không có hoặc không đủ hàng trả `400` với `loi`, vd `"Chuột gaming Logitech G102 LIGHTSYNC chỉ còn 9"`. Sau khi đặt, hệ thống chạy `M2 · Tạo đơn` (tạo Sales Order trong Odoo) và ghi nhận đơn cho thống kê mua kèm.
 
 ## 4. Đẩy đơn sang bước tiếp: `POST /don/viec`
 
@@ -126,8 +126,8 @@ Thứ tự đúng: `dong_goi` → `dang_giao` → `da_giao`. Nếu đã đóng g
     {
       "order_id": "579900003397263811", "buyer_user_id": "gia-lap-khach",
       "status": "IN_TRANSIT", "tracking_number": "VNGL263811",
-      "items": [ { "seller_sku": "PK-CAP-C2C-1M", "quantity": 2, "sku_id": "gia-PK-CAP-C2C-1M" } ],
-      "total_amount": 207000,
+      "items": [ { "seller_sku": "HD-MOU-001", "quantity": 2, "sku_id": "gia-HD-MOU-001" } ],
+      "total_amount": 798000,
       "created_at": "2026-11-10T21:19:00+07:00", "updated_at": "2026-11-10T21:25:00+07:00",
       "lich_su": [
         { "status": "odoo_created", "tracking_number": null, "luc": "..." },

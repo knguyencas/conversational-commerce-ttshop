@@ -7,22 +7,21 @@ Làm [cài đặt chung](00-cai-dat-chung.md) trước. Thư mục của M1 tron
 | Mã | Việc | Xong khi |
 |---|---|---|
 | M1-01 | **Mở shop TikTok cá nhân** ở seller-vn.tiktok.com: CCCD, tài khoản ngân hàng cùng họ tên, liên kết tài khoản TikTok, định danh VNeID nếu được hỏi. **Chụp ảnh từng bước** | Shop được duyệt, ảnh để trong Drive chung |
-| M1-02 | **Làm danh sách 10–20 sản phẩm** trong `cua-hang/san-pham.csv` theo quy tắc SKU. Dữ liệu mẫu cũng được, dùng hàng **không thương hiệu** (xem dưới) | File đủ cột, M3 duyệt pull request |
+| M1-02 | **Danh sách sản phẩm HDX Tech** trong `cua-hang/san-pham.csv` (đã có 25 sản phẩm theo web giả lập). Kiểm tra giá, thông số trong cột `thong_so`, thêm cách gọi tắt vào cột `aliases` | File đủ cột, M3 duyệt pull request |
 | M1-03 | Trong Seller Center, tạo **2–3 sản phẩm ở dạng nháp** (không gửi duyệt) để chụp minh chứng cho báo cáo | Có ảnh chụp màn hình |
-| M1-06 | **Viết 30–50 câu test chatbot** trong `cua-hang/bo-test-chatbot.csv`: hỏi giá, so sánh, tư vấn, khiếu nại, câu cố tình lừa bot | File xong, M3 chấm được |
+| M1-06 | **Bộ 100 câu test chatbot** `cua-hang/bo-test-chatbot.docx` (và `.csv`): câu 01–39 của M1, câu 40–100 M3 bổ sung. **Đọc lại câu 40–100**, sửa hoặc thay câu thấy không tự nhiên | M1 xác nhận, M3 chấm được |
 | M1-07 | **Viết câu test cho mô hình ý định** trong `cua-hang/test-nlu.csv`, gán nhãn theo [nlu/HUONG_DAN_GAN_NHAN.md](../nlu/HUONG_DAN_GAN_NHAN.md) | Khoảng 100 câu đã gán nhãn |
 | M1-08 | Khi M3 gửi link ủy quyền app (sau khi shop duyệt), **bấm đồng ý**. Chỉ chủ shop làm được | M3 xác nhận có token |
 | M1-10 | Chấm bot bằng bộ test sau mỗi lần M3 sửa, ghi lại kết quả | Có bảng kết quả chấm |
 
 Cách làm từng file: [cua-hang/README.md](../cua-hang/README.md).
 
-## Hàng không thương hiệu
+## Danh mục HDX Tech và TikTok thật
 
-TikTok chỉ cho đăng hàng mang tên hãng (Anker, Apple, Samsung...) khi có thư ủy quyền của hãng hoặc nhà phân phối. Vì vậy:
-- Ô Thương hiệu chọn **Không có thương hiệu**.
-- Tên và SKU mô tả món hàng, không ghi tên hãng: `PK-CAP-C2C-1M` *Cáp sạc USB-C 1m*, `PK-OP-IP15-TRONG` *Ốp lưng trong suốt iPhone 15*, `PK-GIA-DO-DT` *Giá đỡ điện thoại để bàn*.
-- Ảnh tự chụp, không lấy ảnh trên mạng, không để lộ logo hãng.
-- Không đăng hàng không có thật để bán; sản phẩm để ở dạng **nháp**.
+Shop demo là **HDX Tech**: laptop và phụ kiện máy tính có hãng (ASUS, Logitech, Sony...), bán trên **web giả lập**. TikTok chỉ cho đăng hàng mang tên hãng khi có thư ủy quyền của hãng hoặc nhà phân phối, nên:
+- Không đăng danh mục HDX Tech lên TikTok thật.
+- Phần minh chứng TikTok (M1-03): tạo 2–3 sản phẩm **nháp** không thương hiệu (ô Thương hiệu chọn **Không có thương hiệu**), ảnh tự chụp, không để lộ logo, chỉ để chụp màn hình cho báo cáo.
+- Báo cáo ghi rõ: hệ thống chạy bằng chế độ giả lập vì TikTok không cấp Open API cho shop cá nhân và không cho đăng hàng có hãng khi chưa có ủy quyền.
 
 ## Thử hệ thống với sản phẩm của mình
 
@@ -30,4 +29,4 @@ Khi `cua-hang/san-pham.csv` đã có SKU, mở form giả lập (mục 4 trong [
 
 ## Nộp cho báo cáo
 
-Viết `bao-cao/m1-cua-hang.md`: các bước mở shop (kèm ảnh), danh sách sản phẩm và quy tắc SKU, lý do chọn hàng không thương hiệu, bộ test và kết quả chấm bot.
+Viết `bao-cao/m1-cua-hang.md`: các bước mở shop (kèm ảnh), danh sách sản phẩm HDX Tech và quy tắc SKU, lý do dùng web giả lập thay cho đăng hàng thật, bộ test và kết quả chấm bot.

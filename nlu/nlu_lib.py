@@ -252,13 +252,18 @@ class Product:
     aliases: list[str]
 
 
+NO_BRAND = {"không thương hiệu", "khong thuong hieu", "no brand", "noname", "oem", "-"}
+
+
 def load_catalog(path: str | Path) -> list[Product]:
+    """Đọc catalog CSV; hàng không thương hiệu thì để brand rỗng để không bị gán nhãn HANG."""
     rows = []
     with open(path, encoding="utf-8-sig", newline="") as f:
         for r in csv.DictReader(f):
             split = lambda v: [x.strip() for x in (v or "").split("|") if x.strip()]
+            brand = (r.get("brand") or "").strip()
             rows.append(Product(
-                sku=r["sku"].strip(), name=r["name"].strip(), brand=r["brand"].strip(),
+                sku=r["sku"].strip(), name=r["name"].strip(), brand="" if brand.lower() in NO_BRAND else brand,
                 category=r["category"].strip(), price=int(r["price"]), colors=split(r.get("colors")),
                 capacity=(r.get("capacity") or "").strip(), aliases=split(r.get("aliases")),
             ))
@@ -280,7 +285,8 @@ class GazetteerNER:
         for p in products:
             for name in [p.name, *p.aliases]:
                 phrases[fold(normalize(name))] = "SAN_PHAM"
-            phrases.setdefault(fold(p.brand), "HANG")
+            if p.brand:
+                phrases.setdefault(fold(p.brand), "HANG")
             phrases.setdefault(fold(p.category), "LOAI")
             for c in p.colors:
                 phrases.setdefault(fold(c), "MAU")
