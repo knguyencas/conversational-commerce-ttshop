@@ -56,6 +56,7 @@ def main():
     ap.add_argument("--lan", default=time.strftime("%Y%m%d-%H%M"), help="tên lần chấm (vd sau-khi-sua-prompt)")
     ap.add_argument("--catalog", default=str(ROOT / "nlu" / "data" / "catalog.csv"),
                     help="danh mục giá đúng (thay bằng file xuất từ Odoo khi đã có dữ liệu thật)")
+    ap.add_argument("--nghi", type=float, default=0, help="số giây nghỉ giữa các câu, tránh vượt giới hạn gói LLM miễn phí")
     args = ap.parse_args()
     for st in (sys.stdout, sys.stderr):
         if hasattr(st, "reconfigure"):
@@ -92,6 +93,7 @@ def main():
         })
         mark = "SAI GIÁ " if wrong_money else ("lỗi " if res.get("loi") else "")
         print(f"[{i}/{len(rows)}] {mark}{q[:60]}")
+        time.sleep(args.nghi)
 
     out_dir = HERE / "ket-qua"
     out_dir.mkdir(exist_ok=True)
