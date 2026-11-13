@@ -1,0 +1,72 @@
+{
+  "model": "vinai/phobert-base-v2",
+  "smoke": false,
+  "time": "2026-11-13 09:25",
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "transformers": "5.22.1"
+  },
+  "data": {
+    "train": 2100,
+    "dev": 560,
+    "generated_meta": {
+      "train": {
+        "tu_van": 300,
+        "so_sanh": 300,
+        "bao_hanh": 300,
+        "khac": 300,
+        "tra_don": 300,
+        "khieu_nai": 300,
+        "hoi_gia": 300
+      },
+      "dev": {
+        "hoi_gia": 80,
+        "tu_van": 80,
+        "so_sanh": 80,
+        "tra_don": 80,
+        "bao_hanh": 80,
+        "khieu_nai": 80,
+        "khac": 80
+      }
+    }
+  },
+  "hyperparams": {
+    "epochs_intent": 5,
+    "lr_intent": 3e-05,
+    "epochs_ner": 8,
+    "lr_ner": 5e-05,
+    "batch": 32,
+    "max_len": 96,
+    "seed": 42
+  },
+  "train_time_s": {
+    "intent_s": 105.9,
+    "ner_s": 194.9
+  },
+  "results": {
+    "dev/Baseline": {
+      "intent_accuracy": 0.7285714285714285,
+      "intent_macro_f1": 0.7210194041043794,
+      "ner_precision": 0.5478841870824054,
+      "ner_recall": 0.42782608695652175,
+      "ner_f1": 0.48046875,
+      "so_cau_khong_dau": 156,
+      "intent_macro_f1_khong_dau": 0.6885400919035741,
+      "ner_f1_khong_dau": 0.4496124031007752
+    },
+    "dev/PhoBERT": {
+      "intent_accuracy": 0.9428571428571428,
+      "intent_macro_f1": 0.9419246814410217,
+      "ner_precision": 0.9001692047377327,
+      "ner_recall": 0.9252173913043479,
+      "ner_f1": 0.9125214408233276,
+      "so_cau_khong_dau": 156,
+      "intent_macro_f1_khong_dau": 0.8707425341353913,
+      "ner_f1_khong_dau": 0.8350877192982457
+    }
+  },
+  "latency": {
+    "cpu_ms_moi_cau": 233.1,
+    "gpu_ms_moi_cau": 20.2
+  }
+}

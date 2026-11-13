@@ -1,0 +1,145 @@
+{
+  "smoke": false,
+  "datasets": [
+    "Electronics"
+  ],
+  "window_days": 30,
+  "alpha": 20.0,
+  "rule_model": "P(B|A) + lọc lift",
+  "min_lift": 1.0,
+  "min_support": 100,
+  "events": 2404428,
+  "users": 1104443,
+  "test_cases": 87651,
+  "results": {
+    "Baseline (phổ biến)": {
+      "so_ca": 87651,
+      "hit_at_1": 0.3232,
+      "hit_at_3": 0.5557,
+      "recall_at_5": 0.599
+    },
+    "Mua cùng nhau P(B|A)": {
+      "so_ca": 87651,
+      "hit_at_1": 0.322,
+      "hit_at_3": 0.567,
+      "recall_at_5": 0.5957
+    },
+    "P(B|A) + lọc lift": {
+      "so_ca": 87651,
+      "hit_at_1": 0.287,
+      "hit_at_3": 0.5708,
+      "recall_at_5": 0.5956
+    },
+    "Lift / PMI": {
+      "so_ca": 87651,
+      "hit_at_1": 0.1916,
+      "hit_at_3": 0.4073,
+      "recall_at_5": 0.4675
+    },
+    "Phân rã ma trận ALS": {
+      "so_ca": 87651,
+      "hit_at_1": 0.096,
+      "hit_at_3": 0.3168,
+      "recall_at_5": 0.3459
+    }
+  },
+  "ket_luan": {
+    "dat": true,
+    "cach_tot_nhat": "Mua cùng nhau P(B|A)",
+    "hit3_tot_nhat": 0.567,
+    "hit3_baseline": 0.5557,
+    "rule_model_dat": false,
+    "cua_so_tot_nhat": {
+      "cua_so": 1,
+      "cach": "Mua cùng nhau P(B|A)",
+      "hon_baseline_hit3": 0.0167,
+      "dat": true
+    }
+  },
+  "tran_ly_thuyet": {
+    "tran": {
+      "so_ca": 87651,
+      "hit_at_1": 0.3232,
+      "hit_at_3": 0.6112,
+      "recall_at_5": 0.6429
+    },
+    "lap_khoang_cach_hit3": {
+      "Mua cùng nhau P(B|A)": 0.204,
+      "P(B|A) + lọc lift": 0.272
+    }
+  },
+  "markov": {
+    "Baseline (phổ biến)": {
+      "co_2_mon": {
+        "so_ca": 22356,
+        "hit_at_1": 0.2187,
+        "hit_at_3": 0.3685,
+        "recall_at_5": 0.5228
+      },
+      "tat_ca": {
+        "so_ca": 59594,
+        "hit_at_1": 0.2398,
+        "hit_at_3": 0.4108,
+        "recall_at_5": 0.5638
+      }
+    },
+    "Markov bậc 1 (1 món gần nhất)": {
+      "co_2_mon": {
+        "so_ca": 22356,
+        "hit_at_1": 0.2063,
+        "hit_at_3": 0.444,
+        "recall_at_5": 0.574
+      },
+      "tat_ca": {
+        "so_ca": 59594,
+        "hit_at_1": 0.2412,
+        "hit_at_3": 0.4755,
+        "recall_at_5": 0.6145
+      }
+    },
+    "Markov bậc 2 (2 món gần nhất)": {
+      "co_2_mon": {
+        "so_ca": 22356,
+        "hit_at_1": 0.2251,
+        "hit_at_3": 0.4344,
+        "recall_at_5": 0.5927
+      },
+      "tat_ca": {
+        "so_ca": 59594,
+        "hit_at_1": 0.2483,
+        "hit_at_3": 0.4719,
+        "recall_at_5": 0.6215
+      }
+    },
+    "Trần bậc 1": {
+      "co_2_mon": {
+        "so_ca": 22356,
+        "hit_at_1": 0.2345,
+        "hit_at_3": 0.5016,
+        "recall_at_5": 0.6681
+      },
+      "tat_ca": {
+        "so_ca": 59594,
+        "hit_at_1": 0.2553,
+        "hit_at_3": 0.516,
+        "recall_at_5": 0.6792
+      }
+    },
+    "Trần bậc 2": {
+      "co_2_mon": {
+        "so_ca": 22356,
+        "hit_at_1": 0.264,
+        "hit_at_3": 0.5428,
+        "recall_at_5": 0.7129
+      },
+      "tat_ca": {
+        "so_ca": 59594,
+        "hit_at_1": 0.2689,
+        "hit_at_3": 0.5324,
+        "recall_at_5": 0.6975
+      }
+    },
+    "bac2_thang": false
+  },
+  "time": "2026-11-13 14:20"
+}

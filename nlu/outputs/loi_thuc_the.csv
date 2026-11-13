@@ -1,0 +1,54 @@
+﻿split,dung,phobert
+dev,da [cap ugreen dp](SAN_PHAM) cau hinh the nao vay?,da [cap](LOAI) [ugreen](HANG) dp cau [hinh](LOAI) the nao vay?
+dev,alo shop [steelseries qck medium](SAN_PHAM) cau hinh the nao vay,alo shop [steelseries qck medium](SAN_PHAM) cau [hinh](LOAI) the nao vay
+dev,Da [cap ugreen dp](SAN_PHAM) het hang chua shop?,Da [cap ugreen dp het](SAN_PHAM) hang chua shop?
+dev,Shop cho minh hoi [cap dp](SAN_PHAM) het hag chua shop,Shop cho minh hoi [cap dp het](SAN_PHAM) hag chua shop
+dev,Alo shop [qck](SAN_PHAM) có màu [đen](MAU) không shop,Alo shop [qck](HANG) có màu [đen](MAU) không shop
+dev,Shop cho mình hỏi [cáp dp](SAN_PHAM) có màu [đen](MAU) không shop,Shop cho mình hỏi [cáp dp](LOAI) có màu [đen](MAU) không shop
+dev,dạ [nv2](SAN_PHAM) cấu hình ntn v,dạ nv2 cấu hình ntn v
+dev,da [rapoo e9050](SAN_PHAM) het hang chua shop,da [rapoo e9050 het](SAN_PHAM) hang chua shop
+dev,da hien [ban phim khong day rapoo e9050l](SAN_PHAM) gia tot nhat nhiu sop,da hien [ban phim](LOAI) khong day [rapoo e9050l](SAN_PHAM) gia tot nhat nhiu sop
+dev,[m650](SAN_PHAM) cau hinh the nao vay,[m650 cau](SAN_PHAM) [hinh](LOAI) the nao vay
+dev,alo shop [qck](SAN_PHAM) co mau [den](MAU) ko shop,alo shop [qck](HANG) co mau [den](MAU) ko shop
+dev,"da em vua mua [o cung ssd kingston nv2 1tb](SAN_PHAM), nen mua kem [ssd](LOAI) nao nha","da em vua mua [o cung ssd kingston nv2 1tb](SAN_PHAM), nen mua [kem ssd](LOAI) nao nha"
+dev,"Da em vua mua [cap displayport 1.4 ugreen](SAN_PHAM), nen mua kem [laptop](LOAI) nao","Da em vua mua [cap displayport 1.4 ugreen](SAN_PHAM), nen mua [kem laptop](LOAI) nao"
+dev,"da em vua mua [rapoo e9050l](SAN_PHAM), nen mua kem [cu sac laptop](LOAI) nao","da em vua mua [rapoo e9050l](SAN_PHAM), nen mua [kem cu sac laptop](LOAI) nao"
+dev,cho e hoi [tai nghe](LOAI) cho [ipad](SAN_PHAM) loai nao vua a?,cho e hoi [tai nghe](LOAI) cho ipad loai nao vua a?
+dev,[Laptop](LOAI) dung chung duoc voi [may tinh ban](SAN_PHAM) khong shop,[Laptop](LOAI) dung chung duoc voi may tinh ban khong shop
+dev,"Chao shop, em vua mua [hp 15s](SAN_PHAM), nen mua kem [lot chuot](LOAI) nao voi","Chao shop, em vua mua [hp 15s](SAN_PHAM), nen mua [kem lot chuot](LOAI) nao voi"
+dev,"da em vua mua [nv2](SAN_PHAM), nen mua kem [lot chuot](LOAI) nao shop","da em vua mua [nv2](SAN_PHAM), nen mua [kem lot chuot](LOAI) nao shop"
+dev,có [bàn phím](LOAI) nào tầm [800 nghìn](NGAN_SACH) đi kèm [qck medium](SAN_PHAM) không?,có [bàn phím](LOAI) nào tầm [800 nghìn](NGAN_SACH) đi kèm [qck](SAN_PHAM) [medium](HANG) không?
+dev,cho em hoi [cap hdmi](LOAI) dung chung duoc voi [hp victus 15](SAN_PHAM) khong shop?,cho em hoi [cap hdmi](SAN_PHAM) dung chung duoc voi [hp victus 15](SAN_PHAM) khong shop?
+dev,"ad oi dang dung [cap dp 1.4](SAN_PHAM), muon mua them [ke tay ban phim](LOAI) thi lay cai nao hop a?","ad oi dang dung [cap dp 1.4](SAN_PHAM), muon mua them [ke](SAN_PHAM) [tay ban phim](LOAI) thi lay cai nao hop a?"
+dev,da [cap man hinh](LOAI) dung chung duoc voi [may tinh ban](SAN_PHAM) khong shop,da [cap man hinh](LOAI) dung chung duoc voi may [tinh ban](LOAI) khong shop
+dev,alo shop [sạc laptop](LOAI) dùng chung đc với [máy tính bàn](SAN_PHAM) không shop,alo shop [sạc laptop](LOAI) dùng chung đc với [máy tính bàn](LOAI) không shop
+dev,[tai nghe](LOAI) cho [ipad](SAN_PHAM) loại nào vừa ạ,[tai nghe](LOAI) cho [ipad](LOAI) loại nào vừa ạ
+dev,dạ [chuột](LOAI) cho [máy tính bàn](SAN_PHAM) loại nào vừa ạ,dạ [chuột](LOAI) cho [máy tính bàn](LOAI) loại nào vừa ạ
+dev,ad oi [ke tay](LOAI) dung chung dc vs [thinkpad e14](SAN_PHAM) k s,ad oi [ke tay](LOAI) dung chung dc vs [thinkpad e14 k](SAN_PHAM) s
+dev,"Cho em hỏi đang dùng [cáp dp](SAN_PHAM), muốn mua thêm [bàn phím](LOAI) thì lấy cái nào hợp??","Cho em hỏi đang dùng [cáp](LOAI) [dp](HANG), muốn mua thêm [bàn phím](LOAI) thì lấy cái nào hợp??"
+dev,"shop ơi đang dùng [qck](SAN_PHAM), muốn mua thêm [cáp màn hình](LOAI) thì lấy cái nào hợp ạ?","shop ơi đang dùng [qck](HANG), muốn mua thêm [cáp màn hình](LOAI) thì lấy cái nào hợp ạ?"
+dev,"chào shop, đang dùng [qck](SAN_PHAM), muốn mua thêm [ssd](LOAI) thì lấy cái nào hợp","chào shop, đang dùng [qck](HANG), muốn mua thêm [ssd](LOAI) thì lấy cái nào hợp"
+dev,ad ơi có [chuột không dây](LOAI) nào tầm [300k](NGAN_SACH) đi kèm [qck](SAN_PHAM) không,ad ơi có [chuột không dây](LOAI) nào tầm [300k](NGAN_SACH) đi kèm [qck](HANG) không
+dev,[qck](SAN_PHAM) khác j [cáp dp](SAN_PHAM) dị a?,[qck](SAN_PHAM) khác j [cáp dp](LOAI) dị a?
+dev,shop cho mình hỏi nên chọn [cáp dp](SAN_PHAM) màu [đen](MAU) hay [m650](SAN_PHAM) ạ?,shop cho mình hỏi nên chọn [cáp dp](LOAI) màu [đen](MAU) hay [m650](SAN_PHAM) ạ?
+dev,Nên chọn [rapoo e9050l](SAN_PHAM) màu [đen](MAU) hay [cap ugreen dp](SAN_PHAM),Nên chọn [rapoo e9050l](SAN_PHAM) màu [đen](MAU) hay [cap ugreen](SAN_PHAM) dp
+dev,[qck](SAN_PHAM) zới [hp 15s](SAN_PHAM) cái nào tốt hơn,[qck](HANG) zới [hp 15s](SAN_PHAM) cái nào tốt hơn
+dev,dạ [rapoo e9050l](SAN_PHAM) khác gì [cáp dp](SAN_PHAM) vậy ạ,dạ [rapoo e9050l](SAN_PHAM) khác gì [cáp dp](LOAI) vậy ạ
+dev,ad ơi [stinger 2](SAN_PHAM) và [cáp dp](SAN_PHAM) chênh nhau bao nhiêu tiền nha,ad ơi [stinger 2](SAN_PHAM) và [cáp dp](LOAI) chênh nhau bao nhiêu tiền nha
+dev,[ổ cứng ssd kingston nv2 1tb](SAN_PHAM) khác gì [cáp dp](SAN_PHAM) vậy ạ,[ổ cứng ssd kingston nv2 1tb](SAN_PHAM) khác gì [cáp dp](LOAI) vậy ạ
+dev,dạ [chuot m650](SAN_PHAM) khác gì [cáp displayport 1.4 ugreen](SAN_PHAM) vậy ạ,dạ [chuot m650](SAN_PHAM) khác gì [cáp displayport 1.4](SAN_PHAM) [ugreen](HANG) vậy ạ
+dev,dạ nên chọn [cáp dp](SAN_PHAM) màu [đen](MAU) hay [chuột logitech signature m650](SAN_PHAM) shop,dạ nên chọn [cáp dp](LOAI) màu [đen](MAU) hay [chuột logitech signature m650](SAN_PHAM) shop
+dev,nên chọn [cáp dp](SAN_PHAM) màu [đen](MAU) hay [stinger 2](SAN_PHAM),nên chọn [cáp dp](LOAI) màu [đen](MAU) hay [stinger 2](SAN_PHAM)
+dev,"chao shop, nen chon [Ban phim khong day Rapoo E9050L](SAN_PHAM) mau [den](MAU) hay [stinger 2](SAN_PHAM)?","chao shop, nen chon [Ban phim](SAN_PHAM) khong day [Rapoo E9050L](SAN_PHAM) mau [den](MAU) hay [stinger 2](SAN_PHAM)?"
+dev,[cáp dp](SAN_PHAM) được bảo hành mấy tháng ạ,[cáp dp](LOAI) được bảo hành mấy tháng ạ
+dev,"da [ban phim co](LOAI) nong ran khi dung, so chay qua nha","da [ban phim](LOAI) co nong ran khi dung, so chay qua nha"
+dev,"Da [chuot khong day](LOAI) nong ran khi dung, so chay qua s","Da [chuot](LOAI) khong day nong ran khi dung, so chay qua s"
+dev,có xuất hóa đơn đỏ không ạ?,có xuất hóa đơn [đỏ](MAU) không ạ?
+dev,có xuất hóa đơn đỏ không ạ,có xuất hóa đơn [đỏ](MAU) không ạ
+dev,có xuất hóa đơn đỏ k a?,có xuất hóa đơn [đỏ](MAU) k a?
+dev,có xuất hóa đơn đỏ kh ah?,có xuất hóa đơn [đỏ](MAU) kh ah?
+dev,có xuất hóa đơn đỏ không a?,có xuất hóa đơn [đỏ](MAU) không a?
+dev,có xuất hóa đơn đỏ không a,có xuất hóa đơn [đỏ](MAU) không a
+dev,Có xuất hóa đơn đỏ hông ạ,Có xuất hóa đơn [đỏ](MAU) hông ạ
+dev,có xuất hóa đơn đỏ k ạ?,có xuất hóa đơn [đỏ](MAU) k ạ?
+dev,có xuất hóa đơn đỏ k ạ,có xuất hóa đơn [đỏ](MAU) k ạ

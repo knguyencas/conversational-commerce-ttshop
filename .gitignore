@@ -6,8 +6,18 @@ backups/*
 !backups/.gitkeep
 
 # Kết quả train NLU (mô hình nặng cỡ GB) và mô hình mua kèm
-nlu/outputs/
-upsell/outputs/
+nlu/outputs/*
+!nlu/outputs/metrics.json
+!nlu/outputs/so_sanh.csv
+!nlu/outputs/loi_y_dinh.csv
+!nlu/outputs/loi_thuc_the.csv
+!nlu/outputs/ma_tran_nham_lan_dev.png
+upsell/outputs/*
+!upsell/outputs/metrics.json
+!upsell/outputs/upsell_rules.csv
+!upsell/outputs/upsell_rules.sql
+!upsell/outputs/so_sanh_mo_hinh.png
+!upsell/outputs/xac_suat_mua_kem.png
 
 # Linh tinh
 *.log
