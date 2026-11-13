@@ -31,7 +31,7 @@ Thư mục này do **M2** giữ. Odoo chạy trên máy trưởng nhóm, nên �
 |---|---|
 | `cau-hinh.md` | Odoo đã cài app nào, bật cài đặt nào (VND, múi giờ, Lots & Serial Numbers), user tích hợp có quyền gì. Không ghi mật khẩu hay API key |
 | `automation-rule.md` | Cách cài Automation Rule báo phiếu xuất kho Done cho n8n, kèm ảnh chụp màn hình nếu cần |
-| `huong-dan-dong-goi.md` | Hướng dẫn 1 trang cho người đóng gói: mở phiếu xuất kho, quét serial, bấm Validate |
+| `huong-dan-dong-goi.md` | Hướng dẫn 1 trang cho người đóng gói: tìm phiếu xuất kho, đối chiếu, đóng gói, bấm Xác nhận, xử lý khi thiếu hàng |
 | `ket-qua-test.md` | Kết quả test đơn trùng, hủy đơn, đồng bộ tồn kho |
 
 Những thứ của M2 nằm ở thư mục khác, vì script và Router đọc ở đó:

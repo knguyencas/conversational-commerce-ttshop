@@ -87,7 +87,8 @@ Bật chế độ giả lập, rồi dùng giao diện demo hoặc form giả l�
 - [x] Validate phiếu xuất kho trong Odoo → đơn chuyển sang đã đặt vận chuyển trên giao diện.
 - [x] Sau bước "đang giao", Sales Order có mã vận đơn.
 - [x] Diễn tập 14/14.
-- [ ] Hướng dẫn đóng gói 1 trang, ảnh chụp cấu hình cho báo cáo.
+- [x] Hướng dẫn đóng gói 1 trang: [odoo/huong-dan-dong-goi.md](../../odoo/huong-dan-dong-goi.md).
+- [ ] Ảnh chụp cấu hình cho báo cáo.
 
 ## File liên quan
 
