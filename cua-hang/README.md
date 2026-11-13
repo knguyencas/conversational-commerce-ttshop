@@ -14,7 +14,7 @@ Thư mục này do **M1** giữ. Mọi file ở đây là dữ liệu cả nhóm
 
 ## `san-pham.csv`
 
-Dòng đầu là tên cột, giữ nguyên. Sửa xong thì M3 chạy `python scripts/nap-san-pham.py` để chatbot và dữ liệu train NLU dùng bản mới, rồi `bash scripts/import-n8n.sh`.
+Dòng đầu là tên cột, giữ nguyên. Ai cũng sửa được: tạo nhánh, sửa file, mở pull request. Sau khi merge, người giữ máy chủ `git pull` rồi chạy lần lượt `python scripts/nap-san-pham.py` (chatbot, dữ liệu train NLU), `bash scripts/import-n8n.sh` (nạp workflow), `python scripts/dung-odoo.py` (sản phẩm và giá trong Odoo; món mới được nhập tồn đầu kỳ). Web demo tự thấy danh sách mới qua API.
 
 | Cột | Ví dụ | Ghi chú |
 |---|---|---|
