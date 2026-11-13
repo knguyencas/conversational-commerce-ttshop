@@ -27,8 +27,8 @@
 | Chatbot nhớ ngữ cảnh (sản phẩm vừa nói, đơn gần nhất), tồn kho giả trừ theo đơn đã đặt | Chạy |
 | Diễn tập trọn luồng `scripts/dien-tap.sh` | 14/14 đạt |
 | Dữ liệu sản phẩm của chatbot | Danh mục HDX Tech (25 sản phẩm, 10 loại) từ `cua-hang/san-pham.csv`, nạp bằng `python scripts/nap-san-pham.py` |
-| PhoBERT | Train lần 1 xong (dev: macro-F1 ý định 0,894, F1 thực thể 0,728, đều hơn baseline). Đã sửa dữ liệu (mẫu "loại hàng + hãng", khiếu nại có mã đơn), chờ train lần 2. Từ 13/11 dữ liệu sinh lại cho danh mục HDX Tech, cần train lại; chưa bật service NLU |
-| Mô hình mua kèm | Đã chạy trên Colab với danh mục cũ (P(B\|A) Hit@3 0,801, lọc lift 0,785, baseline 0,767). Từ 13/11 đổi sang 10 loại HDX Tech: cần chạy lại; database đang dùng 22 luật mặc định HDX |
+| PhoBERT | Đã train danh mục HDX Tech (13/11, dev): macro-F1 ý định 0,964 (baseline 0,830), F1 thực thể 0,884 (baseline 0,577). Chờ tập test của M1 để có số chính thức; chưa bật service NLU |
+| Mô hình mua kèm | Đã chạy danh mục HDX Tech (13/11): không thắng baseline (Hit@3 0,680 so với 0,686); đang thử cửa sổ 1 và 7 ngày. Database dùng 22 luật mặc định viết tay |
 | Chấm chatbot | Chờ bộ câu test |
 | Tailscale | Chưa cài |
 

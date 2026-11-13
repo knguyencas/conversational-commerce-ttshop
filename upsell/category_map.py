@@ -1,7 +1,7 @@
 """Gán sản phẩm Amazon vào loại hàng của shop HDX Tech (tiếng Việt) dựa trên cây danh mục Amazon."""
 from __future__ import annotations
 
-MAP_VERSION = "hdx-1"
+MAP_VERSION = "hdx-2"
 
 SHOP_CATEGORIES = [
     "laptop", "bàn phím", "chuột", "tai nghe", "màn hình",
@@ -32,13 +32,15 @@ LEAF_MAP = {
     "mouse pads": "lót chuột",
 }
 SKIP_PATH_WORDS = ("networking products", "car ", "vehicle", "aviation", "two-way", "telephone", "security")
+MOUSE_PAD_TITLE = ("mouse pad", "mousepad", "mouse mat", "desk mat", "desk pad")
 
 
 def map_category(categories: list[str] | None, title: str | None = None) -> str | None:
     """Trả về loại hàng của shop, hoặc None nếu không thuộc loại nào shop bán."""
     nodes = [str(c).strip().lower() for c in (categories or []) if str(c).strip()]
+    t = str(title or "").lower()
     if not nodes:
-        return None
+        return "lót chuột" if any(k in t for k in MOUSE_PAD_TITLE) else None
     path = " > ".join(nodes)
     if any(w in path for w in SKIP_PATH_WORDS):
         return None
@@ -48,6 +50,8 @@ def map_category(categories: list[str] | None, title: str | None = None) -> str 
     if leaf in LEAF_MAP:
         return LEAF_MAP[leaf]
     if "mouse pad" in leaf:
+        return "lót chuột"
+    if "keyboards, mice & accessories" in path and any(k in t for k in MOUSE_PAD_TITLE):
         return "lót chuột"
     return None
 
@@ -77,6 +81,14 @@ if __name__ == "__main__":
         ("Electronics", "Car & Vehicle Electronics", "Car Electronics", "Car Video", "Car Headphones"): None,
     }
     bad = 0
+    titled = [((), "SteelSeries QcK Gaming Mouse Pad - Medium", "lót chuột"),
+              ((), "Wireless Gaming Mouse 16000 DPI", None),
+              (("Electronics", "Computers & Accessories", "Keyboards, Mice & Accessories", "Keyboard & Mice Accessories", "Keyboard Skins"),
+               "Large Desk Mat Mouse Pad 31.5x11.8", "lót chuột")]
+    for path, title, want in titled:
+        got = map_category(list(path), title)
+        bad += got != want
+        print("ok " if got == want else "SAI", title[:40], "->", got)
     for path, want in cases.items():
         got = map_category(list(path))
         ok = got == want

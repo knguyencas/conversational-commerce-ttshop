@@ -100,6 +100,22 @@ Các file nằm trong `MyDrive/cntttmdt/nlu/outputs/`:
 
 **Lấy số trên tập test**, không lấy số trên dev. Dev cũng là câu sinh tự động, và dev còn được dùng để chọn epoch tốt nhất, nên số trên dev cao hơn thực tế.
 
+**Kết quả train danh mục HDX Tech (13/11/2026, trên dev 560 câu; chưa có tập test của M1):**
+
+| | Baseline | PhoBERT |
+|---|---|---|
+| Ý định: accuracy | 0,832 | **0,964** |
+| Ý định: macro-F1 | 0,830 | **0,964** |
+| Thực thể: F1 | 0,577 | **0,884** |
+| Ý định, riêng 156 câu không dấu | 0,817 | 0,918 |
+| Thực thể, riêng câu không dấu | 0,569 | 0,753 |
+
+- F1 từng ý định của PhoBERT: so_sanh 0,994, tra_don 0,994, khac 0,981, bao_hanh 0,958, khieu_nai 0,956, tu_van 0,952, hoi_gia 0,915 (yếu nhất: một số câu hỏi giá bị đoán thành tư vấn).
+- F1 từng thực thể: MA_DON 1,0, MAU 0,964, NGAN_SACH 0,881, SAN_PHAM 0,877 (dev dùng 5 sản phẩm không có trong train, nên đây là điểm khi gặp tên sản phẩm mới), LOAI 0,865, HANG 0,848. Dev không có câu nào chứa DUNG_LUONG.
+- Train ý định 106 giây, thực thể 439 giây trên GPU T4.
+- So với lần train đầu (danh mục cũ, macro-F1 0,894, F1 thực thể 0,728): mẫu câu bổ sung sau phân tích lỗi đã lấp được lỗ hổng "loại hàng + hãng" và "khiếu nại có mã đơn". Hai lần dùng dev khác nhau nên chỉ so xu hướng, không so tuyệt đối.
+- **Đạt** theo nghĩa vượt baseline rõ ở mọi chỉ số. Điểm chính thức cho báo cáo phải lấy trên tập test do M1 viết, vì dev cũng là câu tự sinh nên điểm dev lạc quan.
+
 ### A5. Tối ưu (nếu kết quả chưa tốt)
 
 Làm lần lượt, mỗi lần train lại rồi so số trên test:
@@ -183,6 +199,22 @@ Các file nằm trong `MyDrive/cntttmdt/upsell/outputs/`:
 | `upsell_rules.sql` | File nạp luật vào hệ thống |
 
 Notebook còn in bảng Hit@1 **theo từng loại hàng**, dùng để viết phần phân tích: loại nào mô hình hơn hẳn baseline, loại nào không.
+
+
+**Kết quả danh mục HDX Tech (13/11/2026, cửa sổ 30 ngày):** 1.897.051 lượt mua của 966.470 người thuộc 10 loại hàng; kiểm tra trên 50.542 ca.
+
+| Cách gợi ý | Hit@1 | Hit@3 | Recall@5 |
+|---|---|---|---|
+| **Baseline (phổ biến)** | **0,383** | **0,686** | **0,857** |
+| P(B\|A) | 0,383 | 0,680 | 0,847 |
+| P(B\|A) + lọc lift | 0,356 | 0,679 | 0,841 |
+| Lift / PMI | 0,204 | 0,553 | 0,778 |
+| Phân rã ma trận ALS | 0,152 | 0,418 | 0,522 |
+
+- **Không đạt:** không cách nào thắng baseline. Với 10 loại hàng máy tính, việc người dùng Amazon đánh giá hai loại trong 30 ngày gần như chỉ phản ánh độ phổ biến: "tai nghe" đứng đầu cho 8/10 loại, và lift của mọi cặp đều dưới 1 trừ **micro ↔ webcam (1,34)**. Khác với danh mục điện thoại cũ, nơi bàn phím ↔ chuột có lift 1,24.
+- Lần này **lót chuột không có sản phẩm nào**: trong dữ liệu Amazon 2023 phần lớn lót chuột không có cây danh mục. Đã sửa `category_map.py` (phiên bản `hdx-2`) để nhận lót chuột theo tên sản phẩm.
+- Notebook đã thêm ô **6b** thử cửa sổ 1 và 7 ngày (đánh giá cùng ngày gần với "cùng một đơn hàng") và ô **6c** tự kết luận đạt/không đạt. Chạy lại để biết cửa sổ ngắn có cho tín hiệu mua kèm thật không.
+- **Nếu vẫn không đạt:** không nạp `upsell_rules.sql`; hệ thống giữ 22 luật mặc định viết tay theo hiểu biết về sản phẩm (laptop → chuột, micro → webcam...), bandit chọn món và học từ khách thật, A/B đo hiệu quả. Đây là kết luận có giá trị cho báo cáo: dữ liệu công khai mức loại hàng không đủ cho danh mục này, nên học trực tuyến từ khách thật quan trọng hơn.
 
 **Kết quả lần chạy đủ (12/11/2026, danh mục cũ: 11 loại phụ kiện điện thoại).** Shop đã đổi sang danh mục HDX Tech ngày 13/11/2026, nên cần chạy lại notebook để có số cho 10 loại mới. Kết quả dưới đây vẫn dùng được trong báo cáo làm phần phân tích phương pháp (vì sao cần lọc lift, vì sao ALS kém). 6.726.367 lượt mua của 1.672.071 người; học trên dữ liệu trước 11/06/2021, kiểm tra trên 350.395 ca sau đó.
 
