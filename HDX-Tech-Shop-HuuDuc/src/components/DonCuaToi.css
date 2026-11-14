@@ -1,0 +1,303 @@
+
+.my-orders-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 20px 100px;
+  color: #222;
+}
+
+.orders-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.orders-eyebrow {
+  color: #ef263d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.orders-heading h1 {
+  margin: 7px 0;
+  font-size: 25px;
+}
+
+.orders-heading p {
+  margin: 0;
+  color: #888;
+  font-size: 13px;
+}
+
+.orders-refresh {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+}
+
+.orders-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.orders-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+}
+
+.orders-summary svg {
+  color: #ef263d;
+}
+
+.orders-summary strong {
+  font-size: 23px;
+}
+
+.orders-summary span {
+  color: #888;
+  font-size: 12px;
+}
+
+.orders-message {
+  min-height: 260px;
+  padding: 35px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  color: #888;
+}
+
+.orders-message h3 {
+  margin: 15px 0 7px;
+  color: #222;
+}
+
+.orders-message p {
+  font-size: 13px;
+}
+
+.orders-message button {
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 20px;
+  background: #ef263d;
+  color: white;
+  cursor: pointer;
+}
+
+.orders-spin {
+  animation: orders-rotate 1s linear infinite;
+}
+
+@keyframes orders-rotate {
+  to { transform: rotate(360deg); }
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-card {
+  padding: 20px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 13px;
+}
+
+.order-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.order-card-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.order-card-heading span,
+.order-tracking span {
+  color: #888;
+  font-size: 11px;
+}
+
+.order-card-heading strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.order-status {
+  height: fit-content;
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: #fff4e5;
+  color: #b56a00;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.order-status.cancelled {
+  background: #f3f3f3;
+  color: #777;
+}
+
+.order-items {
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 13px;
+}
+
+.order-item span:last-child {
+  color: #888;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 13px 0;
+  border-top: 1px solid #eee;
+  font-size: 13px;
+}
+
+.order-total strong {
+  color: #ef263d;
+  font-size: 17px;
+}
+
+.order-progress {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 20px 0;
+}
+
+.progress-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  color: #aaa;
+}
+
+.progress-dot {
+  width: 27px;
+  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eee;
+  font-size: 11px;
+}
+
+.progress-step.completed {
+  color: #e9273e;
+}
+
+.progress-step.completed .progress-dot {
+  background: #fff0f2;
+  color: #e9273e;
+}
+
+.progress-step small {
+  font-size: 10px;
+}
+
+.order-tracking {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  background: #f8f8f8;
+  border-radius: 9px;
+}
+
+.order-tracking svg {
+  color: #ef263d;
+}
+
+.order-tracking div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-tracking strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.order-chat-button {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #ef263d;
+  border-radius: 8px;
+  background: white;
+  color: #ef263d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 500px) {
+  .my-orders-page {
+    padding: 20px 14px 100px;
+  }
+
+  .orders-summary {
+    gap: 7px;
+  }
+
+  .orders-summary > div {
+    padding: 12px 9px;
+  }
+
+  .orders-summary span {
+    font-size: 10px;
+  }
+
+  .order-card {
+    padding: 14px;
+  }
+
+  .progress-step small {
+    font-size: 8px;
+  }
+}

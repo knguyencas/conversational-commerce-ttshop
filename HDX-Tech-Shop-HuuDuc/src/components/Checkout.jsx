@@ -11,6 +11,11 @@ import {
   Package
 } from "lucide-react";
 
+import { datDon } from "../api";
+
+const BUYER_ID =
+  localStorage.getItem("buyer_user_id") || "gia-lap-khach";
+
 function Checkout({ cart, onClose, onOrderComplete }) {
   const [customer, setCustomer] = useState({
     fullName: "",
@@ -21,10 +26,12 @@ function Checkout({ cart, onClose, onOrderComplete }) {
   });
 
   const [errors, setErrors] = useState({});
-  const [orderCode, setOrderCode] = useState("");
+  const [orderData, setOrderData] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const total = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + Number(item.price) * item.quantity,
     0
   );
 
@@ -42,8 +49,10 @@ function Checkout({ cart, onClose, onOrderComplete }) {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (submitting) return;
 
     const newErrors = {};
 
@@ -63,27 +72,54 @@ function Checkout({ cart, onClose, onOrderComplete }) {
       newErrors.cart = "Giỏ hàng đang trống.";
     }
 
+    if (cart.some((item) => !item.sku)) {
+      newErrors.cart = "Có sản phẩm chưa có mã SKU hợp lệ.";
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    const code =
-      "HDX" + Date.now().toString().slice(-8);
+    try {
+      setSubmitting(true);
+      setApiError("");
 
-    setOrderCode(code);
+      const items = cart.map((item) => ({
+        sku: item.sku,
+        quantity: item.quantity
+      }));
 
-    // Hoàn tất đơn hàng mô phỏng trên Frontend
-    onOrderComplete({
-      orderCode: code,
-      customer,
-      items: cart,
-      total,
-      createdAt: new Date().toISOString()
-    });
+      const result = await datDon(BUYER_ID, items);
+
+      if (!result.order_id) {
+        throw new Error("API chưa trả về mã đơn hàng.");
+      }
+
+      const completedOrder = {
+        orderId: result.order_id,
+        total: result.total,
+        customer,
+        items: cart,
+        createdAt: new Date().toISOString()
+      };
+
+      setOrderData({
+        orderId: result.order_id,
+        total: result.total ?? total
+      });
+
+      onOrderComplete?.(completedOrder);
+
+    } catch (error) {
+      console.error("Lỗi đặt hàng:", error);
+      setApiError(error.message || "Không thể đặt hàng.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (orderCode) {
+  if (orderData) {
     return (
       <div className="checkout-overlay">
         <div className="checkout-modal order-success">
@@ -93,26 +129,22 @@ function Checkout({ cart, onClose, onOrderComplete }) {
 
           <h2>Đặt hàng thành công!</h2>
 
-          <p>
-            Cảm ơn bạn đã mua sắm tại HDX Tech.
-          </p>
+          <p>Cảm ơn bạn đã mua sắm tại HDX Tech.</p>
 
           <div className="order-code">
             <span>MÃ ĐƠN HÀNG</span>
-            <strong>{orderCode}</strong>
+            <strong>{orderData.orderId}</strong>
           </div>
 
           <div className="success-info">
             <Package size={20} />
             <span>
-              Đơn hàng đã được ghi nhận trong phiên mô phỏng.
+              Tổng tiền:{" "}
+              {Number(orderData.total).toLocaleString("vi-VN")}đ
             </span>
           </div>
 
-          <button
-            className="checkout-submit"
-            onClick={onClose}
-          >
+          <button className="checkout-submit" onClick={onClose}>
             Tiếp tục mua sắm
           </button>
         </div>
@@ -128,13 +160,16 @@ function Checkout({ cart, onClose, onOrderComplete }) {
       >
         <div className="checkout-header">
           <div>
-            <span className="checkout-eyebrow">
-              HDX TECH STORE
-            </span>
+            <span className="checkout-eyebrow">HDX TECH STORE</span>
             <h2>Thông tin đặt hàng</h2>
           </div>
 
-          <button onClick={onClose} aria-label="Đóng">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng"
+            disabled={submitting}
+          >
             <X />
           </button>
         </div>
@@ -157,6 +192,7 @@ function Checkout({ cart, onClose, onOrderComplete }) {
                   placeholder="Nhập họ và tên người nhận"
                 />
               </div>
+
               {errors.fullName && (
                 <p className="field-error">{errors.fullName}</p>
               )}
@@ -172,6 +208,7 @@ function Checkout({ cart, onClose, onOrderComplete }) {
                   inputMode="tel"
                 />
               </div>
+
               {errors.phone && (
                 <p className="field-error">{errors.phone}</p>
               )}
@@ -184,6 +221,7 @@ function Checkout({ cart, onClose, onOrderComplete }) {
                 placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố"
                 rows={3}
               />
+
               {errors.address && (
                 <p className="field-error">{errors.address}</p>
               )}
@@ -210,25 +248,12 @@ function Checkout({ cart, onClose, onOrderComplete }) {
                   checked={customer.payment === "COD"}
                   onChange={updateField}
                 />
+
                 <Banknote size={20} />
+
                 <span>
                   <strong>Thanh toán khi nhận hàng (COD)</strong>
                   <small>Thanh toán trực tiếp khi nhận hàng</small>
-                </span>
-              </label>
-
-              <label className="payment-option">
-                <input
-                  type="radio"
-                  name="payment"
-                  value="BANK"
-                  checked={customer.payment === "BANK"}
-                  onChange={updateField}
-                />
-                <CreditCard size={20} />
-                <span>
-                  <strong>Chuyển khoản ngân hàng</strong>
-                  <small>Phương thức mô phỏng, chưa thực hiện giao dịch</small>
                 </span>
               </label>
             </section>
@@ -243,7 +268,14 @@ function Checkout({ cart, onClose, onOrderComplete }) {
 
                     <div>
                       <strong>{item.name}</strong>
-                      <span>Số lượng: {item.quantity}</span>
+
+                      <span>
+                        Số lượng: {item.quantity}
+                        {item.selectedColor
+                          ? ` · Màu: ${item.selectedColor}`
+                          : ""}
+                      </span>
+
                       <b>
                         {(item.price * item.quantity).toLocaleString("vi-VN")}đ
                       </b>
@@ -268,23 +300,38 @@ function Checkout({ cart, onClose, onOrderComplete }) {
               </div>
 
               <p className="checkout-disclaimer">
-                Đây là quy trình đặt hàng mô phỏng. Chưa phát sinh
-                thanh toán hoặc vận chuyển thực tế.
+                Đơn hàng được gửi đến hệ thống thông qua API middleware.
+                Thanh toán và vận chuyển thực tế chưa được tích hợp.
               </p>
             </aside>
           </div>
+
+          {errors.cart && (
+            <p className="field-error">{errors.cart}</p>
+          )}
+
+          {apiError && (
+            <p className="field-error">{apiError}</p>
+          )}
 
           <div className="checkout-footer">
             <button
               type="button"
               className="checkout-back"
               onClick={onClose}
+              disabled={submitting}
             >
               Quay lại giỏ hàng
             </button>
 
-            <button type="submit" className="checkout-submit">
-              Xác nhận đặt hàng
+            <button
+              type="submit"
+              className="checkout-submit"
+              disabled={submitting}
+            >
+              {submitting
+                ? "Đang gửi đơn hàng..."
+                : "Xác nhận đặt hàng"}
             </button>
           </div>
         </form>

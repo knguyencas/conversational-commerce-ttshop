@@ -2016,3 +2016,47 @@ body {
     padding-right: 16px !important;
   }
 }
+
+.customer-navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.customer-navigation button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 10px 16px;
+  border-radius: 8px;
+  color: #555;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.customer-navigation button:hover {
+  background: #f8f8f8;
+}
+
+.customer-navigation button.active {
+  background: #fff0f2;
+  color: #ef263d;
+}
+
+@media (max-width: 500px) {
+  .customer-navigation {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .customer-navigation button {
+    white-space: nowrap;
+  }
+}

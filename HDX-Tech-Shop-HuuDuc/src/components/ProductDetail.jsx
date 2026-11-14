@@ -1,37 +1,146 @@
 
-import { X, Star, ShoppingCart, PackageCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  X,
+  ShoppingCart,
+  PackageCheck,
+  MessageCircle,
+  Zap,
+  ShieldCheck,
+  Check
+} from "lucide-react";
+import "./ProductDetail.css";
 
-function ProductDetail({ product, onClose, onAddToCart }) {
+function ProductDetail({
+  product,
+  onClose,
+  onAddToCart,
+  onChat,
+  onBuyNow
+}) {
+  const [selectedColor, setSelectedColor] = useState("");
+
+  useEffect(() => {
+    setSelectedColor(product?.colors?.[0]?.color || "");
+  }, [product]);
+
   if (!product) return null;
 
-  const discount = Math.round(
-    (1 - product.price / product.oldPrice) * 100
+  const colors = Array.isArray(product.colors)
+    ? product.colors
+    : [];
+
+  const selectedColorData = colors.find(
+    (item) => item.color === selectedColor
   );
 
+  const availableStock = colors.length > 0
+    ? Number(selectedColorData?.stock || 0)
+    : Number(product.stock || 0);
+
+  const formatPrice = (price) =>
+    Number(price || 0).toLocaleString("vi-VN") + "đ";
+
   const handleAdd = () => {
-    onAddToCart(product);
+    if (availableStock <= 0) {
+      alert("Màu sắc này hiện đã hết hàng.");
+      return;
+    }
+
+    onAddToCart?.({
+      ...product,
+      selectedColor: selectedColor || null,
+      selectedColorStock: availableStock
+    });
+
     onClose();
+  };
+
+  const handleBuyNow = () => {
+    if (availableStock <= 0) {
+      alert("Màu sắc này hiện đã hết hàng.");
+      return;
+    }
+
+    onBuyNow?.({
+      ...product,
+      selectedColor: selectedColor || null,
+      selectedColorStock: availableStock
+    });
+  };
+
+  const handleChat = () => {
+    onChat?.(product);
+  };
+
+  const renderSpecs = () => {
+    if (!product.specs) return null;
+
+    if (Array.isArray(product.specs)) {
+      return product.specs.map((item, index) => (
+        <div className="detail-spec-row" key={index}>
+          <span>Thông số {index + 1}</span>
+          <strong>
+            {typeof item === "object"
+              ? Object.values(item).join(" - ")
+              : String(item)}
+          </strong>
+        </div>
+      ));
+    }
+
+    if (typeof product.specs === "object") {
+      return Object.entries(product.specs).map(([key, value]) => (
+        <div className="detail-spec-row" key={key}>
+          <span>{key}</span>
+          <strong>
+            {typeof value === "object"
+              ? JSON.stringify(value)
+              : String(value)}
+          </strong>
+        </div>
+      ));
+    }
+
+    return (
+      <div className="detail-spec-row">
+        <span>Thông số</span>
+        <strong>{String(product.specs)}</strong>
+      </div>
+    );
   };
 
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div
         className="detail-modal"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
-        <button className="detail-close" onClick={onClose}>
+        <button
+          type="button"
+          className="detail-close"
+          onClick={onClose}
+          aria-label="Đóng chi tiết sản phẩm"
+        >
           <X size={22} />
         </button>
 
         <div className="detail-content">
+          {/* ẢNH SẢN PHẨM */}
           <div className="detail-image">
-            <img src={product.image} alt={product.name} />
-            <span className="discount">-{discount}%</span>
+            {product.image ? (
+              <img src={product.image} alt={product.name} />
+            ) : (
+              <div className="detail-no-image">
+                Không có hình ảnh
+              </div>
+            )}
           </div>
 
+          {/* THÔNG TIN SẢN PHẨM */}
           <div className="detail-info">
             <span className="product-category">
-              {product.category}
+              {product.category || "Sản phẩm công nghệ"}
             </span>
 
             <h2>{product.name}</h2>
@@ -40,45 +149,134 @@ function ProductDetail({ product, onClose, onAddToCart }) {
               Mã sản phẩm: <strong>{product.sku}</strong>
             </p>
 
-            <div className="detail-rating">
-              <Star size={17} fill="#f5a623" color="#f5a623" />
-              <strong>{product.rating}</strong>
-              <span> | Đã bán {product.sold}</span>
-            </div>
+            <p className="detail-brand">
+              Thương hiệu: <strong>{product.brand || "Chưa cập nhật"}</strong>
+            </p>
 
             <div className="detail-price">
-              <strong>
-                {product.price.toLocaleString("vi-VN")}đ
-              </strong>
-              <del>
-                {product.oldPrice.toLocaleString("vi-VN")}đ
-              </del>
+              <strong>{formatPrice(product.price)}</strong>
             </div>
 
-            <div className="detail-description">
-              <h3>Thông tin sản phẩm</h3>
-              <p>
-                {product.description ||
-                  `Sản phẩm ${product.name} thuộc danh mục ${product.category}. Đây là sản phẩm được giới thiệu tại HDX Tech.`}
-              </p>
+            {/* TỒN KHO */}
+            <div className={`detail-stock ${availableStock > 0 ? "in-stock" : "out-stock"}`}>
+              <PackageCheck size={18} />
+              {availableStock > 0
+                ? `Còn ${availableStock} sản phẩm`
+                : "Tạm hết hàng"}
             </div>
 
+            {/* CHỌN MÀU */}
+            {colors.length > 0 && (
+              <div className="detail-colors">
+                <h3>
+                  Màu sắc
+                  {selectedColor && (
+                    <span> · {selectedColor}</span>
+                  )}
+                </h3>
+
+                <div className="detail-color-list">
+                  {colors.map((item) => (
+                    <button
+                      type="button"
+                      key={item.color}
+                      disabled={Number(item.stock) <= 0}
+                      className={`detail-color-option ${
+                        selectedColor === item.color ? "selected" : ""
+                      }`}
+                      onClick={() => setSelectedColor(item.color)}
+                    >
+                      {selectedColor === item.color && (
+                        <Check size={14} />
+                      )}
+                      {item.color}
+                      <small>{item.stock > 0 ? `Còn ${item.stock}` : "Hết hàng"}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* THÔNG SỐ */}
+            {product.specs && (
+              <div className="detail-section">
+                <h3>Thông số kỹ thuật</h3>
+                <div className="detail-spec-list">
+                  {renderSpecs()}
+                </div>
+              </div>
+            )}
+
+            {/* BẢO HÀNH */}
             <div className="detail-service">
               <div>
-                <PackageCheck size={19} />
-                <span>Thông tin bảo hành theo sản phẩm</span>
-              </div>
-              <div>
-                <ShoppingCart size={19} />
-                <span>Thêm sản phẩm vào giỏ hàng dễ dàng</span>
+                <ShieldCheck size={19} />
+                <span>
+                  Bảo hành:{" "}
+                  <strong>
+                    {product.warranty_months != null
+                      ? `${product.warranty_months} tháng`
+                      : "Chưa cập nhật"}
+                  </strong>
+                </span>
               </div>
             </div>
 
-            <button className="detail-add-cart" onClick={handleAdd}>
-              <ShoppingCart size={19} />
-              Thêm vào giỏ hàng
-            </button>
+            {/* TƯƠNG THÍCH */}
+            {Array.isArray(product.compatible) && (
+              <div className="detail-section">
+                <h3>Thiết bị tương thích</h3>
+
+                {product.compatible.length > 0 ? (
+                  <div className="detail-compatible">
+                    {product.compatible.map((item, index) => (
+                      <span key={index}>
+                        {typeof item === "object"
+                          ? Object.values(item).join(" - ")
+                          : item}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="detail-muted">
+                    Chưa có thông tin tương thích.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* THANH NÚT HÀNH ĐỘNG */}
+        <div className="detail-action-bar">
+          <button
+            type="button"
+            className="detail-chat-button"
+            onClick={handleChat}
+          >
+            <MessageCircle size={18} />
+            Chat
+          </button>
+
+          <button
+            type="button"
+            className="detail-add-cart"
+            onClick={handleAdd}
+            disabled={availableStock <= 0}
+          >
+            <ShoppingCart size={18} />
+            Thêm vào giỏ
+          </button>
+
+          <button
+            type="button"
+            className="detail-buy-now"
+            onClick={handleBuyNow}
+            disabled={availableStock <= 0}
+          >
+            <Zap size={18} />
+            Mua ngay
+          </button>
         </div>
       </div>
     </div>
