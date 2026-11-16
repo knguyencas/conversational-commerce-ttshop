@@ -45,7 +45,7 @@ async function goi(path, body) {
   }
 
   if (res.status === 401) {
-    throw new Error("Sai mã nhóm.");
+    throw new Error("Sai mã nhóm");
   }
 
   if (!res.ok || !data.ok) {

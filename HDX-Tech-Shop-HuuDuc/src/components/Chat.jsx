@@ -1,5 +1,12 @@
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback
+} from "react";
+
 import {
   MessageCircle,
   X,
@@ -12,10 +19,12 @@ import {
 } from "lucide-react";
 
 import { chat, traChatVeBot } from "../api";
+import { getProductImage } from "../lib/anh";
 import "./Chat.css";
 
-const BUYER_ID =
-  localStorage.getItem("buyer_user_id") || "gia-lap-khach";
+function getBuyerId() {
+  return localStorage.getItem("buyer_user_id") || "gia-lap-khach";
+}
 
 function getConversationId() {
   let id = localStorage.getItem("conversation_id");
@@ -46,19 +55,13 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
   const bottomRef = useRef(null);
   const lastRequestId = useRef(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth"
-    });
-  }, [messages, loading, isOpen]);
-
   const productMap = useMemo(() => {
     return new Map(
       products.map((product) => [product.sku, product])
     );
   }, [products]);
 
-  const addMessage = (newMessage) => {
+  const addMessage = useCallback((newMessage) => {
     setMessages((previous) => [
       ...previous,
       {
@@ -66,10 +69,9 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
         id: Date.now() + Math.random()
       }
     ]);
-  };
+  }, []);
 
-  // GỬI TIN NHẮN ĐẾN MIDDLEWARE
-  const sendText = async (text) => {
+  const sendText = useCallback(async (text) => {
     if (!text.trim() || loading) return;
 
     addMessage({
@@ -83,7 +85,7 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
     try {
       const result = await chat(
         conversationId,
-        BUYER_ID,
+        getBuyerId(),
         text
       );
 
@@ -112,15 +114,58 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, conversationId, addMessage]);
 
-  // GỬI TIN NHẮN THÔNG THƯỜNG
+  const sendTextFromProduct = useCallback(async (text) => {
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+      const result = await chat(
+        conversationId,
+        getBuyerId(),
+        text
+      );
+
+      if (result.handed_off) {
+        setHandoff(true);
+      }
+
+      if (result.reply && !result.silent) {
+        addMessage({
+          sender: "bot",
+          text: result.reply,
+          skus: result.skus || [],
+          upsell: result.upsell || []
+        });
+      } else if (result.handed_off) {
+        addMessage({
+          sender: "system",
+          text: "Shop đã tiếp nhận yêu cầu. Nhân viên sẽ trả lời bạn sớm nhất có thể."
+        });
+      }
+    } catch (error) {
+      addMessage({
+        sender: "system",
+        text: error.message || "Không thể gửi tin nhắn. Bạn thử lại nhé!"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, conversationId, addMessage]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth"
+    });
+  }, [messages, loading, isOpen]);
+
   const sendMessage = (event) => {
     event.preventDefault();
     sendText(message.trim());
   };
 
-  // TỰ ĐỘNG MỞ CHAT KHI CHỌN SẢN PHẨM
   useEffect(() => {
     if (!chatRequest?.product) return;
 
@@ -129,67 +174,23 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
     lastRequestId.current = chatRequest.id;
 
     const product = chatRequest.product;
+    const text = `Shop ơi tư vấn giúp mình ${product.name}`;
 
     setIsOpen(true);
 
-    const text = `Shop ơi tư vấn giúp mình ${product.name}`;
-
-    const productMessage = {
-      id: Date.now(),
-      sender: "user",
-      text,
-      product
-    };
-
     setMessages((previous) => [
       ...previous,
-      productMessage
+      {
+        id: Date.now(),
+        sender: "user",
+        text,
+        product
+      }
     ]);
 
     sendTextFromProduct(text);
-  }, [chatRequest]);
+  }, [chatRequest, sendTextFromProduct]);
 
-  // HÀM GỬI RIÊNG CHO YÊU CẦU SẢN PHẨM
-  const sendTextFromProduct = async (text) => {
-    if (loading) return;
-
-    setLoading(true);
-
-    try {
-      const result = await chat(
-        conversationId,
-        BUYER_ID,
-        text
-      );
-
-      if (result.handed_off) {
-        setHandoff(true);
-      }
-
-      if (result.reply && !result.silent) {
-        addMessage({
-          sender: "bot",
-          text: result.reply,
-          skus: result.skus || [],
-          upsell: result.upsell || []
-        });
-      } else if (result.handed_off) {
-        addMessage({
-          sender: "system",
-          text: "Shop đã tiếp nhận yêu cầu. Nhân viên sẽ trả lời bạn sớm nhất có thể."
-        });
-      }
-    } catch (error) {
-      addMessage({
-        sender: "system",
-        text: error.message || "Không thể gửi tin nhắn. Bạn thử lại nhé!"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // BẮT ĐẦU CUỘC TRÒ CHUYỆN MỚI
   const handleReset = async () => {
     if (loading) return;
 
@@ -222,19 +223,24 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
     }
   };
 
-  // HIỂN THỊ SẢN PHẨM TRONG CHAT
   const renderProduct = (sku) => {
     const product = productMap.get(sku);
 
     if (!product) return null;
 
+    const image = getProductImage(product);
+
     return (
       <div className="chat-product" key={sku}>
         <div className="chat-product-icon">
-          {product.image ? (
+          {image ? (
             <img
-              src={product.image}
+              src={image}
               alt={product.name}
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = getProductImage({});
+              }}
             />
           ) : (
             <Package size={22} />
@@ -245,11 +251,11 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
           <strong>{product.name}</strong>
 
           <span>
-            {Number(product.price).toLocaleString("vi-VN")}đ
+            {Number(product.price || 0).toLocaleString("vi-VN")}đ
           </span>
 
           <small>
-            {product.stock > 0
+            {Number(product.stock) > 0
               ? `Còn ${product.stock} sản phẩm`
               : "Tạm hết hàng"}
           </small>
@@ -257,7 +263,7 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
 
         <button
           type="button"
-          disabled={product.stock <= 0}
+          disabled={Number(product.stock) <= 0}
           onClick={() => onAddToCart?.(product)}
           title="Thêm vào giỏ hàng"
         >
@@ -267,7 +273,6 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
     );
   };
 
-  // HIỂN THỊ SẢN PHẨM ĐƯỢC AI GỢI Ý
   const renderRecommendations = (item) => {
     const recommendedSkus = [
       ...(item.skus || []),
@@ -281,7 +286,6 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
     return (
       <div className="chat-recommendations">
         <small>Sản phẩm được gợi ý</small>
-
         {uniqueSkus.map(renderProduct)}
       </div>
     );
@@ -289,8 +293,6 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
 
   return (
     <>
-      {/* NÚT MỞ CHAT */}
-
       <button
         type="button"
         className={`chat-floating-button ${isOpen ? "hidden" : ""}`}
@@ -300,8 +302,6 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
         <MessageCircle size={25} />
         <span>Chat với Shop</span>
       </button>
-
-      {/* KHUNG CHAT */}
 
       {isOpen && (
         <section className="chat-widget">
@@ -313,7 +313,6 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
 
               <div>
                 <strong>HDX Tech</strong>
-
                 <small>
                   {handoff
                     ? "Đang chờ nhân viên hỗ trợ"
@@ -342,8 +341,6 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
             </div>
           </header>
 
-          {/* DANH SÁCH TIN NHẮN */}
-
           <div className="chat-messages">
             {messages.map((item) => (
               <div
@@ -364,30 +361,27 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
                         className="chat-inline-icon"
                       />
                     )}
-
                     {item.text}
                   </div>
-
-                  {/* SẢN PHẨM KHÁCH ĐANG HỎI */}
 
                   {item.product && (
                     <div className="chat-product">
                       <div className="chat-product-icon">
-                        {item.product.image ? (
-                          <img
-                            src={item.product.image}
-                            alt={item.product.name}
-                          />
-                        ) : (
-                          <Package size={22} />
-                        )}
+                        <img
+                          src={getProductImage(item.product)}
+                          alt={item.product.name}
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = getProductImage({});
+                          }}
+                        />
                       </div>
 
                       <div className="chat-product-info">
                         <strong>{item.product.name}</strong>
 
                         <span>
-                          {Number(item.product.price).toLocaleString("vi-VN")}đ
+                          {Number(item.product.price || 0).toLocaleString("vi-VN")}đ
                         </span>
 
                         <small>
@@ -417,8 +411,6 @@ function Chat({ products = [], onAddToCart, chatRequest }) {
 
             <div ref={bottomRef} />
           </div>
-
-          {/* Ô NHẬP TIN NHẮN */}
 
           <form
             className="chat-input-area"

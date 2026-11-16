@@ -12,9 +12,6 @@ import {
 } from "lucide-react";
 import "./DonCuaToi.css";
 
-const BUYER_ID =
-  localStorage.getItem("buyer_user_id") || "gia-lap-khach";
-
 const STEPS = [
   { key: "ordered", label: "Đã đặt hàng" },
   { key: "confirmed", label: "Shop xác nhận" },
@@ -26,24 +23,49 @@ const STEPS = [
 function getOrderStep(order) {
   const history = Array.isArray(order.lich_su)
     ? order.lich_su
-    : [];
+    : Array.isArray(order.history)
+      ? order.history
+      : [];
 
   const actions = history.map((item) =>
-    String(item.viec || item.action || item.status || "").toLowerCase()
+    String(
+      item.viec || item.action || item.status || ""
+    ).toLowerCase()
   );
 
   const status = String(order.status || "").toUpperCase();
 
   if (status === "CANCELLED") return -1;
-  if (status === "DELIVERED" || status === "COMPLETED") return 4;
-  if (status === "IN_TRANSIT") return 3;
 
-  if (actions.includes("shipping_arranged") ||
-      actions.includes("dang_giao")) return 3;
+  if (
+    status === "DELIVERED" ||
+    status === "COMPLETED"
+  ) {
+    return 4;
+  }
 
-  if (actions.includes("dong_goi")) return 2;
+  if (
+    status === "IN_TRANSIT" ||
+    actions.includes("shipping_arranged") ||
+    actions.includes("dang_giao") ||
+    actions.includes("da_giao")
+  ) {
+    return actions.includes("da_giao") ? 4 : 3;
+  }
 
-  if (actions.includes("odoo_created")) return 1;
+  if (
+    actions.includes("dong_goi") ||
+    actions.includes("packed")
+  ) {
+    return 2;
+  }
+
+  if (
+    actions.includes("odoo_created") ||
+    actions.includes("confirmed")
+  ) {
+    return 1;
+  }
 
   return 0;
 }
@@ -62,12 +84,20 @@ function getStatusLabel(order) {
 }
 
 function formatMoney(value) {
-  if (value == null || value === "") return "Đang cập nhật";
+  if (value == null || value === "") {
+    return "Đang cập nhật";
+  }
 
-  return Number(value).toLocaleString("vi-VN") + "đ";
+  const amount = Number(value);
+
+  if (!Number.isFinite(amount)) {
+    return "Đang cập nhật";
+  }
+
+  return amount.toLocaleString("vi-VN") + "đ";
 }
 
-function DonCuaToi({ onAskShop }) {
+function DonCuaToi({ products = [], onAskShop }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -81,12 +111,16 @@ function DonCuaToi({ onAskShop }) {
       const allOrders = Array.isArray(result.orders)
         ? result.orders
         : Array.isArray(result.don)
-        ? result.don
-        : [];
+          ? result.don
+          : [];
+
+      const buyerId =
+        localStorage.getItem("buyer_user_id") ||
+        "gia-lap-khach";
 
       setOrders(
         allOrders.filter(
-          (order) => order.buyer_user_id === BUYER_ID
+          (order) => order.buyer_user_id === buyerId
         )
       );
     } catch (err) {
@@ -104,6 +138,28 @@ function DonCuaToi({ onAskShop }) {
     return () => clearInterval(timer);
   }, [fetchOrders]);
 
+  const getProductName = (sku) => {
+    const product = products.find(
+      (item) => item.sku === sku
+    );
+
+    return product?.name || sku || "Sản phẩm";
+  };
+
+  const pendingOrders = orders.filter((order) =>
+    [
+      "AWAITING_SHIPMENT",
+      "AWAITING_COLLECTION",
+      "IN_TRANSIT",
+    ].includes(String(order.status || "").toUpperCase())
+  ).length;
+
+  const completedOrders = orders.filter((order) =>
+    ["DELIVERED", "COMPLETED"].includes(
+      String(order.status || "").toUpperCase()
+    )
+  ).length;
+
   return (
     <main className="my-orders-page">
       <header className="orders-heading">
@@ -118,6 +174,7 @@ function DonCuaToi({ onAskShop }) {
           type="button"
           onClick={fetchOrders}
           title="Tải lại đơn hàng"
+          disabled={loading}
         >
           <RefreshCw size={18} />
         </button>
@@ -132,24 +189,13 @@ function DonCuaToi({ onAskShop }) {
 
         <div>
           <Clock3 size={21} />
-          <strong>
-            {orders.filter((order) =>
-              ["AWAITING_SHIPMENT", "AWAITING_COLLECTION", "IN_TRANSIT"]
-                .includes(String(order.status || "").toUpperCase())
-            ).length}
-          </strong>
+          <strong>{pendingOrders}</strong>
           <span>Đang xử lý</span>
         </div>
 
         <div>
           <CheckCircle2 size={21} />
-          <strong>
-            {orders.filter((order) =>
-              ["DELIVERED", "COMPLETED"].includes(
-                String(order.status || "").toUpperCase()
-              )
-            ).length}
-          </strong>
+          <strong>{completedOrders}</strong>
           <span>Đã hoàn tất</span>
         </div>
       </div>
@@ -178,15 +224,23 @@ function DonCuaToi({ onAskShop }) {
         </div>
       ) : (
         <section className="orders-list">
-          {orders.map((order) => {
+          {orders.map((order, index) => {
             const step = getOrderStep(order);
             const cancelled = step === -1;
 
-            const orderId = order.order_id || order.id;
+            const orderId =
+              order.order_id || order.id || `order-${index}`;
+
             const tracking =
               order.tracking_number ||
               order.ma_van_don ||
               order.tracking_code;
+
+            const items = Array.isArray(order.items)
+              ? order.items
+              : Array.isArray(order.san_pham)
+                ? order.san_pham
+                : [];
 
             return (
               <article className="order-card" key={orderId}>
@@ -196,27 +250,39 @@ function DonCuaToi({ onAskShop }) {
                     <strong>{orderId || "Chưa có mã"}</strong>
                   </div>
 
-                  <span className={`order-status ${
-                    cancelled ? "cancelled" : ""
-                  }`}>
+                  <span
+                    className={`order-status ${
+                      cancelled ? "cancelled" : ""
+                    }`}
+                  >
                     {getStatusLabel(order)}
                   </span>
                 </div>
 
                 <div className="order-items">
-                  {(order.items || order.san_pham || []).map(
-                    (item, index) => (
-                      <div className="order-item" key={item.sku || index}>
-                        <span>{item.name || item.sku}</span>
+                  {items.map((item, itemIndex) => {
+                    const sku =
+                      item.seller_sku || item.sku;
+
+                    return (
+                      <div
+                        className="order-item"
+                        key={sku || itemIndex}
+                      >
+                        <span>{getProductName(sku)}</span>
                         <span>x{item.quantity || 1}</span>
                       </div>
-                    )
-                  )}
+                    );
+                  })}
                 </div>
 
                 <div className="order-total">
                   <span>Tổng thanh toán</span>
-                  <strong>{formatMoney(order.total)}</strong>
+                  <strong>
+                    {formatMoney(
+                      order.total_amount ?? order.total
+                    )}
+                  </strong>
                 </div>
 
                 {!cancelled && (

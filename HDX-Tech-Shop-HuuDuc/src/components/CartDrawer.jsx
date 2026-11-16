@@ -8,6 +8,8 @@ import {
   ArrowRight
 } from "lucide-react";
 
+import { getProductImage } from "../lib/anh";
+
 function CartDrawer({
   cart,
   onClose,
@@ -16,12 +18,12 @@ function CartDrawer({
   onCheckout
 }) {
   const total = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
     0
   );
 
   const cartCount = cart.reduce(
-    (sum, item) => sum + item.quantity,
+    (sum, item) => sum + Number(item.quantity || 0),
     0
   );
 
@@ -37,7 +39,11 @@ function CartDrawer({
             <span>{cartCount} sản phẩm</span>
           </div>
 
-          <button onClick={onClose} aria-label="Đóng giỏ hàng">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng giỏ hàng"
+          >
             <X />
           </button>
         </div>
@@ -47,25 +53,43 @@ function CartDrawer({
             <ShoppingBag size={55} />
             <h3>Giỏ hàng đang trống</h3>
             <p>Hãy khám phá các sản phẩm tại HDX Tech nhé!</p>
-            <button onClick={onClose}>Tiếp tục mua sắm</button>
+            <button type="button" onClick={onClose}>
+              Tiếp tục mua sắm
+            </button>
           </div>
         ) : (
           <>
             <div className="cart-items">
               {cart.map((item) => (
                 <div className="cart-item" key={item.id}>
-                  <img src={item.image} alt={item.name} />
+                  <div className="cart-item-image">
+                    <img
+                      src={getProductImage(item)}
+                      alt={item.name}
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getProductImage({});
+                      }}
+                    />
+                  </div>
 
                   <div className="cart-item-info">
                     <h4>{item.name}</h4>
                     <p className="cart-sku">{item.sku}</p>
 
+                    {item.selectedColor && (
+                      <p className="cart-sku">
+                        Màu: {item.selectedColor}
+                      </p>
+                    )}
+
                     <strong>
-                      {item.price.toLocaleString("vi-VN")}đ
+                      {Number(item.price || 0).toLocaleString("vi-VN")}đ
                     </strong>
 
                     <div className="quantity-control">
                       <button
+                        type="button"
                         onClick={() => onUpdateQuantity(item.id, -1)}
                         aria-label="Giảm số lượng"
                       >
@@ -75,6 +99,7 @@ function CartDrawer({
                       <span>{item.quantity}</span>
 
                       <button
+                        type="button"
                         onClick={() => onUpdateQuantity(item.id, 1)}
                         aria-label="Tăng số lượng"
                       >
@@ -84,6 +109,7 @@ function CartDrawer({
                   </div>
 
                   <button
+                    type="button"
                     className="remove-item"
                     onClick={() => onRemove(item.id)}
                     title="Xóa sản phẩm"
@@ -101,6 +127,7 @@ function CartDrawer({
               </div>
 
               <button
+                type="button"
                 className="checkout-button"
                 onClick={onCheckout}
               >

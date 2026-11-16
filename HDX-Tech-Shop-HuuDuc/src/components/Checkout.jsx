@@ -12,9 +12,7 @@ import {
 } from "lucide-react";
 
 import { datDon } from "../api";
-
-const BUYER_ID =
-  localStorage.getItem("buyer_user_id") || "gia-lap-khach";
+import { getProductImage } from "../lib/anh";
 
 function Checkout({ cart, onClose, onOrderComplete }) {
   const [customer, setCustomer] = useState({
@@ -31,7 +29,7 @@ function Checkout({ cart, onClose, onOrderComplete }) {
   const [apiError, setApiError] = useState("");
 
   const total = cart.reduce(
-    (sum, item) => sum + Number(item.price) * item.quantity,
+    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
     0
   );
 
@@ -85,12 +83,15 @@ function Checkout({ cart, onClose, onOrderComplete }) {
       setSubmitting(true);
       setApiError("");
 
+      const buyerId =
+        localStorage.getItem("buyer_user_id") || "gia-lap-khach";
+
       const items = cart.map((item) => ({
         sku: item.sku,
         quantity: item.quantity
       }));
 
-      const result = await datDon(BUYER_ID, items);
+      const result = await datDon(buyerId, items);
 
       if (!result.order_id) {
         throw new Error("API chưa trả về mã đơn hàng.");
@@ -98,7 +99,7 @@ function Checkout({ cart, onClose, onOrderComplete }) {
 
       const completedOrder = {
         orderId: result.order_id,
-        total: result.total,
+        total: result.total_amount ?? result.total ?? total,
         customer,
         items: cart,
         createdAt: new Date().toISOString()
@@ -106,11 +107,10 @@ function Checkout({ cart, onClose, onOrderComplete }) {
 
       setOrderData({
         orderId: result.order_id,
-        total: result.total ?? total
+        total: result.total_amount ?? result.total ?? total
       });
 
       onOrderComplete?.(completedOrder);
-
     } catch (error) {
       console.error("Lỗi đặt hàng:", error);
       setApiError(error.message || "Không thể đặt hàng.");
@@ -144,7 +144,11 @@ function Checkout({ cart, onClose, onOrderComplete }) {
             </span>
           </div>
 
-          <button className="checkout-submit" onClick={onClose}>
+          <button
+            type="button"
+            className="checkout-submit"
+            onClick={onClose}
+          >
             Tiếp tục mua sắm
           </button>
         </div>
@@ -264,7 +268,14 @@ function Checkout({ cart, onClose, onOrderComplete }) {
               <div className="checkout-products">
                 {cart.map((item) => (
                   <div className="checkout-product" key={item.id}>
-                    <img src={item.image} alt={item.name} />
+                    <img
+                      src={getProductImage(item)}
+                      alt={item.name}
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = getProductImage({});
+                      }}
+                    />
 
                     <div>
                       <strong>{item.name}</strong>
@@ -277,7 +288,7 @@ function Checkout({ cart, onClose, onOrderComplete }) {
                       </span>
 
                       <b>
-                        {(item.price * item.quantity).toLocaleString("vi-VN")}đ
+                        {(Number(item.price || 0) * Number(item.quantity || 0)).toLocaleString("vi-VN")}đ
                       </b>
                     </div>
                   </div>

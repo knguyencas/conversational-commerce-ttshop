@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from "react";
-import { laySanPham } from "./api";
+import { laySanPham, layMaNhom, luuMaNhom } from "./api";
 
 import {
   Zap,
@@ -27,17 +27,73 @@ import NguoiBan from "./components/NguoiBan";
 import "./App.css";
 
 function App() {
-  // =========================
+  // ĐĂNG NHẬP GIẢ LẬP
+  const [isVerified, setIsVerified] = useState(() =>
+    Boolean(
+      layMaNhom() &&
+      localStorage.getItem("buyer_user_id")
+    )
+  );
+
+  const [groupCode, setGroupCode] = useState(layMaNhom());
+
+  const [selectedBuyer, setSelectedBuyer] = useState(
+    localStorage.getItem("buyer_user_id") || "gia-lap-khach"
+  );
+
+  const [verifying, setVerifying] = useState(false);
+  const [entryError, setEntryError] = useState("");
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+
+    const code = groupCode.trim();
+
+    if (!code) {
+      setEntryError("Vui lòng nhập mã nhóm.");
+      return;
+    }
+
+    if (!selectedBuyer) {
+      setEntryError("Vui lòng chọn khách hàng.");
+      return;
+    }
+
+    setVerifying(true);
+    setEntryError("");
+
+    // Lưu mã tạm để gửi trong header xác thực
+    luuMaNhom(code);
+
+    try {
+      const result = await laySanPham();
+
+      if (!Array.isArray(result.products)) {
+        throw new Error("Dữ liệu sản phẩm không hợp lệ.");
+      }
+
+      localStorage.setItem("buyer_user_id", selectedBuyer);
+      setIsVerified(true);
+    } catch (error) {
+      localStorage.removeItem("ma_nhom");
+
+      setEntryError(
+        error.message?.toLowerCase().includes("sai mã nhóm")
+          ? "Sai mã nhóm"
+          : error.message || "Không thể xác thực mã nhóm."
+      );
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   // STATE
-  // =========================
-
   const [currentPage, setCurrentPage] = useState("home");
-
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Tất cả");
 
   const [products, setProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [productError, setProductError] = useState("");
 
   const [cart, setCart] = useState([]);
@@ -47,10 +103,7 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [chatRequest, setChatRequest] = useState(null);
 
-  // =========================
   // TÌM KIẾM
-  // =========================
-
   const handleSearch = (e) => {
     e.preventDefault();
 
@@ -64,18 +117,17 @@ function App() {
     }, 100);
   };
 
-  // =========================
   // LẤY SẢN PHẨM TỪ MIDDLEWARE
-  // =========================
-
   useEffect(() => {
+    if (!isVerified) return;
+
     let cancelled = false;
 
     const fetchProducts = async () => {
-      try {
-        setLoadingProducts(true);
-        setProductError("");
+      setLoadingProducts(true);
+      setProductError("");
 
+      try {
         const result = await laySanPham();
 
         if (!Array.isArray(result.products)) {
@@ -104,12 +156,9 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isVerified]);
 
-  // =========================
   // DANH MỤC
-  // =========================
-
   const categories = useMemo(() => {
     const uniqueCategories = [
       ...new Set(products.map((product) => product.category)),
@@ -118,10 +167,7 @@ function App() {
     return ["Tất cả", ...uniqueCategories];
   }, [products]);
 
-  // =========================
   // LỌC SẢN PHẨM
-  // =========================
-
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchCategory =
@@ -139,10 +185,7 @@ function App() {
     });
   }, [products, search, activeCategory]);
 
-  // =========================
   // GIỎ HÀNG
-  // =========================
-
   const addToCart = (product) => {
     const selectedStock =
       product.selectedColorStock != null
@@ -170,10 +213,7 @@ function App() {
 
         return previousCart.map((item) =>
           item.id === cartId
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
@@ -210,10 +250,7 @@ function App() {
             return item;
           }
 
-          return {
-            ...item,
-            quantity: newQuantity,
-          };
+          return { ...item, quantity: newQuantity };
         })
         .filter((item) => item.quantity > 0)
     );
@@ -232,10 +269,7 @@ function App() {
     0
   );
 
-  // =========================
   // THANH TOÁN
-  // =========================
-
   const handleCheckout = () => {
     if (cart.length === 0) {
       alert("Giỏ hàng của bạn đang trống!");
@@ -251,10 +285,7 @@ function App() {
     setCart([]);
   };
 
-  // =========================
   // MUA NGAY
-  // =========================
-
   const handleBuyNow = (product) => {
     const selectedStock =
       product.selectedColorStock != null
@@ -283,10 +314,7 @@ function App() {
     setIsCheckoutOpen(true);
   };
 
-  // =========================
   // CHAT VỚI SẢN PHẨM ĐANG XEM
-  // =========================
-
   const handleChatProduct = (product) => {
     setChatRequest({
       id: Date.now(),
@@ -296,24 +324,82 @@ function App() {
     setSelectedProduct(null);
   };
 
-  // =========================
   // HỎI SHOP VỀ ĐƠN HÀNG
-  // =========================
-
   const handleAskShop = () => {
     alert(
       "Bạn hãy bấm nút Chat với Shop ở góc dưới bên phải để liên hệ HDX Tech."
     );
   };
 
-  // =========================
-  // HIỂN THỊ
-  // =========================
+  // MÀN HÌNH NHẬP MÃ NHÓM
+  if (!isVerified) {
+    return (
+      <div className="entry-screen">
+        <form className="entry-card" onSubmit={handleVerify}>
+          <div className="entry-logo">HDX</div>
 
+          <h1>HDX Tech</h1>
+
+          <p>
+            Chào mừng bạn đến với cửa hàng công nghệ
+          </p>
+
+          <label htmlFor="group-code">Mã nhóm</label>
+
+          <input
+            id="group-code"
+            type="text"
+            value={groupCode}
+            onChange={(e) => setGroupCode(e.target.value)}
+            placeholder="Nhập mã nhóm"
+            autoComplete="off"
+          />
+
+          <label>Chọn khách hàng</label>
+
+          <div className="buyer-options">
+            <button
+              type="button"
+              className={
+                selectedBuyer === "gia-lap-khach" ? "selected" : ""
+              }
+              onClick={() => setSelectedBuyer("gia-lap-khach")}
+            >
+              Khách A
+            </button>
+
+            <button
+              type="button"
+              className={
+                selectedBuyer === "gia-lap-khach-2" ? "selected" : ""
+              }
+              onClick={() => setSelectedBuyer("gia-lap-khach-2")}
+            >
+              Khách B
+            </button>
+          </div>
+
+          {entryError && (
+            <div className="entry-error">
+              {entryError}
+            </div>
+          )}
+
+          <button
+            className="entry-submit"
+            type="submit"
+            disabled={verifying}
+          >
+            {verifying ? "Đang kiểm tra..." : "Vào cửa hàng"}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // HIỂN THỊ SHOP
   return (
     <>
-      {/* THANH THÔNG BÁO */}
-
       <div className="top-strip">
         <div className="top-strip-inner">
           <span>
@@ -328,8 +414,6 @@ function App() {
         </div>
       </div>
 
-      {/* HEADER */}
-
       <Header
         search={search}
         setSearch={setSearch}
@@ -337,8 +421,6 @@ function App() {
         cartCount={cartCount}
         onCartClick={() => setIsCartOpen(true)}
       />
-
-      {/* ĐIỀU HƯỚNG */}
 
       <nav className="customer-navigation">
         <button
@@ -369,14 +451,8 @@ function App() {
         </button>
       </nav>
 
-      {/* =========================
-          TRANG CHỦ
-      ========================= */}
-
       {currentPage === "home" && (
         <>
-          {/* THANH DANH MỤC */}
-
           <nav className="main-nav">
             <div className="main-nav-inner">
               {categories.map((category) => (
@@ -404,8 +480,6 @@ function App() {
           </nav>
 
           <div className="shop-container">
-            {/* BANNER CHÍNH */}
-
             <section className="shop-hero">
               <div className="shop-hero-content">
                 <span className="hero-kicker">
@@ -460,8 +534,6 @@ function App() {
               </div>
             </section>
 
-            {/* CAM KẾT DỊCH VỤ */}
-
             <section className="quick-benefits">
               <div>
                 <Truck size={23} />
@@ -483,8 +555,6 @@ function App() {
                 <span>Mua sắm tiện lợi</span>
               </div>
             </section>
-
-            {/* DANH MỤC SẢN PHẨM */}
 
             <section className="category-section">
               <div className="block-heading">
@@ -519,8 +589,6 @@ function App() {
                 ))}
               </div>
             </section>
-
-            {/* SẢN PHẨM NỔI BẬT */}
 
             <section className="flash-section">
               <div className="flash-heading">
@@ -572,8 +640,6 @@ function App() {
                 <ChevronRight size={16} />
               </button>
             </section>
-
-            {/* TẤT CẢ SẢN PHẨM */}
 
             <section className="shop-products" id="shop-products">
               <div className="block-heading">
@@ -644,8 +710,6 @@ function App() {
               )}
             </section>
 
-            {/* VIDEO VÀ LIVESTREAM */}
-
             <section className="video-section">
               <div className="block-heading">
                 <div>
@@ -689,8 +753,6 @@ function App() {
               </div>
             </section>
 
-            {/* FOOTER */}
-
             <footer className="shop-footer">
               <div className="footer-brand">
                 <span className="footer-logo">HDX</span>
@@ -709,19 +771,14 @@ function App() {
         </>
       )}
 
-      {/* TRANG ĐƠN HÀNG CỦA TÔI */}
+     {currentPage === "orders" && (
+  <DonCuaToi
+    products={products}
+    onAskShop={handleAskShop}
+  />
+)}
 
-      {currentPage === "orders" && (
-        <DonCuaToi onAskShop={handleAskShop} />
-      )}
-
-      {/* TRANG NGƯỜI BÁN */}
-
-      {currentPage === "seller" && (
-        <NguoiBan />
-      )}
-
-      {/* GIỎ HÀNG */}
+      {currentPage === "seller" && <NguoiBan />}
 
       {isCartOpen && (
         <CartDrawer
@@ -733,8 +790,6 @@ function App() {
         />
       )}
 
-      {/* CHI TIẾT SẢN PHẨM */}
-
       {selectedProduct && (
         <ProductDetail
           product={selectedProduct}
@@ -745,8 +800,6 @@ function App() {
         />
       )}
 
-      {/* THANH TOÁN */}
-
       {isCheckoutOpen && (
         <Checkout
           cart={cart}
@@ -754,8 +807,6 @@ function App() {
           onOrderComplete={handleOrderComplete}
         />
       )}
-
-      {/* CHAT VỚI SHOP */}
 
       <Chat
         products={products}

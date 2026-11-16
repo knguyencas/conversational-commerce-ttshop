@@ -2060,3 +2060,114 @@ body {
     white-space: nowrap;
   }
 }
+
+/* =========================
+   ENTRY SCREEN - NHẬP MÃ NHÓM
+========================= */
+
+.entry-screen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: #f7f7f8;
+}
+
+.entry-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 35px 30px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 35px rgba(0, 0, 0, 0.08);
+}
+
+.entry-logo {
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #ee293d;
+  color: #fff;
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.entry-card h1 {
+  margin: 18px 0 5px;
+  font-size: 26px;
+}
+
+.entry-card > p {
+  margin: 0 0 28px;
+  color: #888;
+  font-size: 13px;
+}
+
+.entry-card label {
+  display: block;
+  margin: 16px 0 8px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.entry-card > input {
+  width: 100%;
+  height: 46px;
+  padding: 0 13px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+}
+
+.entry-card > input:focus {
+  border-color: #ee293d;
+}
+
+.buyer-options {
+  display: flex;
+  gap: 12px;
+}
+
+.buyer-options button {
+  flex: 1;
+  height: 45px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buyer-options button.selected {
+  border-color: #ee293d;
+  background: #fff0f2;
+  color: #ee293d;
+}
+
+.entry-error {
+  margin-top: 14px;
+  color: #e32636;
+  font-size: 12px;
+}
+
+.entry-submit {
+  width: 100%;
+  height: 47px;
+  margin-top: 22px;
+  border: none;
+  border-radius: 8px;
+  background: #ee293d;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.entry-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

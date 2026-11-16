@@ -1,20 +1,16 @@
+
 import "./NguoiBan.css";
-import { useEffect, useState } from "react";
-import {
-  layDon,
-  dayBuoc,
-  traChatVeBot,
-  layKpi,
-} from "../api";
+import { useCallback, useEffect, useState } from "react";
+import { layDon, dayBuoc, layKpi } from "../api";
 import {
   Package,
   Truck,
   CheckCircle,
   XCircle,
   RefreshCw,
-  MessageCircle,
   BarChart3,
   ShoppingBag,
+  Wallet,
 } from "lucide-react";
 
 function NguoiBan() {
@@ -25,7 +21,7 @@ function NguoiBan() {
   const [processing, setProcessing] = useState("");
   const [activeTab, setActiveTab] = useState("orders");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -35,23 +31,47 @@ function NguoiBan() {
         layKpi(),
       ]);
 
-      setOrders(
-        Array.isArray(orderResult.orders)
-          ? orderResult.orders
-          : []
-      );
+      const orderData =
+        orderResult?.data ??
+        orderResult;
 
-      setKpi(kpiResult);
+      const allOrders = Array.isArray(orderData?.orders)
+        ? orderData.orders
+        : Array.isArray(orderData?.don)
+          ? orderData.don
+          : Array.isArray(orderData)
+            ? orderData
+            : [];
+
+      setOrders(allOrders);
+
+      // Lưu dữ liệu KPI nếu middleware có trả về.
+      // Nếu chỉ có { ok: true }, không dùng nó làm số liệu.
+      const kpiData =
+        kpiResult?.kpi ??
+        kpiResult?.data?.kpi ??
+        kpiResult?.data ??
+        kpiResult;
+
+      if (
+        kpiData &&
+        typeof kpiData === "object" &&
+        Object.keys(kpiData).some((key) => key !== "ok")
+      ) {
+        setKpi(kpiData);
+      } else {
+        setKpi(null);
+      }
     } catch (err) {
       setError(err.message || "Không thể tải dữ liệu.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleAction = async (orderId, action) => {
     const confirmMessage =
@@ -74,45 +94,28 @@ function NguoiBan() {
     }
   };
 
-  const handleReturnBot = async (conversationId) => {
-    if (!conversationId) {
-      alert("Đơn hàng chưa có mã hội thoại.");
-      return;
-    }
-
-    if (!window.confirm("Bạn muốn chuyển cuộc trò chuyện về chatbot?")) {
-      return;
-    }
-
-    try {
-      await traChatVeBot(conversationId);
-      alert("Đã chuyển cuộc trò chuyện về chatbot.");
-    } catch (err) {
-      alert(err.message || "Không thể chuyển cuộc trò chuyện.");
-    }
-  };
-
   const getStatus = (order) => {
-    if (order.status === "DELIVERED") return "Đã giao";
-    if (order.status === "CANCELLED") return "Đã hủy";
-    if (order.status === "IN_TRANSIT") return "Đang vận chuyển";
+    const status = String(order.status || "").toUpperCase();
 
-    if (
-      order.status === "AWAITING_SHIPMENT" &&
-      order.shipping_arranged
-    ) {
+    if (status === "DELIVERED") return "Đã giao";
+    if (status === "COMPLETED") return "Hoàn tất";
+    if (status === "CANCELLED") return "Đã hủy";
+    if (status === "IN_TRANSIT") return "Đang vận chuyển";
+
+    if (status === "AWAITING_SHIPMENT" && order.shipping_arranged) {
       return "Chờ bàn giao vận chuyển";
     }
 
-    if (order.status === "AWAITING_SHIPMENT") {
-      return "Chờ xử lý";
-    }
+    if (status === "AWAITING_COLLECTION") return "Chờ lấy hàng";
+    if (status === "AWAITING_SHIPMENT") return "Chờ xử lý";
 
     return order.status || "Chưa xác định";
   };
 
   const getActions = (order) => {
-    if (order.status === "AWAITING_SHIPMENT") {
+    const status = String(order.status || "").toUpperCase();
+
+    if (status === "AWAITING_SHIPMENT") {
       if (order.shipping_arranged) {
         return [
           {
@@ -137,7 +140,7 @@ function NguoiBan() {
       ];
     }
 
-    if (order.status === "IN_TRANSIT") {
+    if (status === "IN_TRANSIT") {
       return [
         {
           label: "Đã giao",
@@ -150,18 +153,117 @@ function NguoiBan() {
     return [];
   };
 
+  const getOrderItems = (order) => {
+    if (Array.isArray(order.items)) return order.items;
+    if (Array.isArray(order.san_pham)) return order.san_pham;
+    return [];
+  };
+
+  const getOrderTotal = (order) => {
+    const total = Number(order.total_amount ?? order.total);
+
+    if (Number.isFinite(total) && total > 0) {
+      return total;
+    }
+
+    return getOrderItems(order).reduce((sum, item) => {
+      const price = Number(item.price ?? item.unit_price ?? 0);
+      const quantity = Number(item.quantity ?? 0);
+
+      return sum + price * quantity;
+    }, 0);
+  };
+
+  const getStatusCode = (order) =>
+    String(order.status || "").toUpperCase();
+
   const totalOrders = orders.length;
-  const pendingOrders = orders.filter(
-    (order) =>
-      order.status === "AWAITING_SHIPMENT" ||
-      order.status === "IN_TRANSIT"
-  ).length;
-  const completedOrders = orders.filter(
-    (order) => order.status === "DELIVERED"
+
+  const pendingOrders = orders.filter((order) =>
+    [
+      "AWAITING_SHIPMENT",
+      "AWAITING_COLLECTION",
+      "IN_TRANSIT",
+    ].includes(getStatusCode(order))
   ).length;
 
-  const formatPrice = (price) =>
-    Number(price || 0).toLocaleString("vi-VN") + "đ";
+  const completedOrders = orders.filter((order) =>
+    ["DELIVERED", "COMPLETED"].includes(getStatusCode(order))
+  ).length;
+
+  const cancelledOrders = orders.filter(
+    (order) => getStatusCode(order) === "CANCELLED"
+  ).length;
+
+  const totalRevenue = orders.reduce((sum, order) => {
+    if (getStatusCode(order) === "CANCELLED") return sum;
+    return sum + getOrderTotal(order);
+  }, 0);
+
+  const formatPrice = (price) => {
+    if (price == null || price === "") return "Đang cập nhật";
+
+    const amount = Number(price);
+
+    if (!Number.isFinite(amount)) return "Đang cập nhật";
+
+    return amount.toLocaleString("vi-VN") + "đ";
+  };
+
+  const renderStat = (label, value, Icon) => (
+    <div className="seller-stat-card" key={label}>
+      <Icon />
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+
+  const renderKpi = () => {
+    const cards = [
+      {
+        label: "Tổng đơn hàng",
+        value: totalOrders.toLocaleString("vi-VN"),
+        icon: ShoppingBag,
+      },
+      {
+        label: "Đang xử lý",
+        value: pendingOrders.toLocaleString("vi-VN"),
+        icon: Package,
+      },
+      {
+        label: "Đã hoàn tất",
+        value: completedOrders.toLocaleString("vi-VN"),
+        icon: CheckCircle,
+      },
+      {
+        label: "Đã hủy",
+        value: cancelledOrders.toLocaleString("vi-VN"),
+        icon: XCircle,
+      },
+      {
+        label: "Doanh thu từ đơn hàng",
+        value: formatPrice(totalRevenue),
+        icon: Wallet,
+      },
+    ];
+
+    return (
+      <>
+        <div className="seller-kpi">
+          {cards.map((card) =>
+            renderStat(card.label, card.value, card.icon)
+          )}
+        </div>
+
+        <p className="seller-kpi-note">
+          Số liệu được tổng hợp từ danh sách đơn hàng tải từ middleware.
+          {kpi
+            ? " Middleware cũng đã cung cấp dữ liệu thống kê."
+            : " API thống kê chưa cung cấp dữ liệu chi tiết nên hệ thống sử dụng dữ liệu đơn hàng để tính toán."}
+        </p>
+      </>
+    );
+  };
 
   return (
     <div className="seller-page">
@@ -174,6 +276,7 @@ function NguoiBan() {
 
         <button
           className="seller-refresh"
+          type="button"
           onClick={loadData}
           disabled={loading}
         >
@@ -184,6 +287,7 @@ function NguoiBan() {
 
       <nav className="seller-tabs">
         <button
+          type="button"
           className={activeTab === "orders" ? "active" : ""}
           onClick={() => setActiveTab("orders")}
         >
@@ -192,6 +296,7 @@ function NguoiBan() {
         </button>
 
         <button
+          type="button"
           className={activeTab === "kpi" ? "active" : ""}
           onClick={() => setActiveTab("kpi")}
         >
@@ -203,23 +308,9 @@ function NguoiBan() {
       {activeTab === "orders" && (
         <>
           <section className="seller-stats">
-            <div className="seller-stat-card">
-              <ShoppingBag />
-              <span>Tổng đơn hàng</span>
-              <strong>{totalOrders}</strong>
-            </div>
-
-            <div className="seller-stat-card">
-              <Package />
-              <span>Đang xử lý</span>
-              <strong>{pendingOrders}</strong>
-            </div>
-
-            <div className="seller-stat-card">
-              <CheckCircle />
-              <span>Đã hoàn tất</span>
-              <strong>{completedOrders}</strong>
-            </div>
+            {renderStat("Tổng đơn hàng", totalOrders, ShoppingBag)}
+            {renderStat("Đang xử lý", pendingOrders, Package)}
+            {renderStat("Đã hoàn tất", completedOrders, CheckCircle)}
           </section>
 
           <section className="seller-content">
@@ -233,7 +324,9 @@ function NguoiBan() {
             ) : error ? (
               <div className="seller-error">
                 <p>{error}</p>
-                <button onClick={loadData}>Thử lại</button>
+                <button type="button" onClick={loadData}>
+                  Thử lại
+                </button>
               </div>
             ) : orders.length === 0 ? (
               <div className="seller-empty">
@@ -244,13 +337,8 @@ function NguoiBan() {
             ) : (
               <div className="seller-order-list">
                 {orders.map((order, index) => {
-                  const orderId =
-                    order.order_id || order.id || index;
-
-                  const items = Array.isArray(order.items)
-                    ? order.items
-                    : [];
-
+                  const orderId = order.order_id || order.id || index;
+                  const items = getOrderItems(order);
                   const actions = getActions(order);
 
                   return (
@@ -272,40 +360,50 @@ function NguoiBan() {
                       </div>
 
                       <div className="seller-order-items">
-                        {items.map((item, itemIndex) => (
-                          <div
-                            className="seller-order-item"
-                            key={item.sku || itemIndex}
-                          >
-                            <div>
-                              <strong>
-                                {item.name || item.sku}
-                              </strong>
-                              <span>
-                                SKU: {item.sku || "—"} · Số lượng:{" "}
-                                {item.quantity || 0}
-                              </span>
-                            </div>
+                        {items.map((item, itemIndex) => {
+                          const sku = item.seller_sku || item.sku;
+                          const quantity = Number(item.quantity || 0);
+                          const price = Number(
+                            item.price ?? item.unit_price ?? 0
+                          );
 
-                            <strong>
-                              {formatPrice(
-                                item.price * item.quantity
-                              )}
-                            </strong>
-                          </div>
-                        ))}
+                          return (
+                            <div
+                              className="seller-order-item"
+                              key={sku || itemIndex}
+                            >
+                              <div>
+                                <strong>
+                                  {item.name || sku || "Sản phẩm"}
+                                </strong>
+                                <span>
+                                  SKU: {sku || "—"} · Số lượng: {quantity}
+                                </span>
+                              </div>
+
+                              <strong>
+                                {formatPrice(price * quantity)}
+                              </strong>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       <div className="seller-order-total">
                         <span>Tổng tiền</span>
                         <strong>
-                          {formatPrice(order.total)}
+                          {formatPrice(getOrderTotal(order))}
                         </strong>
                       </div>
 
-                      {order.tracking_number && (
+                      {(order.tracking_number ||
+                        order.ma_van_don ||
+                        order.tracking_code) && (
                         <p className="seller-tracking">
-                          Mã vận đơn: {order.tracking_number}
+                          Mã vận đơn:{" "}
+                          {order.tracking_number ||
+                            order.ma_van_don ||
+                            order.tracking_code}
                         </p>
                       )}
 
@@ -316,6 +414,7 @@ function NguoiBan() {
                           return (
                             <button
                               key={item.action}
+                              type="button"
                               className={
                                 item.action === "huy_don"
                                   ? "danger"
@@ -354,34 +453,12 @@ function NguoiBan() {
           ) : error ? (
             <div className="seller-error">
               <p>{error}</p>
-              <button onClick={loadData}>Thử lại</button>
+              <button type="button" onClick={loadData}>
+                Thử lại
+              </button>
             </div>
           ) : (
-            <div className="seller-kpi">
-              {kpi ? (
-                Object.entries(kpi).map(([key, value]) => {
-                  if (
-                    value === null ||
-                    typeof value === "object"
-                  ) {
-                    return null;
-                  }
-
-                  return (
-                    <div className="seller-stat-card" key={key}>
-                      <span>{key.replaceAll("_", " ")}</span>
-                      <strong>
-                        {typeof value === "number"
-                          ? value.toLocaleString("vi-VN")
-                          : String(value)}
-                      </strong>
-                    </div>
-                  );
-                })
-              ) : (
-                <p>Chưa có dữ liệu thống kê.</p>
-              )}
-            </div>
+            renderKpi()
           )}
         </section>
       )}

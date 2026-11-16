@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   X,
   ShoppingCart,
@@ -7,8 +7,10 @@ import {
   MessageCircle,
   Zap,
   ShieldCheck,
-  Check
+  Check,
 } from "lucide-react";
+
+import { getProductImage } from "../lib/anh";
 import "./ProductDetail.css";
 
 function ProductDetail({
@@ -16,13 +18,9 @@ function ProductDetail({
   onClose,
   onAddToCart,
   onChat,
-  onBuyNow
+  onBuyNow,
 }) {
   const [selectedColor, setSelectedColor] = useState("");
-
-  useEffect(() => {
-    setSelectedColor(product?.colors?.[0]?.color || "");
-  }, [product]);
 
   if (!product) return null;
 
@@ -30,16 +28,21 @@ function ProductDetail({
     ? product.colors
     : [];
 
-  const selectedColorData = colors.find(
-    (item) => item.color === selectedColor
-  );
+  const currentColor =
+    colors.find((item) => item.color === selectedColor) ||
+    colors.find((item) => Number(item.stock) > 0) ||
+    colors[0];
+
+  const activeColor = currentColor?.color || "";
 
   const availableStock = colors.length > 0
-    ? Number(selectedColorData?.stock || 0)
+    ? Number(currentColor?.stock || 0)
     : Number(product.stock || 0);
 
   const formatPrice = (price) =>
     Number(price || 0).toLocaleString("vi-VN") + "đ";
+
+  const image = getProductImage(product);
 
   const handleAdd = () => {
     if (availableStock <= 0) {
@@ -49,8 +52,8 @@ function ProductDetail({
 
     onAddToCart?.({
       ...product,
-      selectedColor: selectedColor || null,
-      selectedColorStock: availableStock
+      selectedColor: activeColor || null,
+      selectedColorStock: availableStock,
     });
 
     onClose();
@@ -64,8 +67,8 @@ function ProductDetail({
 
     onBuyNow?.({
       ...product,
-      selectedColor: selectedColor || null,
-      selectedColorStock: availableStock
+      selectedColor: activeColor || null,
+      selectedColorStock: availableStock,
     });
   };
 
@@ -126,18 +129,23 @@ function ProductDetail({
         </button>
 
         <div className="detail-content">
-          {/* ẢNH SẢN PHẨM */}
           <div className="detail-image">
-            {product.image ? (
-              <img src={product.image} alt={product.name} />
-            ) : (
-              <div className="detail-no-image">
-                Không có hình ảnh
-              </div>
-            )}
+            <img
+              src={image}
+              alt={product.name}
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src =
+                  "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800";
+              }}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
+            />
           </div>
 
-          {/* THÔNG TIN SẢN PHẨM */}
           <div className="detail-info">
             <span className="product-category">
               {product.category || "Sản phẩm công nghệ"}
@@ -150,29 +158,30 @@ function ProductDetail({
             </p>
 
             <p className="detail-brand">
-              Thương hiệu: <strong>{product.brand || "Chưa cập nhật"}</strong>
+              Thương hiệu:{" "}
+              <strong>{product.brand || "Chưa cập nhật"}</strong>
             </p>
 
             <div className="detail-price">
               <strong>{formatPrice(product.price)}</strong>
             </div>
 
-            {/* TỒN KHO */}
-            <div className={`detail-stock ${availableStock > 0 ? "in-stock" : "out-stock"}`}>
+            <div
+              className={`detail-stock ${
+                availableStock > 0 ? "in-stock" : "out-stock"
+              }`}
+            >
               <PackageCheck size={18} />
               {availableStock > 0
                 ? `Còn ${availableStock} sản phẩm`
                 : "Tạm hết hàng"}
             </div>
 
-            {/* CHỌN MÀU */}
             {colors.length > 0 && (
               <div className="detail-colors">
                 <h3>
                   Màu sắc
-                  {selectedColor && (
-                    <span> · {selectedColor}</span>
-                  )}
+                  {activeColor && <span> · {activeColor}</span>}
                 </h3>
 
                 <div className="detail-color-list">
@@ -182,22 +191,27 @@ function ProductDetail({
                       key={item.color}
                       disabled={Number(item.stock) <= 0}
                       className={`detail-color-option ${
-                        selectedColor === item.color ? "selected" : ""
+                        activeColor === item.color ? "selected" : ""
                       }`}
                       onClick={() => setSelectedColor(item.color)}
                     >
-                      {selectedColor === item.color && (
+                      {activeColor === item.color && (
                         <Check size={14} />
                       )}
+
                       {item.color}
-                      <small>{item.stock > 0 ? `Còn ${item.stock}` : "Hết hàng"}</small>
+
+                      <small>
+                        {item.stock > 0
+                          ? `Còn ${item.stock}`
+                          : "Hết hàng"}
+                      </small>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* THÔNG SỐ */}
             {product.specs && (
               <div className="detail-section">
                 <h3>Thông số kỹ thuật</h3>
@@ -207,7 +221,6 @@ function ProductDetail({
               </div>
             )}
 
-            {/* BẢO HÀNH */}
             <div className="detail-service">
               <div>
                 <ShieldCheck size={19} />
@@ -222,7 +235,6 @@ function ProductDetail({
               </div>
             </div>
 
-            {/* TƯƠNG THÍCH */}
             {Array.isArray(product.compatible) && (
               <div className="detail-section">
                 <h3>Thiết bị tương thích</h3>
@@ -247,7 +259,6 @@ function ProductDetail({
           </div>
         </div>
 
-        {/* THANH NÚT HÀNH ĐỘNG */}
         <div className="detail-action-bar">
           <button
             type="button"

@@ -21,9 +21,11 @@ import {
   Smartphone,
 } from "lucide-react";
 
+import { getProductImage } from "../lib/anh";
+
 const categoryConfig = [
   {
-    keywords: ["laptop", "máy tính xách tay", "máy tính"],
+    keywords: ["laptop", "may tinh xach tay", "may tinh"],
     Icon: Laptop,
     color: "#e8efff",
     iconColor: "#3563c9",
@@ -37,25 +39,25 @@ const categoryConfig = [
     label: "TAI NGHE",
   },
   {
-    keywords: ["màn hình", "monitor"],
+    keywords: ["man hinh", "monitor"],
     Icon: Monitor,
     color: "#e5f3ff",
     iconColor: "#2584c7",
-    label: "MÀN HÌNH",
+    label: "MAN HINH",
   },
   {
-    keywords: ["ssd", "ổ cứng"],
+    keywords: ["ssd", "o cung"],
     Icon: HardDrive,
     color: "#e5f5ee",
     iconColor: "#26966a",
-    label: "LƯU TRỮ",
+    label: "LUU TRU",
   },
   {
-    keywords: ["hub", "cáp", "dây", "adapter"],
+    keywords: ["hub", "cap", "day", "adapter"],
     Icon: Cable,
     color: "#fff1e4",
     iconColor: "#d47a31",
-    label: "PHỤ KIỆN",
+    label: "PHU KIEN",
   },
   {
     keywords: ["micro", "mic"],
@@ -72,60 +74,60 @@ const categoryConfig = [
     label: "WEBCAM",
   },
   {
-    keywords: ["chuột", "mouse", "lót chuột"],
+    keywords: ["chuot", "mouse", "lot chuot"],
     Icon: Mouse,
     color: "#f1edff",
     iconColor: "#7856c7",
-    label: "CHUỘT",
+    label: "CHUOT",
   },
   {
-    keywords: ["balo"],
+    keywords: ["balo", "backpack"],
     Icon: Backpack,
     color: "#fff0e5",
     iconColor: "#bc7741",
     label: "BALO",
   },
   {
-    keywords: ["túi chống sốc", "túi laptop"],
+    keywords: ["tui chong soc", "tui laptop"],
     Icon: BriefcaseBusiness,
     color: "#edf0f4",
     iconColor: "#596777",
-    label: "TÚI LAPTOP",
+    label: "TUI LAPTOP",
   },
   {
-    keywords: ["đế tản nhiệt", "tản nhiệt"],
+    keywords: ["de tan nhiet", "tan nhiet"],
     Icon: Snowflake,
     color: "#e5f7ff",
     iconColor: "#2898c7",
-    label: "TẢN NHIỆT",
+    label: "TAN NHIET",
   },
   {
-    keywords: ["sạc", "pin"],
+    keywords: ["sac", "pin"],
     Icon: BatteryCharging,
     color: "#e8f7e9",
     iconColor: "#39964b",
-    label: "SẠC",
+    label: "SAC",
   },
   {
-    keywords: ["giá treo"],
+    keywords: ["gia treo"],
     Icon: Monitor,
     color: "#e9efff",
     iconColor: "#476ac4",
-    label: "GIÁ TREO",
+    label: "GIA TREO",
   },
   {
-    keywords: ["kê tay", "bàn phím", "keyboard"],
+    keywords: ["ke tay", "ban phim", "keyboard"],
     Icon: Keyboard,
     color: "#f1edff",
     iconColor: "#7959bd",
-    label: "BÀN PHÍM",
+    label: "BAN PHIM",
   },
   {
-    keywords: ["cpu", "linh kiện"],
+    keywords: ["cpu", "linh kien"],
     Icon: Cpu,
     color: "#e6f4f3",
     iconColor: "#318d85",
-    label: "LINH KIỆN",
+    label: "LINH KIEN",
   },
   {
     keywords: ["loa", "speaker"],
@@ -135,31 +137,30 @@ const categoryConfig = [
     label: "LOA",
   },
   {
-    keywords: ["điện thoại", "smartphone"],
+    keywords: ["dien thoai", "smartphone"],
     Icon: Smartphone,
     color: "#e9edff",
     iconColor: "#586bc4",
-    label: "ĐIỆN THOẠI",
+    label: "DIEN THOAI",
   },
 ];
 
-function getCategoryConfig(category = "") {
-  const normalized = category
+function normalize(value = "") {
+  return String(value)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d");
+}
+
+function getCategoryConfig(category = "") {
+  const normalized = normalize(category);
 
   return (
     categoryConfig.find((item) =>
-      item.keywords.some((keyword) => {
-        const normalizedKeyword = keyword
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/đ/g, "d");
-
-        return normalized.includes(normalizedKeyword);
-      })
+      item.keywords.some((keyword) =>
+        normalized.includes(normalize(keyword))
+      )
     ) || {
       Icon: Package,
       color: "#f0f1f4",
@@ -173,65 +174,41 @@ function ProductCard({ product, onAddToCart, onViewDetail }) {
   const formatPrice = (price) =>
     Number(price || 0).toLocaleString("vi-VN") + "₫";
 
-  const outOfStock = Number(product.stock) <= 0;
+  const stock = Number(product.stock || 0);
+  const outOfStock = stock <= 0;
+
   const config = getCategoryConfig(product.category);
   const CategoryIcon = config.Icon;
+  const productImage = getProductImage(product);
 
   return (
     <article className="product-card">
       <div
         className="product-image clickable"
-        onClick={() => onViewDetail(product)}
+        onClick={() => onViewDetail?.(product)}
         style={{
           background: config.color,
           position: "relative",
           overflow: "hidden",
         }}
       >
-        <div
-          className="product-placeholder"
+        <img
+          src={productImage}
+          alt={product.name || "Sản phẩm HDX Tech"}
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = getProductImage({});
+          }}
           style={{
             width: "100%",
             height: "100%",
             minHeight: "160px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "12px",
-            background: config.color,
+            objectFit: "contain",
+            padding: "12px",
+            display: "block",
           }}
-        >
-          <div
-            style={{
-              width: "76px",
-              height: "76px",
-              borderRadius: "22px",
-              background: "rgba(255,255,255,0.75)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-            }}
-          >
-            <CategoryIcon
-              size={42}
-              strokeWidth={1.6}
-              color={config.iconColor}
-            />
-          </div>
-
-          <span
-            style={{
-              color: config.iconColor,
-              fontSize: "11px",
-              fontWeight: "800",
-              letterSpacing: "1.5px",
-            }}
-          >
-            {config.label}
-          </span>
-        </div>
+        />
 
         <span className="product-image-label">HDX TECH</span>
 
@@ -242,22 +219,22 @@ function ProductCard({ product, onAddToCart, onViewDetail }) {
 
       <div className="product-info">
         <span className="product-category">
-          {product.category}
+          {product.category || "Phụ kiện công nghệ"}
         </span>
 
         <h3
           className="clickable"
-          onClick={() => onViewDetail(product)}
+          onClick={() => onViewDetail?.(product)}
         >
           {product.name}
         </h3>
 
         <div className="rating">
-          <Package size={14} />
+          <CategoryIcon size={14} color={config.iconColor} />
           <span>
             {outOfStock
               ? "Tạm hết hàng"
-              : `Còn ${product.stock} sản phẩm`}
+              : `Còn ${stock} sản phẩm`}
           </span>
         </div>
 
@@ -267,18 +244,21 @@ function ProductCard({ product, onAddToCart, onViewDetail }) {
 
         <div className="product-card-actions">
           <button
+            type="button"
             className="add-cart"
             disabled={outOfStock}
-            onClick={() => onAddToCart(product)}
+            onClick={() => onAddToCart?.(product)}
           >
             <ShoppingCart size={16} />
             {outOfStock ? "Hết hàng" : "Thêm vào giỏ"}
           </button>
 
           <button
+            type="button"
             className="quick-view"
             title="Xem chi tiết"
-            onClick={() => onViewDetail(product)}
+            aria-label="Xem chi tiết sản phẩm"
+            onClick={() => onViewDetail?.(product)}
           >
             <Eye size={17} />
           </button>
